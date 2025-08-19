@@ -47,187 +47,236 @@
       </div>
     @endif
 
-    {{-- Quick Search and Filters --}}
-    <div class="mb-6 bg-white rounded-lg shadow-sm border p-4">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        {{-- Search Box --}}
-        <div>
-          <form method="GET" action="{{ route('admin.bookings.index') }}" class="flex gap-2">
-            {{-- Preserve existing filters --}}
-            @foreach(request()->except(['search', 'page']) as $key => $value)
-              <input type="hidden" name="{{ $key }}" value="{{ $value }}">
-            @endforeach
-            
-            <input type="text" 
-                   name="search" 
-                   value="{{ request('search') }}"
-                   placeholder="🔍 Search booking ref, customer, vehicle, container..."
-                   class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm">
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
-              Search
+    {{-- Main Control Panel --}}
+    <div class="mb-6 bg-white rounded-lg shadow-sm border">
+      {{-- Top Row: Search, Quick Actions & Export --}}
+      <div class="p-4 border-b border-gray-200">
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 items-center">
+          {{-- Search Box --}}
+          <div class="xl:col-span-1">
+            <form method="GET" action="{{ route('admin.bookings.index') }}" class="flex gap-2">
+              {{-- Preserve existing filters --}}
+              @foreach(request()->except(['search', 'page']) as $key => $value)
+                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+              @endforeach
+              
+              <input type="text" 
+                     name="search" 
+                     value="{{ request('search') }}"
+                     placeholder="🔍 Search booking ref, customer, vehicle, container..."
+                     class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm">
+              <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                Search
+              </button>
+              @if(request('search'))
+                <a href="{{ route('admin.bookings.index', request()->except(['search', 'page'])) }}"
+                   class="px-3 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">
+                  Clear
+                </a>
+              @endif
+            </form>
+          </div>
+          
+          {{-- Quick Actions --}}
+          <div class="xl:col-span-1 flex justify-center gap-2">
+            <button onclick="openTrailerCollectionModal()" 
+                    class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium">
+              🚛 Trailer Collection
             </button>
-            @if(request('search'))
-              <a href="{{ route('admin.bookings.index', request()->except(['search', 'page'])) }}"
-                 class="px-3 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">
-                Clear
+            <a href="{{ route('admin.trailer-location-report') }}" 
+               class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
+              📍 Trailers on Site
+            </a>
+          </div>
+          
+          {{-- Export Actions --}}
+          <div class="xl:col-span-1 flex justify-end gap-1">
+            <div class="flex gap-1">
+              <a href="{{ route('admin.bookings.export.pdf', request()->query()) }}" 
+                 class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs" target="_blank" title="Export PDF">
+                📄 PDF
               </a>
-            @endif
-          </form>
-        </div>
-        
-        {{-- Status Filter --}}
-        <div class="flex gap-2 items-center">
-          <span class="text-sm font-medium text-gray-700">Status:</span>
-          <a href="{{ route('admin.bookings.index', array_merge(request()->except(['status', 'page']), ['status' => 'outstanding'])) }}" 
-             class="px-3 py-1 rounded text-sm {{ request('status', 'outstanding') == 'outstanding' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
-            ⏳ Outstanding
-          </a>
-          <a href="{{ route('admin.bookings.index', array_merge(request()->except(['status', 'page']), ['status' => 'completed'])) }}" 
-             class="px-3 py-1 rounded text-sm {{ request('status') == 'completed' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
-            ✅ Completed
-          </a>
-          <a href="{{ route('admin.bookings.index', array_merge(request()->except(['status', 'page']), ['status' => 'all'])) }}" 
-             class="px-3 py-1 rounded text-sm {{ request('status') == 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
-            📋 All
-          </a>
+              <a href="{{ route('admin.bookings.export.excel', request()->query()) }}" 
+                 class="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs" title="Export Excel">
+                📊 Excel
+              </a>
+              <a href="{{ route('admin.bookings.export.csv', request()->query()) }}" 
+                 class="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs" title="Export CSV">
+                📝 CSV
+              </a>
+            </div>
+          </div>
         </div>
       </div>
       
-      {{-- Date Filter Buttons --}}
-      <div class="flex flex-wrap gap-2">
-        <span class="text-sm font-medium text-gray-700 self-center">Date:</span>
-        <a href="{{ route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'today'])) }}" 
-           class="px-3 py-1 rounded text-sm {{ request('filter') == 'today' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
-          📅 Today
-        </a>
-        <a href="{{ route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'tomorrow'])) }}" 
-           class="px-3 py-1 rounded text-sm {{ request('filter') == 'tomorrow' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
-          🗓️ Tomorrow
-        </a>
-        <a href="{{ route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'this_week'])) }}" 
-           class="px-3 py-1 rounded text-sm {{ request('filter') == 'this_week' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
-          📊 This Week
-        </a>
-        <a href="{{ route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'next_week'])) }}" 
-           class="px-3 py-1 rounded text-sm {{ request('filter') == 'next_week' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
-          📈 Next Week
-        </a>
-        @if(request()->hasAny(['filter', 'status', 'search']))
-          <a href="{{ route('admin.bookings.index') }}"
-             class="px-3 py-1 rounded text-sm bg-gray-500 text-white hover:bg-gray-600 ml-4">
-            🔄 Reset All
-          </a>
-        @endif
+      {{-- Quick Filters Row --}}
+      <div class="p-4">
+        <div class="flex flex-wrap items-center gap-4">
+          {{-- Status Filter --}}
+          <div class="flex gap-2 items-center">
+            <span class="text-sm font-medium text-gray-700">Status:</span>
+            <a href="{{ route('admin.bookings.index', array_merge(request()->except(['status', 'page']), ['status' => 'outstanding'])) }}" 
+               class="px-3 py-1 rounded text-sm {{ request('status', 'outstanding') == 'outstanding' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+              ⏳ Outstanding
+            </a>
+            <a href="{{ route('admin.bookings.index', array_merge(request()->except(['status', 'page']), ['status' => 'completed'])) }}" 
+               class="px-3 py-1 rounded text-sm {{ request('status') == 'completed' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+              ✅ Completed
+            </a>
+            <a href="{{ route('admin.bookings.index', array_merge(request()->except(['status', 'page']), ['status' => 'all'])) }}" 
+               class="px-3 py-1 rounded text-sm {{ request('status') == 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+              📋 All
+            </a>
+          </div>
+          
+          {{-- Date Filter --}}
+          <div class="flex flex-wrap gap-2 items-center">
+            <span class="text-sm font-medium text-gray-700">Date:</span>
+            <a href="{{ route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'yesterday'])) }}" 
+               class="px-3 py-1 rounded text-sm {{ request('filter') == 'yesterday' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+              📅 Yesterday
+            </a>
+            <a href="{{ route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'today'])) }}" 
+               class="px-3 py-1 rounded text-sm {{ request('filter') == 'today' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+              📅 Today
+            </a>
+            <a href="{{ route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'tomorrow'])) }}" 
+               class="px-3 py-1 rounded text-sm {{ request('filter') == 'tomorrow' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+              🗓️ Tomorrow
+            </a>
+            <a href="{{ route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'last_week'])) }}" 
+               class="px-3 py-1 rounded text-sm {{ request('filter') == 'last_week' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+              📉 Last Week
+            </a>
+            <a href="{{ route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'this_week'])) }}" 
+               class="px-3 py-1 rounded text-sm {{ request('filter') == 'this_week' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+              📊 This Week
+            </a>
+            <a href="{{ route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'next_week'])) }}" 
+               class="px-3 py-1 rounded text-sm {{ request('filter') == 'next_week' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+              📈 Next Week
+            </a>
+          </div>
+          
+          {{-- Reset Button --}}
+          @if(request()->hasAny(['filter', 'status', 'search']))
+            <a href="{{ route('admin.bookings.index') }}"
+               class="px-3 py-1 rounded text-sm bg-gray-500 text-white hover:bg-gray-600 ml-auto">
+              🔄 Reset All
+            </a>
+          @endif
+        </div>
       </div>
     </div>
 
-    {{-- Quick Actions --}}
-    <div class="mb-4 flex flex-wrap gap-2 justify-between">
-      <div class="flex gap-2">
-        <button onclick="openQuickTrailerCollectionModal()" 
-                class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
-          🚛 Quick Trailer Collection
-        </button>
-        <a href="{{ route('admin.trailer-location-report') }}" 
-           class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
-          📍 View Trailers on Site
-        </a>
+    {{-- Advanced Filters (Collapsible) --}}
+    <div class="mb-4 bg-white rounded-lg shadow-sm border">
+      <button type="button" onclick="toggleAdvancedFilters()" class="w-full p-3 text-left flex items-center justify-between hover:bg-gray-50">
+        <span class="text-sm font-medium text-gray-700">🔧 Advanced Filters</span>
+        <svg id="advanced-filters-icon" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </button>
+      
+      <div id="advanced-filters-content" class="hidden border-t border-gray-200">
+        <form method="GET" class="p-4">
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">🏭 Depot</label>
+              <select name="depot_id" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                <option value="" {{ !$currentDepotId ? 'selected' : '' }}>All Depots</option>
+                @foreach($allDepots as $depot)
+                  <option value="{{ $depot->id }}" {{ $currentDepotId == $depot->id ? 'selected' : '' }}>
+                    {{ $depot->name }}
+                  </option>
+                @endforeach
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">👥 Customer</label>
+              <select name="customer_id" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                <option value="">All</option>
+                @foreach($customers as $customer)
+                  <option value="{{ $customer->id }}" @selected(request('customer_id') == $customer->id)>{{ $customer->name }}</option>
+                @endforeach
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">📋 Type</label>
+              <select name="booking_type_id" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                <option value="">All</option>
+                @foreach($types as $type)
+                  <option value="{{ $type->id }}" @selected(request('booking_type_id') == $type->id)>{{ $type->name }}</option>
+                @endforeach
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">📅 Week</label>
+              <select name="week_number" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                <option value="">All Weeks</option>
+                @foreach($weeks as $week)
+                  @php
+                    $isCurrentWeek = $week['number'] === \Carbon\Carbon::now()->weekOfYear;
+                  @endphp
+                  <option value="{{ $week['number'] }}" @selected(request('week_number') == $week['number'])>
+                    Week {{ $week['number'] }}{{ $isCurrentWeek ? ' (Current)' : '' }}
+                  </option>
+                @endforeach
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">📅 From Date</label>
+              <input type="date" name="from" value="{{ request('from') }}" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">📅 To Date</label>
+              <input type="date" name="to" value="{{ request('to') }}" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">🚛 Arrival Status</label>
+              <select name="arrival" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                <option value="">All</option>
+                <option value="not_arrived" @selected(request('arrival')=='not_arrived')>📋 Not Arrived</option>
+                <option value="late_runners" @selected(request('arrival')=='late_runners')>⏰ Late Runners</option>
+                <option value="arrived" @selected(request('arrival')=='arrived')>✅ Arrived</option>
+                <option value="on_time" @selected(request('arrival')=='on_time')>🎯 On Time</option>
+                <option value="arrived_late" @selected(request('arrival')=='arrived_late')>🔶 Arrived Late</option>
+                <option value="onsite" @selected(request('arrival')=='onsite')>🚛 On Site</option>
+                <option value="completed" @selected(request('arrival')=='completed')>✅ Completed</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">📊 Booking Status</label>
+              <select name="status" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                <option value="" @selected(!request('status'))>🔍 Active Only</option>
+                <option value="all" @selected(request('status') == 'all')>📋 Show All</option>
+                <option value="pending" @selected(request('status') == 'pending')>⏳ Pending</option>
+                <option value="confirmed" @selected(request('status') == 'confirmed')>✅ Confirmed</option>
+                <option value="in_progress" @selected(request('status') == 'in_progress')>🚛 In Progress</option>
+                <option value="completed" @selected(request('status') == 'completed')>✅ Completed</option>
+                <option value="cancelled" @selected(request('status') == 'cancelled')>❌ Cancelled</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="mt-4 flex justify-end gap-2">
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
+              🔍 Apply Filters
+            </button>
+            <a href="{{ route('admin.bookings.index') }}" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm font-medium">
+              🔄 Reset All
+            </a>
+          </div>
+        </form>
       </div>
-      <div class="flex gap-2">
-        <a href="{{ route('admin.bookings.export.pdf', request()->query()) }}" 
-           class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm" target="_blank">
-          📄 Export PDF
-        </a>
-      <a href="{{ route('admin.bookings.export.excel', request()->query()) }}" 
-         class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
-        📊 Export Excel
-      </a>
-      <a href="{{ route('admin.bookings.export.csv', request()->query()) }}" 
-         class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
-        📝 Export CSV
-      </a>
     </div>
-
-    {{-- Filters --}}
-    <form method="GET" class="mb-4 flex flex-wrap gap-4 items-end bg-gray-50 p-4 rounded">
-      <div>
-        <label class="block text-sm font-medium">View</label>
-        <select name="depot_id" class="border rounded px-2 py-1 text-sm">
-          <option value="" {{ !$currentDepotId ? 'selected' : '' }}>All Depots (View Only)</option>
-          @foreach($allDepots as $depot)
-            <option value="{{ $depot->id }}" {{ $currentDepotId == $depot->id ? 'selected' : '' }}>
-              {{ $depot->name }} {{ $depot->id == $defaultDepotId ? '(Default - Actions Enabled)' : '(View Only)' }}
-            </option>
-          @endforeach
-        </select>
-      </div>
-      <div>
-        <label class="block text-sm font-medium">Customer</label>
-        <select name="customer_id" class="border rounded px-2 py-1 text-sm">
-          <option value="">All</option>
-          @foreach($customers as $customer)
-            <option value="{{ $customer->id }}" @selected(request('customer_id') == $customer->id)>{{ $customer->name }}</option>
-          @endforeach
-        </select>
-      </div>
-      <div>
-        <label class="block text-sm font-medium">Type</label>
-        <select name="booking_type_id" class="border rounded px-2 py-1 text-sm">
-          <option value="">All</option>
-          @foreach($types as $type)
-            <option value="{{ $type->id }}" @selected(request('booking_type_id') == $type->id)>{{ $type->name }}</option>
-          @endforeach
-        </select>
-      </div>
-      <div>
-        <label class="block text-sm font-medium">Week Number</label>
-        <select name="week_number" class="border rounded px-2 py-1 text-sm">
-          <option value="">All</option>
-          @foreach($weeks as $week)
-            <option value="{{ $week['number'] }}" @selected(request('week_number') == $week['number'])>
-              Week {{ $week['number'] }} ({{ $week['start'] }} - {{ $week['end'] }})
-            </option>
-          @endforeach
-        </select>
-      </div>
-      <div>
-        <label class="block text-sm font-medium">From</label>
-        <input type="date" name="from" value="{{ request('from') }}" class="border rounded px-2 py-1 text-sm">
-      </div>
-      <div>
-        <label class="block text-sm font-medium">To</label>
-        <input type="date" name="to" value="{{ request('to') }}" class="border rounded px-2 py-1 text-sm">
-      </div>
-      <div>
-        <label class="block text-sm font-medium">Arrival Status</label>
-        <select name="arrival" class="border rounded px-2 py-1 text-sm">
-          <option value="">All</option>
-          <option value="not_arrived" @selected(request('arrival')=='not_arrived')>📋 Not Arrived</option>
-          <option value="late_runners" @selected(request('arrival')=='late_runners')>⏰ Late Runners</option>
-          <option value="arrived" @selected(request('arrival')=='arrived')>✅ Arrived</option>
-          <option value="on_time" @selected(request('arrival')=='on_time')>🎯 Arrived On Time</option>
-          <option value="arrived_late" @selected(request('arrival')=='arrived_late')>🔶 Arrived Late</option>
-          <option value="onsite" @selected(request('arrival')=='onsite')>🚛 On Site</option>
-          <option value="completed" @selected(request('arrival')=='completed')>✅ Completed</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-sm font-medium">Booking Status</label>
-        <select name="status" class="border rounded px-2 py-1 text-sm">
-          <option value="" @selected(!request('status'))>🔍 Active Only</option>
-          <option value="all" @selected(request('status') == 'all')>📋 Show All</option>
-          <option value="pending" @selected(request('status') == 'pending')>⏳ Pending</option>
-          <option value="confirmed" @selected(request('status') == 'confirmed')>✅ Confirmed</option>
-          <option value="in_progress" @selected(request('status') == 'in_progress')>🚛 In Progress</option>
-          <option value="completed" @selected(request('status') == 'completed')>✅ Completed</option>
-          <option value="cancelled" @selected(request('status') == 'cancelled')>❌ Cancelled</option>
-        </select>
-      </div>
-      <div class="flex space-x-2">
-        <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Filter</button>
-        <a href="{{ route('admin.bookings.index') }}" class="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear</a>
-      </div>
-    </form>
 
     {{-- Bookings Table --}}
     <table class="min-w-full bg-white shadow rounded overflow-hidden text-sm">
@@ -1870,6 +1919,34 @@
     document.getElementById('quickTrailerCollectionModal').addEventListener('click', function(e) {
       if (e.target === this) {
         closeQuickTrailerCollectionModal();
+      }
+    });
+
+    // Trailer Collection Modal Functions
+    function openTrailerCollectionModal() {
+      // Open the empty unit collection page in a new window/tab
+      window.open('{{ route("admin.empty-unit-collection") }}', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+    }
+
+    // Advanced Filters Toggle
+    function toggleAdvancedFilters() {
+      const content = document.getElementById('advanced-filters-content');
+      const icon = document.getElementById('advanced-filters-icon');
+      
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.style.transform = 'rotate(180deg)';
+      } else {
+        content.classList.add('hidden');
+        icon.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    // Show advanced filters if any are active
+    document.addEventListener('DOMContentLoaded', function() {
+      const hasActiveFilters = {{ request()->hasAny(['depot_id', 'customer_id', 'booking_type_id', 'week_number', 'from', 'to', 'arrival']) ? 'true' : 'false' }};
+      if (hasActiveFilters) {
+        toggleAdvancedFilters();
       }
     });
   </script>

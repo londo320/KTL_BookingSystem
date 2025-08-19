@@ -175,9 +175,9 @@
     {{-- Operational Quick Actions --}}
     <div class="mb-4 flex flex-wrap gap-2 justify-between items-center">
       <div class="flex gap-2">
-        <button onclick="openQuickTrailerCollectionModal()" 
+        <button onclick="openTrailerCollectionModal()" 
                 class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium">
-          🚛 Quick Collection
+          🚛 Trailer Collection
         </button>
         <a href="{{ route($routePrefix . 'trailer-location-report') }}" 
            class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
@@ -716,6 +716,12 @@
         });
       }
     });
+
+    // Trailer Collection Modal Functions
+    function openTrailerCollectionModal() {
+      // Open the empty unit collection page in a new window/tab
+      window.open('{{ route("admin.empty-unit-collection") }}', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+    }
   </script>
 
   <style>

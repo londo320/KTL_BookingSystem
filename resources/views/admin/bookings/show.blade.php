@@ -212,7 +212,18 @@
                 @if($booking->departed_at)
                   | Departed: {{ $booking->departed_at->format('d M Y, H:i') }}
                 @else
-                  | Currently on-site
+                  @php
+                    $movement = $booking->movements->first();
+                    $collectionCompleted = $movement && ($movement->collection_unit_departed_at || $booking->trailer_collected_at);
+                    $unitDeparted = $movement && $movement->unit_departed_at;
+                  @endphp
+                  @if($collectionCompleted)
+                    | ✅ Collection Complete
+                  @elseif($unitDeparted)
+                    | 🚚 Unit Departed - Trailer on Site
+                  @else
+                    | Currently on-site
+                  @endif
                 @endif
               </p>
             </div>
@@ -667,7 +678,197 @@
                 <p class="text-lg">{{ $booking->waiting_area_location }}</p>
               </div>
             @endif
+            
+            {{-- Tipping Type Information --}}
+            @if($booking->tipping_type)
+              <div>
+                <label class="text-sm font-medium text-gray-600">Tipping Type</label>
+                @php
+                  $movement = $booking->movements->first();
+                  
+                  // Determine actual tipping type based on what happened
+                  $actualTippingType = $booking->tipping_type;
+                  
+                  // Get collection vehicle from custom_fields or movement fields
+                  $collectionVehicleUsed = null;
+                  if ($movement && $movement->custom_fields && isset($movement->custom_fields['collected_by_vehicle'])) {
+                    $collectionVehicleUsed = $movement->custom_fields['collected_by_vehicle'];
+                  } elseif ($movement && $movement->collection_unit_registration) {
+                    $collectionVehicleUsed = $movement->collection_unit_registration;
+                  } elseif ($booking->departure_vehicle_registration) {
+                    $collectionVehicleUsed = $booking->departure_vehicle_registration;
+                  }
+                  
+                  // If different collection vehicle, it was definitely a drop operation
+                  if ($collectionVehicleUsed && $booking->vehicle_registration && 
+                      $collectionVehicleUsed !== $booking->vehicle_registration) {
+                    $actualTippingType = 'drop';
+                  }
+                  
+                  // If unit departed but collection happened later (different times), it was a drop
+                  if ($movement && $movement->unit_departed_at && $movement->collection_unit_departed_at && 
+                      $movement->unit_departed_at != $movement->collection_unit_departed_at) {
+                    $actualTippingType = 'drop';
+                  }
+                  
+                  // If unit departed but trailer was collected later (booking level)
+                  if ($movement && $movement->unit_departed_at && $booking->trailer_collected_at && 
+                      $movement->unit_departed_at != $booking->trailer_collected_at) {
+                    $actualTippingType = 'drop';
+                  }
+                  
+                  // If different carriers were involved (delivery vs collection)
+                  if ($movement && $movement->custom_fields && isset($movement->custom_fields['collection_carrier']) && 
+                      $booking->carrier_company && 
+                      $movement->custom_fields['collection_carrier'] !== $booking->carrier_company) {
+                    $actualTippingType = 'drop';
+                  }
+                @endphp
+                <p class="text-lg">
+                  @if($actualTippingType === 'live_tip')
+                    🚛 Live Tip (Vehicle stays attached)
+                  @elseif($actualTippingType === 'drop')
+                    📍 Drop Trailer (Vehicle leaves trailer)
+                    @if($actualTippingType !== $booking->tipping_type)
+                      <span class="text-sm text-blue-600 ml-2">(Detected from collection data)</span>
+                    @endif
+                  @else
+                    {{ ucwords(str_replace('_', ' ', $actualTippingType)) }}
+                  @endif
+                </p>
+              </div>
+            @endif
           </div>
+          
+          {{-- Collection Information --}}
+          @php
+            $movement = $booking->movements->first();
+            $hasCollectionInfo = $movement && ($movement->collection_unit_arrived_at || $movement->collection_unit_registration || $movement->collection_driver_name || $booking->departure_vehicle_registration);
+            $isCollected = $movement && in_array($movement->current_status, ['departed', 'trailer_collected']);
+            $hasCollectionTimes = $movement && ($movement->collection_unit_departed_at || $booking->trailer_collected_at);
+            
+            // Check custom_fields for collection data from empty-unit-collection form
+            $hasCustomFieldData = $movement && $movement->custom_fields && 
+                                  (isset($movement->custom_fields['collected_by_vehicle']) || 
+                                   isset($movement->custom_fields['collection_carrier']));
+            
+            // Show collection section if we have any collection information OR the trailer was actually collected
+            $showCollectionSection = $hasCollectionInfo || $isCollected || $hasCollectionTimes || $hasCustomFieldData;
+          @endphp
+          
+          @if($showCollectionSection)
+            <div class="border-t mt-6 pt-6">
+              <h4 class="font-medium text-gray-800 mb-4 flex items-center">
+                <span class="mr-2">🚚</span>
+                Collection Details
+                @php
+                  // Determine actual collection status based on data available
+                  $actualCollectionStatus = 'recorded'; // Default: just recorded in system
+                  $statusBadge = '';
+                  
+                  if ($movement) {
+                    // If collection unit actually arrived on site (not just system entry)
+                    if ($movement->collection_unit_arrived_at && $movement->collection_unit_departed_at) {
+                      $actualCollectionStatus = 'collected';
+                      $statusBadge = '<span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">✅ Physically Collected</span>';
+                    }
+                    // If only system entry of collection (no actual arrival time)
+                    elseif (($booking->trailer_collected_at || $movement->collection_unit_departed_at) && !$movement->collection_unit_arrived_at) {
+                      $actualCollectionStatus = 'recorded';
+                      $statusBadge = '<span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">📝 Collection Recorded</span>';
+                    }
+                    // Still awaiting collection
+                    elseif (in_array($movement->current_status, ['empty', 'awaiting_collection'])) {
+                      $actualCollectionStatus = 'awaiting';
+                      $statusBadge = '<span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">📍 Awaiting Collection</span>';
+                    }
+                  }
+                @endphp
+                {!! $statusBadge !!}
+              </h4>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {{-- Collection Vehicle Information --}}
+                <div class="space-y-3">
+                  <h5 class="text-sm font-semibold text-gray-700">Collection Vehicle</h5>
+                  
+                  @php
+                    $collectionVehicle = null;
+                    $collectionCarrier = null;
+                    
+                    // Check custom_fields first (from empty-unit-collection form)
+                    if ($movement && $movement->custom_fields) {
+                      $collectionVehicle = $movement->custom_fields['collected_by_vehicle'] ?? null;
+                      $collectionCarrier = $movement->custom_fields['collection_carrier'] ?? null;
+                    }
+                    
+                    // Fallback to movement fields
+                    if (!$collectionVehicle && $movement && $movement->collection_unit_registration) {
+                      $collectionVehicle = $movement->collection_unit_registration;
+                    }
+                    
+                    // Fallback to booking departure vehicle
+                    if (!$collectionVehicle && $booking->departure_vehicle_registration) {
+                      $collectionVehicle = $booking->departure_vehicle_registration;
+                    }
+                  @endphp
+                  
+                  @if($collectionVehicle)
+                    <div>
+                      <label class="text-sm font-medium text-gray-600">Vehicle Registration</label>
+                      <p class="text-lg font-mono bg-gray-100 px-2 py-1 rounded">{{ $collectionVehicle }}</p>
+                    </div>
+                  @else
+                    <div>
+                      <label class="text-sm font-medium text-gray-600">Vehicle Registration</label>
+                      <p class="text-lg text-gray-500 italic">Not recorded</p>
+                    </div>
+                  @endif
+                  
+                  @if($collectionCarrier)
+                    <div>
+                      <label class="text-sm font-medium text-gray-600">Collection Carrier</label>
+                      <p class="text-lg">{{ $collectionCarrier }}</p>
+                    </div>
+                  @elseif($booking->carrier_company)
+                    <div>
+                      <label class="text-sm font-medium text-gray-600">Collection Carrier</label>
+                      <p class="text-lg">{{ $booking->carrier_company }}</p>
+                    </div>
+                  @endif
+                  
+                  @if($movement && $movement->collection_driver_name)
+                    <div>
+                      <label class="text-sm font-medium text-gray-600">Driver Name</label>
+                      <p class="text-lg">{{ $movement->collection_driver_name }}</p>
+                    </div>
+                  @endif
+                  
+                  @if($movement && $movement->collection_driver_phone)
+                    <div>
+                      <label class="text-sm font-medium text-gray-600">Driver Phone</label>
+                      <p class="text-lg font-mono">{{ $movement->collection_driver_phone }}</p>
+                    </div>
+                  @endif
+                </div>
+                
+              </div>
+              
+              {{-- Collection Notes --}}
+              @if(($movement && $movement->collection_notes) || $booking->departure_notes)
+                <div class="mt-4 pt-3 border-t border-gray-100">
+                  <label class="text-sm font-medium text-gray-600">Collection Notes</label>
+                  <div class="text-sm text-gray-700 mt-1 bg-gray-50 p-3 rounded">
+                    @if($movement && $movement->collection_notes)
+                      {{ $movement->collection_notes }}
+                    @elseif($booking->departure_notes)
+                      {{ $booking->departure_notes }}
+                    @endif
+                  </div>
+                </div>
+              @endif
+            </div>
+          @endif
         </div>
       @endif
 
@@ -764,33 +965,32 @@
                 </div>
               </div>
             @else
-              <div class="p-3 bg-blue-100 rounded border border-blue-300">
-                <p class="text-blue-800 font-medium">🚛 Currently on-site</p>
-              </div>
+              @php
+                $movement = $booking->movements->first();
+                $collectionCompleted = $movement && ($movement->collection_unit_departed_at || $booking->trailer_collected_at);
+                $unitDeparted = $movement && $movement->unit_departed_at;
+              @endphp
+              @if($collectionCompleted)
+                <div class="p-3 bg-green-100 rounded border border-green-300">
+                  <p class="text-green-800 font-medium">✅ Collection Complete</p>
+                  @if($movement->collection_unit_departed_at)
+                    <p class="text-xs text-green-600">Physically collected: {{ $movement->collection_unit_departed_at->format('H:i') }}</p>
+                  @elseif($booking->trailer_collected_at)
+                    <p class="text-xs text-green-600">Recorded: {{ $booking->trailer_collected_at->format('H:i') }}</p>
+                  @endif
+                </div>
+              @elseif($unitDeparted)
+                <div class="p-3 bg-purple-100 rounded border border-purple-300">
+                  <p class="text-purple-800 font-medium">🚚 Unit Departed</p>
+                  <p class="text-xs text-purple-600">Trailer awaiting collection since {{ $movement->unit_departed_at->format('H:i') }}</p>
+                </div>
+              @else
+                <div class="p-3 bg-blue-100 rounded border border-blue-300">
+                  <p class="text-blue-800 font-medium">🚛 Currently on-site</p>
+                </div>
+              @endif
             @endif
             
-            {{-- Departure Vehicle Information (if different from arrival) --}}
-            @if($booking->departed_at && ($booking->departure_vehicle_registration || $booking->departure_driver_name))
-              <div class="mt-4 pt-4 border-t border-green-200">
-                <h4 class="font-medium text-green-800 mb-3">🚚 Collection Vehicle</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  @if($booking->departure_vehicle_registration)
-                    <div>
-                      <label class="text-xs font-medium text-gray-600">Collection Vehicle</label>
-                      <p class="font-mono">{{ $booking->departure_vehicle_registration }}</p>
-                    </div>
-                  @endif
-                  
-                </div>
-                
-                @if($booking->departure_notes)
-                  <div class="mt-2">
-                    <label class="text-xs font-medium text-gray-600">Departure Notes</label>
-                    <p class="text-sm text-gray-700">{{ $booking->departure_notes }}</p>
-                  </div>
-                @endif
-              </div>
-            @endif
 
           </div>
         </div>
@@ -1167,6 +1367,145 @@
                      class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
                     🚛 Manage Tipping Workflow
                   </a>
+                </div>
+              @endif
+            </div>
+          @endif
+          
+          {{-- Complete Operational Timeline --}}
+          @if($movement)
+            <div class="mt-6 space-y-4">
+              <h4 class="text-lg font-semibold text-green-700">📊 Complete Operational Timeline</h4>
+              
+              {{-- Vehicle Arrival & Duration --}}
+              @if($booking->arrived_at)
+                <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
+                  <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                      <label class="text-sm font-medium text-blue-700">🚛 Vehicle Arrival</label>
+                      <p class="text-lg font-mono">{{ $booking->arrived_at->format('l, d F Y - H:i') }}</p>
+                      <p class="text-sm text-blue-600">Scheduled: {{ $booking->slot->start_at->format('H:i') }}</p>
+                    </div>
+                    @if($movement && $movement->unit_departed_at)
+                      <div class="text-right">
+                        <span class="text-sm text-blue-600">On-site Duration</span>
+                        <p class="font-semibold text-blue-700 text-lg">{{ $booking->arrived_at->diffForHumans($movement->unit_departed_at, true) }}</p>
+                      </div>
+                    @endif
+                  </div>
+                </div>
+              @endif
+              
+              {{-- Tipping Operations --}}
+              @if($movement && $movement->unloading_started_at)
+                <div class="bg-orange-50 p-4 rounded-lg border-l-4 border-orange-500">
+                  <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                      <label class="text-sm font-medium text-orange-700">🏗️ Tipping Operations</label>
+                      <div class="text-lg">
+                        <div class="font-mono">Start: {{ $movement->unloading_started_at->format('l, d F Y - H:i') }}</div>
+                        @if($movement->unloading_completed_at)
+                          <div class="font-mono">End: {{ $movement->unloading_completed_at->format('l, d F Y - H:i') }}</div>
+                        @else
+                          <div class="text-orange-600">End: In Progress</div>
+                        @endif
+                      </div>
+                    </div>
+                    @if($movement && $movement->unloading_started_at && $movement->unloading_completed_at)
+                      <div class="text-right">
+                        <span class="text-sm text-orange-600">Tipping Duration</span>
+                        <p class="font-semibold text-orange-700 text-lg">{{ $movement->unloading_started_at->diffForHumans($movement->unloading_completed_at, true) }}</p>
+                      </div>
+                    @endif
+                  </div>
+                </div>
+              @endif
+              
+              {{-- Unit Departure (Drop-off) --}}
+              @if($movement && $movement->unit_departed_at)
+                <div class="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-500">
+                  <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                      <label class="text-sm font-medium text-purple-700">🚚 Original Unit Departed</label>
+                      <p class="text-lg font-mono">{{ $movement->unit_departed_at->format('l, d F Y - H:i') }}</p>
+                      <p class="text-sm text-purple-600">Trailer dropped on-site</p>
+                    </div>
+                    @if($booking->arrived_at)
+                      <div class="text-right">
+                        <span class="text-sm text-purple-600">Total On-site Time</span>
+                        <p class="font-semibold text-purple-700 text-lg">{{ $booking->arrived_at->diffForHumans($movement->unit_departed_at, true) }}</p>
+                      </div>
+                    @endif
+                  </div>
+                </div>
+              @endif
+              
+              {{-- Collection Information --}}
+              @if($movement && ($movement->collection_unit_arrived_at || $movement->collection_unit_departed_at || $booking->trailer_collected_at))
+                <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
+                  <div class="space-y-3">
+                    <label class="text-sm font-medium text-green-700">🚛 Collection Operations</label>
+                    
+                    @if($movement->collection_unit_arrived_at)
+                      <div class="flex justify-between items-center">
+                        <p class="text-sm font-medium">Collection Vehicle Arrived:</p>
+                        <p class="font-mono font-semibold">{{ $movement->collection_unit_arrived_at->format('l, d F Y - H:i') }}</p>
+                      </div>
+                    @endif
+                    
+                    @if($movement->collection_unit_departed_at)
+                      <div class="flex justify-between items-center">
+                        <p class="text-sm font-medium">Collection Completed:</p>
+                        <p class="font-mono font-semibold">{{ $movement->collection_unit_departed_at->format('l, d F Y - H:i') }}</p>
+                      </div>
+                    @elseif($booking->trailer_collected_at)
+                      <div class="flex justify-between items-center">
+                        <p class="text-sm font-medium">📝 Collection Recorded:</p>
+                        <div class="text-right">
+                          <p class="font-mono font-semibold">{{ $booking->trailer_collected_at->format('l, d F Y - H:i') }}</p>
+                          <span class="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">System Entry Only</span>
+                        </div>
+                      </div>
+                    @endif
+                    
+                    {{-- Collection Duration --}}
+                    @if($movement->collection_unit_arrived_at && $movement->collection_unit_departed_at)
+                      <div class="flex justify-between items-center border-t pt-2 border-green-200">
+                        <span class="text-sm text-green-600 font-medium">Collection Duration:</span>
+                        <p class="font-semibold text-green-700 text-lg">{{ $movement->collection_unit_arrived_at->diffForHumans($movement->collection_unit_departed_at, true) }}</p>
+                      </div>
+                    @endif
+                    
+                    {{-- Time Between Drop and Collection --}}
+                    @if($movement->unit_departed_at && ($movement->collection_unit_departed_at || $booking->trailer_collected_at))
+                      @php
+                        $collectionTime = $movement->collection_unit_departed_at ?? $booking->trailer_collected_at;
+                      @endphp
+                      <div class="flex justify-between items-center border-t pt-2 border-green-200">
+                        <span class="text-sm text-green-600 font-medium">Trailer Sat On-site:</span>
+                        <p class="font-semibold text-green-700 text-lg">{{ $movement->unit_departed_at->diffForHumans($collectionTime, true) }}</p>
+                      </div>
+                    @endif
+                  </div>
+                </div>
+              @endif
+              
+              {{-- Summary --}}
+              @if($booking->arrived_at && ($movement->collection_unit_departed_at || $booking->trailer_collected_at))
+                @php
+                  $finalTime = $movement->collection_unit_departed_at ?? $booking->trailer_collected_at;
+                @endphp
+                <div class="bg-gray-100 p-4 rounded-lg border border-gray-300">
+                  <div class="flex justify-between items-center">
+                    <div class="flex-1">
+                      <label class="text-sm font-medium text-gray-700">📈 Total Operation Time</label>
+                      <p class="text-sm text-gray-600">From initial arrival to final collection</p>
+                    </div>
+                    <div class="text-right">
+                      <p class="text-2xl font-bold text-gray-800">{{ $booking->arrived_at->diffForHumans($finalTime, true) }}</p>
+                      <p class="text-sm text-gray-500">{{ $booking->arrived_at->format('H:i') }} → {{ $finalTime->format('H:i') }}</p>
+                    </div>
+                  </div>
                 </div>
               @endif
             </div>
