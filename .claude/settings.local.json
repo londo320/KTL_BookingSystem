@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(composer install:*)",
+      "Bash(npm install)",
+      "Bash(cp:*)",
+      "Bash(php artisan key:generate:*)",
+      "Bash(php artisan migrate:*)",
+      "Bash(sqlite3:*)",
+      "Bash(rm:*)",
+      "Bash(touch:*)",
+      "Bash(php artisan:*)",
+      "Bash(npm run build:*)",
+      "Bash(mysql:*)",
+      "Bash(grep:*)",
+      "Bash(./vendor/bin/phpunit:*)",
+      "Bash(php vendor/bin/phpunit:*)",
+      "Bash(composer show:*)",
+      "Bash(vendor/bin/phpunit:*)",
+      "Bash(vendor/bin/pest:*)",
+      "Bash(composer test:*)",
+      "Bash(./vendor/bin/pest:*)",
+      "Bash(php:*)",
+      "Bash(./vendor/bin/pint)",
+      "Bash(./vendor/bin/pint:*)",
+      "Bash(cat:*)",
+      "Bash(curl:*)",
+      "Bash(sed:*)",
+      "Bash(find:*)",
+      "Bash(mkdir:*)",
+      "Bash(chmod:*)",
+      "Bash(./deploy-migrations.sh:*)",
+      "Bash(./reorder-migrations.sh:*)",
+      "Bash(./setup-demo-system.sh:*)",
+      "Bash(for file in resources/views/admin/booking_types/index.blade.php resources/views/admin/booking-rules/index.blade.php resources/views/admin/slot-settings/index.blade.php resources/views/admin/bookings/edit.blade.php)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(head:*)",
+      "Bash(done)"
+    ],
+    "deny": []
+  }
+}
