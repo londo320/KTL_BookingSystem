@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('tipping_bays', function (Blueprint $table) {
-            $table->string('text_color', 7)->default('#ffffff')->comment('Hex color for text (e.g., #ffffff)');
-        });
+        // This migration is redundant - text_color field is already added by 
+        // 2025_08_20_194548_add_visual_properties_to_tipping_bays_table migration
+        // Keeping this migration file for backward compatibility but doing nothing
     }
 
     /**
@@ -21,8 +21,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('tipping_bays', function (Blueprint $table) {
-            $table->dropColumn('text_color');
-        });
+        // This migration doesn't add anything, so there's nothing to rollback
+        // The text_color field is managed by the main visual properties migration
     }
 };
