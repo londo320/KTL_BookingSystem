@@ -17,12 +17,26 @@ class TippingBay extends Model
         'is_active',
         'is_occupied',
         'equipment',
+        'map_x',
+        'map_y',
+        'show_on_map',
+        'map_rotation',
+        'map_width',
+        'map_height',
+        'text_size',
+        'text_color',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'is_occupied' => 'boolean',
+        'show_on_map' => 'boolean',
         'equipment' => 'array',
+        'map_x' => 'decimal:2',
+        'map_y' => 'decimal:2',
+        'map_rotation' => 'decimal:2',
+        'map_width' => 'integer',
+        'map_height' => 'integer',
     ];
 
     public function depot(): BelongsTo

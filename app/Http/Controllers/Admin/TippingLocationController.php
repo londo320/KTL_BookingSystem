@@ -177,12 +177,53 @@ class TippingLocationController extends Controller
         if ($tippingLocation->activeBookings()->count() > 0) {
             return back()->withErrors(['delete' => 'Cannot delete location with active bookings.']);
         }
+        
+        // Check if location has any historical movements
+        $movementsCount = \App\Models\Movement::where('tipping_location_id', $tippingLocation->id)->count();
+        if ($movementsCount > 0) {
+            // Soft delete: deactivate instead of deleting
+            $tippingLocation->update(['is_active' => false]);
+            return redirect()
+                ->route('admin.tipping-locations.index')
+                ->with('success', "Location '{$tippingLocation->name}' has been deactivated (soft deleted) due to {$movementsCount} historical movement records. You can reactivate it later if needed.");
+        }
 
-        $tippingLocation->delete();
+        try {
+            $tippingLocation->delete();
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->errorInfo[1] == 1451) { // Foreign key constraint error
+                // Soft delete: deactivate instead of deleting
+                $tippingLocation->update(['is_active' => false]);
+                return redirect()
+                    ->route('admin.tipping-locations.index')
+                    ->with('success', "Location '{$tippingLocation->name}' has been deactivated (soft deleted) as it is still referenced by other records. You can reactivate it later if needed.");
+            }
+            throw $e; // Re-throw if it's a different error
+        }
 
         return redirect()
             ->route('admin.tipping-locations.index')
             ->with('success', 'Tipping location deleted successfully.');
+    }
+    
+    public function toggleActive(TippingLocation $tippingLocation)
+    {
+        // Check depot access
+        if (auth()->user()->depot_id) {
+            if ($tippingLocation->depot_id !== auth()->user()->depot_id) {
+                abort(403, 'You do not have access to this depot.');
+            }
+        }
+        
+        $tippingLocation->update([
+            'is_active' => !$tippingLocation->is_active
+        ]);
+        
+        $status = $tippingLocation->is_active ? 'activated' : 'deactivated';
+        
+        return redirect()
+            ->route('admin.tipping-locations.index')
+            ->with('success', "Tipping location '{$tippingLocation->name}' has been {$status}.");
     }
 
     private function getAllowedDepots()

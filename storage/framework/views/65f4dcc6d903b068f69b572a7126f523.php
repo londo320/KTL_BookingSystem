@@ -58,187 +58,237 @@
     <?php endif; ?>
 
     
-    <div class="mb-6 bg-white rounded-lg shadow-sm border p-4">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        
-        <div>
-          <form method="GET" action="<?php echo e(route('admin.bookings.index')); ?>" class="flex gap-2">
-            
-            <?php $__currentLoopData = request()->except(['search', 'page']); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $value): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-              <input type="hidden" name="<?php echo e($key); ?>" value="<?php echo e($value); ?>">
-            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-            
-            <input type="text" 
-                   name="search" 
-                   value="<?php echo e(request('search')); ?>"
-                   placeholder="🔍 Search booking ref, customer, vehicle, container..."
-                   class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm">
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
-              Search
+    <div class="mb-6 bg-white rounded-lg shadow-sm border">
+      
+      <div class="p-4 border-b border-gray-200">
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 items-center">
+          
+          <div class="xl:col-span-1">
+            <form method="GET" action="<?php echo e(route('admin.bookings.index')); ?>" class="flex gap-2">
+              
+              <?php $__currentLoopData = request()->except(['search', 'page']); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $value): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <input type="hidden" name="<?php echo e($key); ?>" value="<?php echo e($value); ?>">
+              <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+              
+              <input type="text" 
+                     name="search" 
+                     value="<?php echo e(request('search')); ?>"
+                     placeholder="🔍 Search booking ref, customer, vehicle, container..."
+                     class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm">
+              <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                Search
+              </button>
+              <?php if(request('search')): ?>
+                <a href="<?php echo e(route('admin.bookings.index', request()->except(['search', 'page']))); ?>"
+                   class="px-3 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">
+                  Clear
+                </a>
+              <?php endif; ?>
+            </form>
+          </div>
+          
+          
+          <div class="xl:col-span-1 flex justify-center gap-2">
+            <button onclick="openTrailerCollectionModal()" 
+                    class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium">
+              🚛 Trailer Collection
             </button>
-            <?php if(request('search')): ?>
-              <a href="<?php echo e(route('admin.bookings.index', request()->except(['search', 'page']))); ?>"
-                 class="px-3 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">
-                Clear
+            <a href="<?php echo e(route('admin.trailer-location-report')); ?>" 
+               class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
+              📍 Trailers on Site
+            </a>
+          </div>
+          
+          
+          <div class="xl:col-span-1 flex justify-end gap-1">
+            <div class="flex gap-1">
+              <a href="<?php echo e(route('admin.bookings.export.pdf', request()->query())); ?>" 
+                 class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs" target="_blank" title="Export PDF">
+                📄 PDF
               </a>
-            <?php endif; ?>
-          </form>
-        </div>
-        
-        
-        <div class="flex gap-2 items-center">
-          <span class="text-sm font-medium text-gray-700">Status:</span>
-          <a href="<?php echo e(route('admin.bookings.index', array_merge(request()->except(['status', 'page']), ['status' => 'outstanding']))); ?>" 
-             class="px-3 py-1 rounded text-sm <?php echo e(request('status', 'outstanding') == 'outstanding' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'); ?>">
-            ⏳ Outstanding
-          </a>
-          <a href="<?php echo e(route('admin.bookings.index', array_merge(request()->except(['status', 'page']), ['status' => 'completed']))); ?>" 
-             class="px-3 py-1 rounded text-sm <?php echo e(request('status') == 'completed' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'); ?>">
-            ✅ Completed
-          </a>
-          <a href="<?php echo e(route('admin.bookings.index', array_merge(request()->except(['status', 'page']), ['status' => 'all']))); ?>" 
-             class="px-3 py-1 rounded text-sm <?php echo e(request('status') == 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'); ?>">
-            📋 All
-          </a>
+              <a href="<?php echo e(route('admin.bookings.export.excel', request()->query())); ?>" 
+                 class="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs" title="Export Excel">
+                📊 Excel
+              </a>
+              <a href="<?php echo e(route('admin.bookings.export.csv', request()->query())); ?>" 
+                 class="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs" title="Export CSV">
+                📝 CSV
+              </a>
+            </div>
+          </div>
         </div>
       </div>
       
       
-      <div class="flex flex-wrap gap-2">
-        <span class="text-sm font-medium text-gray-700 self-center">Date:</span>
-        <a href="<?php echo e(route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'today']))); ?>" 
-           class="px-3 py-1 rounded text-sm <?php echo e(request('filter') == 'today' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'); ?>">
-          📅 Today
-        </a>
-        <a href="<?php echo e(route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'tomorrow']))); ?>" 
-           class="px-3 py-1 rounded text-sm <?php echo e(request('filter') == 'tomorrow' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'); ?>">
-          🗓️ Tomorrow
-        </a>
-        <a href="<?php echo e(route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'this_week']))); ?>" 
-           class="px-3 py-1 rounded text-sm <?php echo e(request('filter') == 'this_week' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'); ?>">
-          📊 This Week
-        </a>
-        <a href="<?php echo e(route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'next_week']))); ?>" 
-           class="px-3 py-1 rounded text-sm <?php echo e(request('filter') == 'next_week' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'); ?>">
-          📈 Next Week
-        </a>
-        <?php if(request()->hasAny(['filter', 'status', 'search'])): ?>
-          <a href="<?php echo e(route('admin.bookings.index')); ?>"
-             class="px-3 py-1 rounded text-sm bg-gray-500 text-white hover:bg-gray-600 ml-4">
-            🔄 Reset All
-          </a>
-        <?php endif; ?>
+      <div class="p-4">
+        <div class="flex flex-wrap items-center gap-4">
+          
+          <div class="flex gap-2 items-center">
+            <span class="text-sm font-medium text-gray-700">Status:</span>
+            <a href="<?php echo e(route('admin.bookings.index', array_merge(request()->except(['status', 'page']), ['status' => 'outstanding']))); ?>" 
+               class="px-3 py-1 rounded text-sm <?php echo e(request('status', 'outstanding') == 'outstanding' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'); ?>">
+              ⏳ Outstanding
+            </a>
+            <a href="<?php echo e(route('admin.bookings.index', array_merge(request()->except(['status', 'page']), ['status' => 'completed']))); ?>" 
+               class="px-3 py-1 rounded text-sm <?php echo e(request('status') == 'completed' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'); ?>">
+              ✅ Completed
+            </a>
+            <a href="<?php echo e(route('admin.bookings.index', array_merge(request()->except(['status', 'page']), ['status' => 'all']))); ?>" 
+               class="px-3 py-1 rounded text-sm <?php echo e(request('status') == 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'); ?>">
+              📋 All
+            </a>
+          </div>
+          
+          
+          <div class="flex flex-wrap gap-2 items-center">
+            <span class="text-sm font-medium text-gray-700">Date:</span>
+            <a href="<?php echo e(route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'yesterday']))); ?>" 
+               class="px-3 py-1 rounded text-sm <?php echo e(request('filter') == 'yesterday' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'); ?>">
+              📅 Yesterday
+            </a>
+            <a href="<?php echo e(route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'today']))); ?>" 
+               class="px-3 py-1 rounded text-sm <?php echo e(request('filter') == 'today' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'); ?>">
+              📅 Today
+            </a>
+            <a href="<?php echo e(route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'tomorrow']))); ?>" 
+               class="px-3 py-1 rounded text-sm <?php echo e(request('filter') == 'tomorrow' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'); ?>">
+              🗓️ Tomorrow
+            </a>
+            <a href="<?php echo e(route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'last_week']))); ?>" 
+               class="px-3 py-1 rounded text-sm <?php echo e(request('filter') == 'last_week' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'); ?>">
+              📉 Last Week
+            </a>
+            <a href="<?php echo e(route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'this_week']))); ?>" 
+               class="px-3 py-1 rounded text-sm <?php echo e(request('filter') == 'this_week' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'); ?>">
+              📊 This Week
+            </a>
+            <a href="<?php echo e(route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'next_week']))); ?>" 
+               class="px-3 py-1 rounded text-sm <?php echo e(request('filter') == 'next_week' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'); ?>">
+              📈 Next Week
+            </a>
+          </div>
+          
+          
+          <?php if(request()->hasAny(['filter', 'status', 'search'])): ?>
+            <a href="<?php echo e(route('admin.bookings.index')); ?>"
+               class="px-3 py-1 rounded text-sm bg-gray-500 text-white hover:bg-gray-600 ml-auto">
+              🔄 Reset All
+            </a>
+          <?php endif; ?>
+        </div>
       </div>
     </div>
 
     
-    <div class="mb-4 flex flex-wrap gap-2 justify-between">
-      <div class="flex gap-2">
-        <button onclick="openQuickTrailerCollectionModal()" 
-                class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
-          🚛 Quick Trailer Collection
-        </button>
-        <a href="<?php echo e(route('admin.trailer-location-report')); ?>" 
-           class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
-          📍 View Trailers on Site
-        </a>
+    <div class="mb-4 bg-white rounded-lg shadow-sm border">
+      <button type="button" onclick="toggleAdvancedFilters()" class="w-full p-3 text-left flex items-center justify-between hover:bg-gray-50">
+        <span class="text-sm font-medium text-gray-700">🔧 Advanced Filters</span>
+        <svg id="advanced-filters-icon" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </button>
+      
+      <div id="advanced-filters-content" class="hidden border-t border-gray-200">
+        <form method="GET" class="p-4">
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">🏭 Depot</label>
+              <select name="depot_id" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                <option value="" <?php echo e(!$currentDepotId ? 'selected' : ''); ?>>All Depots</option>
+                <?php $__currentLoopData = $allDepots; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $depot): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                  <option value="<?php echo e($depot->id); ?>" <?php echo e($currentDepotId == $depot->id ? 'selected' : ''); ?>>
+                    <?php echo e($depot->name); ?>
+
+                  </option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">👥 Customer</label>
+              <select name="customer_id" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                <option value="">All</option>
+                <?php $__currentLoopData = $customers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $customer): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                  <option value="<?php echo e($customer->id); ?>" <?php if(request('customer_id') == $customer->id): echo 'selected'; endif; ?>><?php echo e($customer->name); ?></option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">📋 Type</label>
+              <select name="booking_type_id" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                <option value="">All</option>
+                <?php $__currentLoopData = $types; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $type): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                  <option value="<?php echo e($type->id); ?>" <?php if(request('booking_type_id') == $type->id): echo 'selected'; endif; ?>><?php echo e($type->name); ?></option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">📅 Week</label>
+              <select name="week_number" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                <option value="">All Weeks</option>
+                <?php $__currentLoopData = $weeks; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $week): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                  <?php
+                    $isCurrentWeek = $week['number'] === \Carbon\Carbon::now()->weekOfYear;
+                  ?>
+                  <option value="<?php echo e($week['number']); ?>" <?php if(request('week_number') == $week['number']): echo 'selected'; endif; ?>>
+                    Week <?php echo e($week['number']); ?><?php echo e($isCurrentWeek ? ' (Current)' : ''); ?>
+
+                  </option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">📅 From Date</label>
+              <input type="date" name="from" value="<?php echo e(request('from')); ?>" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">📅 To Date</label>
+              <input type="date" name="to" value="<?php echo e(request('to')); ?>" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">🚛 Arrival Status</label>
+              <select name="arrival" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                <option value="">All</option>
+                <option value="not_arrived" <?php if(request('arrival')=='not_arrived'): echo 'selected'; endif; ?>>📋 Not Arrived</option>
+                <option value="late_runners" <?php if(request('arrival')=='late_runners'): echo 'selected'; endif; ?>>⏰ Late Runners</option>
+                <option value="arrived" <?php if(request('arrival')=='arrived'): echo 'selected'; endif; ?>>✅ Arrived</option>
+                <option value="on_time" <?php if(request('arrival')=='on_time'): echo 'selected'; endif; ?>>🎯 On Time</option>
+                <option value="arrived_late" <?php if(request('arrival')=='arrived_late'): echo 'selected'; endif; ?>>🔶 Arrived Late</option>
+                <option value="onsite" <?php if(request('arrival')=='onsite'): echo 'selected'; endif; ?>>🚛 On Site</option>
+                <option value="completed" <?php if(request('arrival')=='completed'): echo 'selected'; endif; ?>>✅ Completed</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">📊 Booking Status</label>
+              <select name="status" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                <option value="" <?php if(!request('status')): echo 'selected'; endif; ?>>🔍 Active Only</option>
+                <option value="all" <?php if(request('status') == 'all'): echo 'selected'; endif; ?>>📋 Show All</option>
+                <option value="pending" <?php if(request('status') == 'pending'): echo 'selected'; endif; ?>>⏳ Pending</option>
+                <option value="confirmed" <?php if(request('status') == 'confirmed'): echo 'selected'; endif; ?>>✅ Confirmed</option>
+                <option value="in_progress" <?php if(request('status') == 'in_progress'): echo 'selected'; endif; ?>>🚛 In Progress</option>
+                <option value="completed" <?php if(request('status') == 'completed'): echo 'selected'; endif; ?>>✅ Completed</option>
+                <option value="cancelled" <?php if(request('status') == 'cancelled'): echo 'selected'; endif; ?>>❌ Cancelled</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="mt-4 flex justify-end gap-2">
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
+              🔍 Apply Filters
+            </button>
+            <a href="<?php echo e(route('admin.bookings.index')); ?>" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm font-medium">
+              🔄 Reset All
+            </a>
+          </div>
+        </form>
       </div>
-      <div class="flex gap-2">
-        <a href="<?php echo e(route('admin.bookings.export.pdf', request()->query())); ?>" 
-           class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm" target="_blank">
-          📄 Export PDF
-        </a>
-      <a href="<?php echo e(route('admin.bookings.export.excel', request()->query())); ?>" 
-         class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
-        📊 Export Excel
-      </a>
-      <a href="<?php echo e(route('admin.bookings.export.csv', request()->query())); ?>" 
-         class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
-        📝 Export CSV
-      </a>
     </div>
-
-    
-    <form method="GET" class="mb-4 flex flex-wrap gap-4 items-end bg-gray-50 p-4 rounded">
-      <div>
-        <label class="block text-sm font-medium">View</label>
-        <select name="depot_id" class="border rounded px-2 py-1 text-sm">
-          <option value="" <?php echo e(!$currentDepotId ? 'selected' : ''); ?>>All Depots (View Only)</option>
-          <?php $__currentLoopData = $allDepots; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $depot): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-            <option value="<?php echo e($depot->id); ?>" <?php echo e($currentDepotId == $depot->id ? 'selected' : ''); ?>>
-              <?php echo e($depot->name); ?> <?php echo e($depot->id == $defaultDepotId ? '(Default - Actions Enabled)' : '(View Only)'); ?>
-
-            </option>
-          <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-        </select>
-      </div>
-      <div>
-        <label class="block text-sm font-medium">Customer</label>
-        <select name="customer_id" class="border rounded px-2 py-1 text-sm">
-          <option value="">All</option>
-          <?php $__currentLoopData = $customers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $customer): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-            <option value="<?php echo e($customer->id); ?>" <?php if(request('customer_id') == $customer->id): echo 'selected'; endif; ?>><?php echo e($customer->name); ?></option>
-          <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-        </select>
-      </div>
-      <div>
-        <label class="block text-sm font-medium">Type</label>
-        <select name="booking_type_id" class="border rounded px-2 py-1 text-sm">
-          <option value="">All</option>
-          <?php $__currentLoopData = $types; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $type): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-            <option value="<?php echo e($type->id); ?>" <?php if(request('booking_type_id') == $type->id): echo 'selected'; endif; ?>><?php echo e($type->name); ?></option>
-          <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-        </select>
-      </div>
-      <div>
-        <label class="block text-sm font-medium">Week Number</label>
-        <select name="week_number" class="border rounded px-2 py-1 text-sm">
-          <option value="">All</option>
-          <?php $__currentLoopData = $weeks; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $week): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-            <option value="<?php echo e($week['number']); ?>" <?php if(request('week_number') == $week['number']): echo 'selected'; endif; ?>>
-              Week <?php echo e($week['number']); ?> (<?php echo e($week['start']); ?> - <?php echo e($week['end']); ?>)
-            </option>
-          <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-        </select>
-      </div>
-      <div>
-        <label class="block text-sm font-medium">From</label>
-        <input type="date" name="from" value="<?php echo e(request('from')); ?>" class="border rounded px-2 py-1 text-sm">
-      </div>
-      <div>
-        <label class="block text-sm font-medium">To</label>
-        <input type="date" name="to" value="<?php echo e(request('to')); ?>" class="border rounded px-2 py-1 text-sm">
-      </div>
-      <div>
-        <label class="block text-sm font-medium">Arrival Status</label>
-        <select name="arrival" class="border rounded px-2 py-1 text-sm">
-          <option value="">All</option>
-          <option value="not_arrived" <?php if(request('arrival')=='not_arrived'): echo 'selected'; endif; ?>>📋 Not Arrived</option>
-          <option value="late_runners" <?php if(request('arrival')=='late_runners'): echo 'selected'; endif; ?>>⏰ Late Runners</option>
-          <option value="arrived" <?php if(request('arrival')=='arrived'): echo 'selected'; endif; ?>>✅ Arrived</option>
-          <option value="on_time" <?php if(request('arrival')=='on_time'): echo 'selected'; endif; ?>>🎯 Arrived On Time</option>
-          <option value="arrived_late" <?php if(request('arrival')=='arrived_late'): echo 'selected'; endif; ?>>🔶 Arrived Late</option>
-          <option value="onsite" <?php if(request('arrival')=='onsite'): echo 'selected'; endif; ?>>🚛 On Site</option>
-          <option value="completed" <?php if(request('arrival')=='completed'): echo 'selected'; endif; ?>>✅ Completed</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-sm font-medium">Booking Status</label>
-        <select name="status" class="border rounded px-2 py-1 text-sm">
-          <option value="" <?php if(!request('status')): echo 'selected'; endif; ?>>🔍 Active Only</option>
-          <option value="all" <?php if(request('status') == 'all'): echo 'selected'; endif; ?>>📋 Show All</option>
-          <option value="pending" <?php if(request('status') == 'pending'): echo 'selected'; endif; ?>>⏳ Pending</option>
-          <option value="confirmed" <?php if(request('status') == 'confirmed'): echo 'selected'; endif; ?>>✅ Confirmed</option>
-          <option value="in_progress" <?php if(request('status') == 'in_progress'): echo 'selected'; endif; ?>>🚛 In Progress</option>
-          <option value="completed" <?php if(request('status') == 'completed'): echo 'selected'; endif; ?>>✅ Completed</option>
-          <option value="cancelled" <?php if(request('status') == 'cancelled'): echo 'selected'; endif; ?>>❌ Cancelled</option>
-        </select>
-      </div>
-      <div class="flex space-x-2">
-        <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Filter</button>
-        <a href="<?php echo e(route('admin.bookings.index')); ?>" class="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear</a>
-      </div>
-    </form>
 
     
     <table class="min-w-full bg-white shadow rounded overflow-hidden text-sm">
@@ -1897,6 +1947,34 @@
     document.getElementById('quickTrailerCollectionModal').addEventListener('click', function(e) {
       if (e.target === this) {
         closeQuickTrailerCollectionModal();
+      }
+    });
+
+    // Trailer Collection Modal Functions
+    function openTrailerCollectionModal() {
+      // Open the empty unit collection page in a new window/tab
+      window.open('<?php echo e(route("admin.empty-unit-collection")); ?>', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+    }
+
+    // Advanced Filters Toggle
+    function toggleAdvancedFilters() {
+      const content = document.getElementById('advanced-filters-content');
+      const icon = document.getElementById('advanced-filters-icon');
+      
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.style.transform = 'rotate(180deg)';
+      } else {
+        content.classList.add('hidden');
+        icon.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    // Show advanced filters if any are active
+    document.addEventListener('DOMContentLoaded', function() {
+      const hasActiveFilters = <?php echo e(request()->hasAny(['depot_id', 'customer_id', 'booking_type_id', 'week_number', 'from', 'to', 'arrival']) ? 'true' : 'false'); ?>;
+      if (hasActiveFilters) {
+        toggleAdvancedFilters();
       }
     });
   </script>

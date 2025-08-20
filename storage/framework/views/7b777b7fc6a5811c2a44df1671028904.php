@@ -205,7 +205,16 @@
                                         <?php if($canTakeAction): ?>
                                             <a href="<?php echo e(route('admin.tipping-locations.edit', $location)); ?>" 
                                                class="text-yellow-600 hover:text-yellow-900">Edit</a>
-                                            <?php if($location->activeBookings()->count() === 0): ?>
+                                            <?php if(!$location->is_active): ?>
+                                                <!-- Reactivate button for inactive locations -->
+                                                <form method="POST" action="<?php echo e(route('admin.tipping-locations.toggle-active', $location)); ?>" 
+                                                      class="inline-block" onsubmit="return confirm('Reactivate this location? It will become available for new bookings.');">
+                                                    <?php echo csrf_field(); ?>
+                                                    <?php echo method_field('PATCH'); ?>
+                                                    <button type="submit" class="text-green-600 hover:text-green-900">Reactivate</button>
+                                                </form>
+                                            <?php elseif($location->activeBookings()->count() === 0): ?>
+                                                <!-- Delete/Deactivate button for active locations with no bookings -->
                                                 <form method="POST" action="<?php echo e(route('admin.tipping-locations.destroy', $location)); ?>" 
                                                       class="inline-block" onsubmit="return confirm('Are you sure you want to delete this location?');">
                                                     <?php echo csrf_field(); ?>
@@ -218,8 +227,13 @@
                                         <?php else: ?>
                                             <span class="text-gray-400 cursor-not-allowed" 
                                                   title="Actions only available for your default depot">Edit</span>
-                                            <span class="text-gray-400 cursor-not-allowed" 
-                                                  title="Actions only available for your default depot">Delete</span>
+                                            <?php if(!$location->is_active): ?>
+                                                <span class="text-gray-400 cursor-not-allowed" 
+                                                      title="Actions only available for your default depot">Reactivate</span>
+                                            <?php else: ?>
+                                                <span class="text-gray-400 cursor-not-allowed" 
+                                                      title="Actions only available for your default depot">Delete</span>
+                                            <?php endif; ?>
                                         <?php endif; ?>
                                     </td>
                                 </tr>

@@ -48,6 +48,15 @@
         Customer Analysis
       </a>
     </li>
+    <li>
+      <?php
+        $depotMapPrefix = request()->route()->getPrefix() === 'depot-admin' ? 'depot.' : 'admin.';
+      ?>
+      <a href="<?php echo e(route($depotMapPrefix . 'depot-map.index')); ?>"
+         class="px-3 py-1 rounded <?php echo e(request()->routeIs('admin.depot-map.*', 'depot.depot-map.*') ? 'bg-green-500 text-white' : 'text-gray-700 dark:text-gray-300'); ?>">
+        🗺️ Depot Map
+      </a>
+    </li>
     <li class="relative">
       <button onclick="toggleTippingDropdown()" 
               class="px-3 py-1 rounded flex items-center <?php echo e(request()->routeIs('admin.tipping-*') ? 'bg-orange-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100'); ?>">
@@ -68,6 +77,13 @@
         <a href="<?php echo e(route('admin.tipping-bays.index')); ?>" 
            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 <?php echo e(request()->routeIs('admin.tipping-bays.*') ? 'bg-orange-50 text-orange-600' : ''); ?>">
           🚛 Tipping Bays
+        </a>
+        <?php
+          $mapRoutePrefix = request()->route()->getPrefix() === 'depot-admin' ? 'depot.' : 'admin.';
+        ?>
+        <a href="<?php echo e(route($mapRoutePrefix . 'depot-map.index')); ?>" 
+           class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 <?php echo e(request()->routeIs('admin.depot-map.*', 'depot.depot-map.*') ? 'bg-orange-50 text-orange-600' : ''); ?>">
+          🗺️ Depot Map
         </a>
         <div class="border-t border-gray-100 my-1"></div>
         <?php

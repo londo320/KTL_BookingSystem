@@ -192,7 +192,16 @@
                                         @if($canTakeAction)
                                             <a href="{{ route('admin.tipping-locations.edit', $location) }}" 
                                                class="text-yellow-600 hover:text-yellow-900">Edit</a>
-                                            @if($location->activeBookings()->count() === 0)
+                                            @if(!$location->is_active)
+                                                <!-- Reactivate button for inactive locations -->
+                                                <form method="POST" action="{{ route('admin.tipping-locations.toggle-active', $location) }}" 
+                                                      class="inline-block" onsubmit="return confirm('Reactivate this location? It will become available for new bookings.');">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit" class="text-green-600 hover:text-green-900">Reactivate</button>
+                                                </form>
+                                            @elseif($location->activeBookings()->count() === 0)
+                                                <!-- Delete/Deactivate button for active locations with no bookings -->
                                                 <form method="POST" action="{{ route('admin.tipping-locations.destroy', $location) }}" 
                                                       class="inline-block" onsubmit="return confirm('Are you sure you want to delete this location?');">
                                                     @csrf
@@ -205,8 +214,13 @@
                                         @else
                                             <span class="text-gray-400 cursor-not-allowed" 
                                                   title="Actions only available for your default depot">Edit</span>
-                                            <span class="text-gray-400 cursor-not-allowed" 
-                                                  title="Actions only available for your default depot">Delete</span>
+                                            @if(!$location->is_active)
+                                                <span class="text-gray-400 cursor-not-allowed" 
+                                                      title="Actions only available for your default depot">Reactivate</span>
+                                            @else
+                                                <span class="text-gray-400 cursor-not-allowed" 
+                                                      title="Actions only available for your default depot">Delete</span>
+                                            @endif
                                         @endif
                                     </td>
                                 </tr>

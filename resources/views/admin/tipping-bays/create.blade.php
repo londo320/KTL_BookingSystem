@@ -72,8 +72,8 @@
                             <p class="text-xs text-gray-500 mt-1">Short code for easy identification (optional)</p>
                         </div>
 
-                        <div>
-                            <div class="flex items-center mt-8">
+                        <div class="space-y-4">
+                            <div class="flex items-center">
                                 <input type="hidden" name="is_active" value="0">
                                 <input type="checkbox" name="is_active" id="is_active" value="1" 
                                        {{ old('is_active', true) ? 'checked' : '' }}
@@ -82,6 +82,22 @@
                                     Active (available for use)
                                 </label>
                             </div>
+                            <p class="text-xs text-gray-500">
+                                Inactive bays won't be available for tipping
+                            </p>
+                            
+                            <div class="flex items-center">
+                                <input type="hidden" name="show_on_map" value="0">
+                                <input type="checkbox" name="show_on_map" id="show_on_map" value="1" 
+                                       {{ old('show_on_map', true) ? 'checked' : '' }}
+                                       class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                <label class="ml-2 block text-sm text-gray-700" for="show_on_map">
+                                    Show on depot map
+                                </label>
+                            </div>
+                            <p class="text-xs text-gray-500">
+                                Controls whether this bay appears on the visual depot map
+                            </p>
                         </div>
                     </div>
 
@@ -92,6 +108,54 @@
                         <textarea name="description" id="description" rows="3" 
                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                                   placeholder="Additional details about this bay...">{{ old('description') }}</textarea>
+                    </div>
+
+                    <!-- Map Position Settings -->
+                    <div class="border-t border-gray-200 pt-6">
+                        <h4 class="text-lg font-medium text-gray-800 mb-4">🗺️ Map Position Settings</h4>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" for="map_x">
+                                    Map X Position (%)
+                                </label>
+                                <input type="number" name="map_x" id="map_x" 
+                                       value="{{ old('map_x') }}" 
+                                       min="0" max="100" step="0.1"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       placeholder="e.g., 25.5">
+                                <p class="text-xs text-gray-500 mt-1">Horizontal position on map (0-100%)</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" for="map_y">
+                                    Map Y Position (%)
+                                </label>
+                                <input type="number" name="map_y" id="map_y" 
+                                       value="{{ old('map_y') }}" 
+                                       min="0" max="100" step="0.1"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       placeholder="e.g., 65.2">
+                                <p class="text-xs text-gray-500 mt-1">Vertical position on map (0-100%)</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="text-blue-400">ℹ️</div>
+                                </div>
+                                <div class="ml-3">
+                                    <h5 class="text-sm font-medium text-blue-800">Map Position Tips:</h5>
+                                    <ul class="mt-2 text-sm text-blue-700 space-y-1">
+                                        <li>• Leave positions empty to position manually using the map editor</li>
+                                        <li>• Use the <a href="{{ route('admin.depot-map.manage-positions') }}" class="underline hover:no-underline">Map Position Manager</a> for drag-and-drop positioning</li>
+                                        <li>• Position values are percentages relative to the map image size</li>
+                                        <li>• (0,0) is top-left corner, (100,100) is bottom-right corner</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div>

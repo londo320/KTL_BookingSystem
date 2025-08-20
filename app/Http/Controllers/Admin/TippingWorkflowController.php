@@ -412,10 +412,14 @@ class TippingWorkflowController extends Controller
             'operation_notes' => $request->notes ? ($movement->operation_notes ? $movement->operation_notes."\n".$request->notes : $request->notes) : $movement->operation_notes,
         ]);
 
-        // If trailer is empty and unit is leaving, mark as waiting for collection
-        if (in_array($movement->current_status, ['empty'])) {
+        // If trailer is empty and unit is leaving, status should stay empty (ready for collection)
+        // Only change to trailer_dropped if trailer was full when unit departed
+        if ($movement->current_status === 'unloading' || 
+            ($movement->current_status === 'at_bay' && !$movement->unloading_completed_at)) {
+            // Unit departing during tipping or before tipping completed - mark as dropped
             $movement->update(['current_status' => 'trailer_dropped']);
         }
+        // If current_status is 'empty', keep it as 'empty' - no change needed
 
         // If unit is collecting a different trailer, mark this booking as completed
         if ($collectingDifferentTrailer) {

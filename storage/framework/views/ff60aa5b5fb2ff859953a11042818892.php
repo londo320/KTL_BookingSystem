@@ -57,6 +57,60 @@
       </form>
     </div>
 
+    
+    <div class="bg-white shadow rounded-lg p-6">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4">🗺️ Depot Map Management</h3>
+      <p class="text-sm text-gray-600 mb-4">
+        Configure and manage interactive depot maps showing real-time bay status and positions.
+      </p>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <a href="<?php echo e(route('admin.depot-map.index')); ?>" 
+           class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <div class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+            🗺️
+          </div>
+          <div class="ml-4">
+            <h4 class="font-medium text-gray-900">View Depot Map</h4>
+            <p class="text-sm text-gray-500">See live bay status and operations</p>
+          </div>
+        </a>
+        
+        <a href="<?php echo e(route('admin.depot-map.manage-positions')); ?>" 
+           class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <div class="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+            🎯
+          </div>
+          <div class="ml-4">
+            <h4 class="font-medium text-gray-900">Position Bays</h4>
+            <p class="text-sm text-gray-500">Drag and drop bay positions on map</p>
+          </div>
+        </a>
+
+        <a href="<?php echo e(route('admin.depots.index')); ?>" 
+           class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+            🏭
+          </div>
+          <div class="ml-4">
+            <h4 class="font-medium text-gray-900">Manage Depots</h4>
+            <p class="text-sm text-gray-500">Upload map files and depot settings</p>
+          </div>
+        </a>
+
+        <a href="<?php echo e(route('admin.tipping-bays.index')); ?>" 
+           class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <div class="flex-shrink-0 w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+            🚛
+          </div>
+          <div class="ml-4">
+            <h4 class="font-medium text-gray-900">Manage Bays</h4>
+            <p class="text-sm text-gray-500">Configure tipping bay settings</p>
+          </div>
+        </a>
+      </div>
+    </div>
+
     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
       <a href="<?php echo e(route('admin.depots.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         📦 Manage Depots
@@ -116,6 +170,14 @@
 
       <a href="<?php echo e(route('admin.tipping-bays.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         🏗️ Tipping Bays
+      </a>
+
+      <a href="<?php echo e(route('admin.depot-map.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+        🗺️ Depot Map View
+      </a>
+
+      <a href="<?php echo e(route('admin.depot-map.manage-positions')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+        🎯 Position Bays on Map
       </a>
 
       <a href="<?php echo e(route('admin.arrival-time-settings.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">

@@ -13,6 +13,8 @@ class Depot extends Model
         'name',
         'location',
         'cut_off_time',
+        'map_file',
+        'map_notes',
     ];
 
     protected $casts = [

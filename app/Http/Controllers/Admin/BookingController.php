@@ -1524,10 +1524,10 @@ class BookingController extends Controller
         if ($request->isMethod('post')) {
             $validated = $request->validate([
                 'vehicle_registration' => 'required|string|max:50',
-                'carrier_company' => 'nullable|string|max:100',
-                'collected_trailer_number' => 'required|string|max:100',
-                'collection_location' => 'required|string|max:50',
-                'collected_from_booking_id' => 'nullable|exists:bookings,id',
+                'carrier_name' => 'nullable|string|max:100',
+                'carrier_id' => 'nullable|exists:carriers,id',
+                'collected_trailer_number' => 'nullable|string|max:100',
+                'collected_from_booking_id' => 'required|exists:bookings,id',
             ]);
 
             // If collecting from a specific booking, update that movement
@@ -1543,8 +1543,8 @@ class BookingController extends Controller
                         $sourceMovement->custom_fields ?? [],
                         [
                             'collected_by_vehicle' => $validated['vehicle_registration'],
-                            'collection_carrier' => $validated['carrier_company'],
-                            'collection_location' => $validated['collection_location'],
+                            'collection_carrier' => $validated['carrier_name'],
+                            'collection_carrier_id' => $validated['carrier_id'],
                         ]
                     ),
                 ]);
@@ -1552,20 +1552,20 @@ class BookingController extends Controller
                 \App\Models\BookingHistory::recordAction(
                     $sourceBooking,
                     'modified',
-                    'Trailer collected by '.$validated['vehicle_registration'].' ('.($validated['carrier_company'] ?: 'Unknown carrier').')'
+                    'Trailer collected by '.$validated['vehicle_registration'].' ('.($validated['carrier_name'] ?: 'Unknown carrier').')'
                 );
             }
 
             // Log the collection event
-            \Log::info('Empty unit collection completed', [
+            \Log::info('Unit collection completed', [
                 'vehicle' => $validated['vehicle_registration'],
-                'trailer' => $validated['collected_trailer_number'],
-                'location' => $validated['collection_location'],
+                'booking_id' => $validated['collected_from_booking_id'],
+                'carrier' => $validated['carrier_name'],
                 'collected_at' => now(),
             ]);
 
             return redirect()->route('admin.bookings.index')->with('success',
-                'Empty unit collection recorded - Vehicle '.$validated['vehicle_registration'].' collected trailer '.$validated['collected_trailer_number']);
+                'Unit collection recorded - Vehicle '.$validated['vehicle_registration'].' collected trailer from booking');
         }
 
         // Get user's allowed depot IDs and default depot
@@ -1598,7 +1598,7 @@ class BookingController extends Controller
             ->whereNull('trailer_collected_at')
             ->get();
 
-        // Convert to bookings for view compatibility and add location info
+        // Convert to bookings for view compatibility and add detailed info
         $availableTrailers = $availableTrailersMovements->map(function ($movement) {
             $booking = $movement->booking;
             
@@ -1608,14 +1608,23 @@ class BookingController extends Controller
                 $currentLocation = $movement->tippingBay->name . ' (Tipping Bay)';
             } elseif ($movement->tippingLocation) {
                 $currentLocation = $movement->tippingLocation->name . ' (' . ucwords(str_replace('_', ' ', $movement->tippingLocation->location_type)) . ')';
+            } elseif ($movement->current_status === 'empty') {
+                $currentLocation = 'Ready for Collection (Location TBD)';
+            } elseif ($movement->current_status === 'trailer_dropped') {
+                $currentLocation = 'Dropped on Site (Location TBD)';
             }
             
-            // Add location info to booking
+            // Add enhanced info to booking
             $booking->current_location = $currentLocation;
             $booking->movement_status = $movement->current_status;
+            $booking->customer_name = $booking->customer ? $booking->customer->name : 'Unknown Customer';
+            $booking->depot_name = $booking->slot && $booking->slot->depot ? $booking->slot->depot->name : 'Unknown Depot';
+            
+            // Add trailer display number for sorting
+            $booking->trailer_display_number = $booking->container_number ?? 'TRAILER-' . $booking->id;
             
             return $booking;
-        });
+        })->sortBy('trailer_display_number'); // Sort alphabetically by trailer number
 
         return view('admin.bookings.empty-unit-collection', compact('availableTrailers', 'collectionZones', 'tippingBays'));
     }

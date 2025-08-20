@@ -87,6 +87,14 @@ class TippingBayController extends Controller
             'code' => 'nullable|string|max:50|unique:tipping_bays,code,NULL,id,depot_id,'.$request->depot_id,
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'show_on_map' => 'boolean',
+            'map_x' => 'nullable|numeric|min:0|max:100',
+            'map_y' => 'nullable|numeric|min:0|max:100',
+            'map_width' => 'nullable|integer|min:20|max:300',
+            'map_height' => 'nullable|integer|min:15|max:200',
+            'map_rotation' => 'nullable|numeric|min:0|max:360',
+            'text_size' => 'nullable|in:xs,sm,md,lg',
+            'text_color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'equipment' => 'nullable|array',
             'equipment.*' => 'nullable|string|max:255',
         ]);
@@ -171,6 +179,14 @@ class TippingBayController extends Controller
             'code' => 'nullable|string|max:50|unique:tipping_bays,code,'.$tippingBay->id.',id,depot_id,'.$request->depot_id,
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'show_on_map' => 'boolean',
+            'map_x' => 'nullable|numeric|min:0|max:100',
+            'map_y' => 'nullable|numeric|min:0|max:100',
+            'map_width' => 'nullable|integer|min:20|max:300',
+            'map_height' => 'nullable|integer|min:15|max:200',
+            'map_rotation' => 'nullable|numeric|min:0|max:360',
+            'text_size' => 'nullable|in:xs,sm,md,lg',
+            'text_color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'equipment' => 'nullable|array',
             'equipment.*' => 'nullable|string|max:255',
         ]);
@@ -211,7 +227,7 @@ class TippingBayController extends Controller
         }
 
         // Check if bay is occupied
-        if ($tippingBay->is_occupied || $tippingBay->currentBooking()->exists()) {
+        if ($tippingBay->is_occupied || $tippingBay->currentBooking()) {
             return back()->withErrors(['delete' => 'Cannot delete bay that is currently occupied.']);
         }
 

@@ -17,12 +17,26 @@ class TippingLocation extends Model
         'capacity',
         'is_active',
         'coordinates',
+        'map_x',
+        'map_y',
+        'show_on_map',
+        'map_width',
+        'map_height',
+        'map_rotation',
+        'text_size',
+        'text_color',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'capacity' => 'integer',
         'coordinates' => 'array',
+        'show_on_map' => 'boolean',
+        'map_x' => 'decimal:2',
+        'map_y' => 'decimal:2',
+        'map_width' => 'integer',
+        'map_height' => 'integer',
+        'map_rotation' => 'decimal:2',
     ];
 
     // Location type constants

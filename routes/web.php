@@ -42,6 +42,26 @@ Route::get('/', function () {
         : redirect()->route('login');
 });
 
+Route::get('/depot-info-public', function () {
+    $depots = \App\Models\Depot::select('id', 'name')->get();
+    $users = \App\Models\User::select('id', 'name', 'email', 'depot_id')
+        ->with('depot:id,name')
+        ->get();
+    
+    return response()->json([
+        'depots' => $depots,
+        'users_with_depots' => $users->filter(fn($u) => $u->depot_id)->map(function($u) {
+            return [
+                'id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+                'depot_id' => $u->depot_id,
+                'depot_name' => $u->depot->name ?? null
+            ];
+        })->values()
+    ]);
+});
+
 // Route::view('/', 'welcome');
 
 Route::middleware('auth')->group(function () {
@@ -131,6 +151,9 @@ Route::middleware('auth')->group(function () {
         Route::post('trailer-types/{id}/restore', [\App\Http\Controllers\Admin\TrailerTypeController::class, 'restore'])->name('trailer-types.restore');
         Route::post('trailer-types/{id}/toggle', [\App\Http\Controllers\Admin\TrailerTypeController::class, 'toggle'])->name('trailer-types.toggle');
 
+        // Additional tipping location actions  
+        Route::patch('tipping-locations/{tippingLocation}/toggle-active', [\App\Http\Controllers\Admin\TippingLocationController::class, 'toggleActive'])->name('tipping-locations.toggle-active');
+        
         // Additional tipping bay actions
         Route::post('tipping-bays/{tippingBay}/mark-available', [\App\Http\Controllers\Admin\TippingBayController::class, 'markAvailable'])->name('tipping-bays.mark-available');
 
@@ -201,6 +224,255 @@ Route::middleware('auth')->group(function () {
         
         Route::resource('bookings', BookingController::class);
         Route::get('bookings-streamlined', [BookingController::class, 'indexStreamlined'])->name('bookings.streamlined');
+        
+        // Depot Map Routes
+        Route::prefix('depot-map')->name('depot-map.')->group(function () {
+            Route::get('/debug', function () {
+                $depot = \App\Models\Depot::first();
+                $user = auth()->user();
+                return response()->json([
+                    'depot' => $depot ? $depot->name : 'No depot',
+                    'user_depot_id' => $user ? $user->depot_id : 'No user',
+                    'total_depots' => \App\Models\Depot::count(),
+                    'locations_count' => $depot ? \App\Models\TippingLocation::where('depot_id', $depot->id)->active()->count() : 0
+                ]);
+            })->name('debug');
+            Route::get('/test-full', function () {
+                try {
+                    $depot = \App\Models\Depot::first();
+                    $bays = \App\Models\TippingBay::where('depot_id', $depot->id)->active()->get();
+                    
+                    return response()->json([
+                        'success' => true,
+                        'depot' => $depot->name,
+                        'total_bays' => $bays->count(),
+                        'bay_names' => $bays->pluck('name')->take(5)->toArray(),
+                        'message' => 'Controller logic working'
+                    ]);
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
+            })->name('test-full');
+            Route::get('/view-test', function () {
+                try {
+                    $depot = \App\Models\Depot::first();
+                    $bays = collect(); // Empty collection
+                    $bayStatuses = [];
+                    $activitySummary = [
+                        'total_locations' => 0,
+                        'available_locations' => 0,
+                        'active_bookings' => 0,
+                        'awaiting_collection' => 0,
+                        'todays_arrivals' => 0,
+                        'pending_arrivals' => 0,
+                    ];
+                    $recentActivity = collect();
+
+                    return view('admin.depot-map.index', compact(
+                        'depot',
+                        'bays',
+                        'bayStatuses',
+                        'activitySummary',
+                        'recentActivity'
+                    ));
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'error' => 'View rendering failed: ' . $e->getMessage(),
+                        'line' => $e->getLine(),
+                        'file' => $e->getFile()
+                    ]);
+                }
+            })->name('view-test');
+            Route::get('/position-test', function () {
+                try {
+                    $depot = \App\Models\Depot::first();
+                    $bays = \App\Models\TippingBay::where('depot_id', $depot->id)->active()->get();
+                    
+                    return response()->json([
+                        'success' => true,
+                        'depot' => $depot->name,
+                        'total_bays' => $bays->count(),
+                        'view_exists' => view()->exists('admin.depot-map.manage-positions'),
+                        'message' => 'Position controller logic working'
+                    ]);
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => $e->getMessage(),
+                        'line' => $e->getLine(),
+                        'file' => $e->getFile()
+                    ]);
+                }
+            })->name('position-test');
+            Route::get('/position-view-test', function () {
+                try {
+                    $depot = \App\Models\Depot::first();
+                    $bays = \App\Models\TippingBay::where('depot_id', $depot->id)->active()->get();
+                    
+                    return view('admin.depot-map.manage-positions', compact('depot', 'bays'));
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'View rendering failed: ' . $e->getMessage(),
+                        'line' => $e->getLine(),
+                        'file' => $e->getFile(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
+            })->name('position-view-test');
+            Route::get('/direct-depot-map', function () {
+                $depot = \App\Models\Depot::first();
+                $bays = \App\Models\TippingBay::where('depot_id', $depot->id)
+                    ->active()
+                    ->where('show_on_map', true)
+                    ->whereNotNull('map_x')
+                    ->whereNotNull('map_y')
+                    ->orderBy('name')
+                    ->get();
+                
+                return response()->json([
+                    'depot' => $depot->name,
+                    'bays_count' => $bays->count(),
+                    'bays' => $bays->map(function($bay) {
+                        return [
+                            'name' => $bay->name,
+                            'x' => $bay->map_x,
+                            'y' => $bay->map_y,
+                            'show_on_map' => $bay->show_on_map
+                        ];
+                    })
+                ]);
+            })->name('direct-depot-map');
+            Route::get('/controller-debug', function () {
+                try {
+                    $controller = new \App\Http\Controllers\Admin\DepotMapController();
+                    $request = request();
+                    $result = $controller->index($request);
+                    
+                    if ($result instanceof \Illuminate\Http\RedirectResponse) {
+                        return response()->json([
+                            'type' => 'redirect',
+                            'url' => $result->getTargetUrl(),
+                            'session_errors' => session()->all()
+                        ]);
+                    }
+                    
+                    return response()->json([
+                        'type' => 'success',
+                        'message' => 'Controller returned view successfully'
+                    ]);
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'type' => 'exception',
+                        'error' => $e->getMessage(),
+                        'line' => $e->getLine(),
+                        'file' => $e->getFile()
+                    ]);
+                }
+            })->name('controller-debug');
+            Route::get('/auth-debug', function () {
+                return response()->json([
+                    'authenticated' => auth()->check(),
+                    'user' => auth()->user() ? [
+                        'id' => auth()->user()->id,
+                        'name' => auth()->user()->name,
+                        'depot_id' => auth()->user()->depot_id,
+                        'roles' => auth()->user()->getRoleNames()
+                    ] : null,
+                    'session_id' => session()->getId(),
+                    'middleware_applied' => 'auth middleware working'
+                ]);
+            })->name('auth-debug');
+            Route::get('/simple', function () {
+                return '<h1>Depot Map Simple Test</h1><p>This route is working!</p>';
+            })->name('simple');
+            Route::get('/minimal', function () {
+                $depot = \App\Models\Depot::first();
+                $locations = \App\Models\TippingLocation::where('depot_id', $depot->id)->active()->get();
+                return view('admin.depot-map.index', [
+                    'depot' => $depot,
+                    'locations' => $locations,
+                    'locationStatuses' => [],
+                    'activitySummary' => [
+                        'total_locations' => 0,
+                        'available_locations' => 0,
+                        'active_bookings' => 0,
+                        'awaiting_collection' => 0,
+                        'todays_arrivals' => 0,
+                        'pending_arrivals' => 0,
+                    ],
+                    'recentActivity' => collect(),
+                ]);
+            })->name('minimal');
+            Route::get('/', [\App\Http\Controllers\Admin\DepotMapController::class, 'index'])->name('index');
+            Route::get('/test', function () {
+                return view('admin.depot-map.test');
+            })->name('test');
+            Route::get('/manage-positions', [\App\Http\Controllers\Admin\DepotMapController::class, 'manageBayPositions'])->name('manage-positions');
+            Route::post('/update-position', [\App\Http\Controllers\Admin\DepotMapController::class, 'updateBayPosition'])->name('update-position');
+            Route::post('/update-location-position', [\App\Http\Controllers\Admin\DepotMapController::class, 'updateLocationPosition'])->name('update-location-position');
+            Route::get('/bay/{bay}', [\App\Http\Controllers\Admin\DepotMapController::class, 'getBayStatus'])->name('bay-status');
+            Route::post('/change-bay', [\App\Http\Controllers\Admin\DepotMapController::class, 'changeBay'])->name('change-bay');
+            Route::get('/location/{location}', [\App\Http\Controllers\Admin\DepotMapController::class, 'getLocationStatus'])->name('location-status');
+            Route::post('/refresh', [\App\Http\Controllers\Admin\DepotMapController::class, 'refreshStatus'])->name('refresh');
+            Route::get('/select-map-file/{depot?}', [\App\Http\Controllers\Admin\DepotMapController::class, 'selectMapFile'])->name('select-map-file');
+            Route::post('/update-map-file', [\App\Http\Controllers\Admin\DepotMapController::class, 'updateMapFile'])->name('update-map-file');
+            Route::post('/upload-map-file', [\App\Http\Controllers\Admin\DepotMapController::class, 'uploadMapFile'])->name('upload-map-file');
+            Route::delete('/delete-map-file', [\App\Http\Controllers\Admin\DepotMapController::class, 'deleteMapFile'])->name('delete-map-file');
+            Route::get('/depot-debug', function () {
+                $user = Auth::user();
+                $depots = \App\Models\Depot::all();
+                return response()->json([
+                    'user_id' => $user->id ?? null,
+                    'user_depot_id' => $user->depot_id ?? null,
+                    'user_depot_name' => $user->depot->name ?? null,
+                    'all_depots' => $depots->map(fn($d) => ['id' => $d->id, 'name' => $d->name])
+                ]);
+            })->name('depot-debug');
+            Route::get('/depot-info', function () {
+                $depots = \App\Models\Depot::select('id', 'name')->get();
+                $users = \App\Models\User::select('id', 'name', 'email', 'depot_id')
+                    ->with('depot:id,name')
+                    ->where('role', 'admin')
+                    ->get();
+                
+                return response()->json([
+                    'depots' => $depots,
+                    'admin_users' => $users->map(function($u) {
+                        return [
+                            'id' => $u->id,
+                            'name' => $u->name,
+                            'email' => $u->email,
+                            'depot_id' => $u->depot_id,
+                            'depot_name' => $u->depot->name ?? null
+                        ];
+                    })
+                ]);
+            })->name('depot-info');
+            Route::get('/user-depot-check', function () {
+                $user = Auth::user();
+                $depot = null;
+                if ($user && $user->depot_id) {
+                    $depot = $user->depot;
+                }
+                $firstDepot = \App\Models\Depot::first();
+                
+                return response()->json([
+                    'authenticated' => Auth::check(),
+                    'user_id' => $user->id ?? null,
+                    'user_name' => $user->name ?? null,
+                    'user_depot_id' => $user->depot_id ?? null,
+                    'user_depot_name' => $depot->name ?? null,
+                    'first_depot_id' => $firstDepot->id ?? null,
+                    'first_depot_name' => $firstDepot->name ?? null,
+                    'will_load_depot' => $depot ? $depot->name : ($firstDepot ? $firstDepot->name : 'none')
+                ]);
+            })->name('user-depot-check');
+        });
 
         // Rebooking and cancellation routes
         Route::prefix('bookings/{booking}')->group(function () {
@@ -312,6 +584,71 @@ Route::middleware('auth')->group(function () {
         Route::resource('bookings', BookingController::class);
         Route::get('bookings-streamlined', [BookingController::class, 'indexStreamlined'])->name('bookings.streamlined');
         Route::get('/arrivals', [BookingController::class, 'arrivals'])->name('arrivals.index');
+        
+        // Depot Map Routes for depot-admin
+        Route::prefix('depot-map')->name('depot-map.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\DepotMapController::class, 'index'])->name('index');
+            Route::get('/manage-positions', [\App\Http\Controllers\Admin\DepotMapController::class, 'manageBayPositions'])->name('manage-positions');
+            Route::post('/update-position', [\App\Http\Controllers\Admin\DepotMapController::class, 'updateBayPosition'])->name('update-position');
+            Route::post('/update-location-position', [\App\Http\Controllers\Admin\DepotMapController::class, 'updateLocationPosition'])->name('update-location-position');
+            Route::get('/bay/{bay}', [\App\Http\Controllers\Admin\DepotMapController::class, 'getBayStatus'])->name('bay-status');
+            Route::post('/change-bay', [\App\Http\Controllers\Admin\DepotMapController::class, 'changeBay'])->name('change-bay');
+            Route::get('/location/{location}', [\App\Http\Controllers\Admin\DepotMapController::class, 'getLocationStatus'])->name('location-status');
+            Route::post('/refresh', [\App\Http\Controllers\Admin\DepotMapController::class, 'refreshStatus'])->name('refresh');
+            Route::get('/select-map-file/{depot?}', [\App\Http\Controllers\Admin\DepotMapController::class, 'selectMapFile'])->name('select-map-file');
+            Route::post('/update-map-file', [\App\Http\Controllers\Admin\DepotMapController::class, 'updateMapFile'])->name('update-map-file');
+            Route::post('/upload-map-file', [\App\Http\Controllers\Admin\DepotMapController::class, 'uploadMapFile'])->name('upload-map-file');
+            Route::delete('/delete-map-file', [\App\Http\Controllers\Admin\DepotMapController::class, 'deleteMapFile'])->name('delete-map-file');
+            Route::get('/depot-debug', function () {
+                $user = Auth::user();
+                $depots = \App\Models\Depot::all();
+                return response()->json([
+                    'user_id' => $user->id ?? null,
+                    'user_depot_id' => $user->depot_id ?? null,
+                    'user_depot_name' => $user->depot->name ?? null,
+                    'all_depots' => $depots->map(fn($d) => ['id' => $d->id, 'name' => $d->name])
+                ]);
+            })->name('depot-debug');
+            Route::get('/depot-info', function () {
+                $depots = \App\Models\Depot::select('id', 'name')->get();
+                $users = \App\Models\User::select('id', 'name', 'email', 'depot_id')
+                    ->with('depot:id,name')
+                    ->where('role', 'admin')
+                    ->get();
+                
+                return response()->json([
+                    'depots' => $depots,
+                    'admin_users' => $users->map(function($u) {
+                        return [
+                            'id' => $u->id,
+                            'name' => $u->name,
+                            'email' => $u->email,
+                            'depot_id' => $u->depot_id,
+                            'depot_name' => $u->depot->name ?? null
+                        ];
+                    })
+                ]);
+            })->name('depot-info');
+            Route::get('/user-depot-check', function () {
+                $user = Auth::user();
+                $depot = null;
+                if ($user && $user->depot_id) {
+                    $depot = $user->depot;
+                }
+                $firstDepot = \App\Models\Depot::first();
+                
+                return response()->json([
+                    'authenticated' => Auth::check(),
+                    'user_id' => $user->id ?? null,
+                    'user_name' => $user->name ?? null,
+                    'user_depot_id' => $user->depot_id ?? null,
+                    'user_depot_name' => $depot->name ?? null,
+                    'first_depot_id' => $firstDepot->id ?? null,
+                    'first_depot_name' => $firstDepot->name ?? null,
+                    'will_load_depot' => $depot ? $depot->name : ($firstDepot ? $firstDepot->name : 'none')
+                ]);
+            })->name('user-depot-check');
+        });
 
         // Arrival/Departure routes for depot-admin
         Route::get('bookings/{booking}/arrival', [BookingController::class, 'markArrived'])->name('bookings.arrival.form');
