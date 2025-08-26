@@ -814,6 +814,56 @@
                 alert('No active tipping operations found');
             }
         }
+
+        // Scale overlay positions based on map image dimensions
+        function updateOverlayPositions() {
+            const mapImage = document.getElementById('depot-map-image');
+            const mapContainer = document.getElementById('map-image-container');
+            const overlays = document.querySelectorAll('.bay-overlay, .location-overlay');
+            
+            if (!mapImage || !mapContainer) return;
+            
+            // Get actual rendered image dimensions
+            const mapRect = mapImage.getBoundingClientRect();
+            const containerRect = mapContainer.getBoundingClientRect();
+            
+            // Calculate scale factors
+            const scaleX = mapRect.width / mapContainer.offsetWidth;
+            const scaleY = mapRect.height / mapContainer.offsetHeight;
+            
+            // Update each overlay position and size
+            overlays.forEach(overlay => {
+                const computedStyle = window.getComputedStyle(overlay);
+                const transform = `scale(${Math.min(scaleX, scaleY)})`;
+                overlay.style.transform = transform;
+            });
+        }
+
+        // Initialize overlay positioning
+        function initializeOverlayPositioning() {
+            const mapImage = document.getElementById('depot-map-image');
+            if (mapImage) {
+                // Update positions when image loads
+                mapImage.addEventListener('load', updateOverlayPositions);
+                
+                // Update positions on window resize
+                window.addEventListener('resize', updateOverlayPositions);
+                
+                // Update positions when entering/exiting fullscreen
+                const fullscreenButton = document.querySelector('[onclick="toggleFullscreen()"]');
+                if (fullscreenButton) {
+                    fullscreenButton.addEventListener('click', () => {
+                        setTimeout(updateOverlayPositions, 100);
+                    });
+                }
+                
+                // Initial positioning
+                setTimeout(updateOverlayPositions, 100);
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializeOverlayPositioning);
     </script>
     <style>
         .location-overlay:hover .location-box {
@@ -825,6 +875,10 @@
         }
         .location-box {
             transition: all 0.2s ease;
+        }
+        .bay-overlay, .location-overlay {
+            transform-origin: center center;
+            transition: transform 0.3s ease;
         }
         /* Full screen mode styles */
         .fullscreen-mode {
