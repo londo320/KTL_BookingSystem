@@ -11,11 +11,10 @@ class TippingBaySeeder extends Seeder
 {
     public function run(): void
     {
-        // Check if tipping bays already exist
-        if (TippingBay::count() > 0) {
-            $this->command->info('Tipping bays already exist, skipping seeder.');
-            return;
-        }
+        // PRODUCTION: Skip automatic tipping bay creation
+        // Create these manually through the admin interface as needed
+        $this->command->info('Tipping bay seeder skipped for production. Create bays manually through admin interface.');
+        return;
 
         $mainDepot = Depot::first(); // Use first available depot
         

@@ -17,6 +17,10 @@ class DemoDataSeeder extends Seeder
 {
     public function run(): void
     {
+        // PRODUCTION: Skip demo data creation
+        $this->command->info('Demo data seeder skipped for production.');
+        return;
+        
         $depot = Depot::first();
         
         if (!$depot) {

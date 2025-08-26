@@ -20,6 +20,10 @@ class TestBookingDataSeeder extends Seeder
 {
     public function run(): void
     {
+        // PRODUCTION: Skip test booking data creation
+        $this->command->info('Test booking data seeder skipped for production.');
+        return;
+        
         $depot = Depot::first();
         $customers = Customer::all();
         $bookingTypes = BookingType::all();

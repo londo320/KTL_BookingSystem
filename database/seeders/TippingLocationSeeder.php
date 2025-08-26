@@ -10,11 +10,10 @@ class TippingLocationSeeder extends Seeder
 {
     public function run(): void
     {
-        // Check if tipping locations already exist
-        if (TippingLocation::count() > 0) {
-            $this->command->info('Tipping locations already exist, skipping seeder.');
-            return;
-        }
+        // PRODUCTION: Skip automatic tipping location creation
+        // Create these manually through the admin interface as needed
+        $this->command->info('Tipping location seeder skipped for production. Create locations manually through admin interface.');
+        return;
 
         $mainDepot = Depot::first(); // Use first available depot
         

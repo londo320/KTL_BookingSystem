@@ -10,6 +10,11 @@ class ProductSeeder extends Seeder
 {
     public function run(): void
     {
+        // PRODUCTION: Skip automatic product creation
+        // Create your specific products manually through the admin interface
+        $this->command->info('Product seeder skipped for production. Create your specific products manually through admin interface.');
+        return;
+        
         $products = [
             [
                 'sku' => 'CONC-BLK',

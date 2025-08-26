@@ -9,23 +9,17 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            // Core system data
+            // Core system data only for production
             RoleSeeder::class,
-            DepotSeeder::class,
             UserSeeder::class,
             BookingTypeSeeder::class,
             
-            // Essential data
+            // Essential configuration data
             TrailerTypeSeeder::class,
-            ArrivalTimeSettingsSeeder::class,
-            ProductSeeder::class,
             PalletTypeSeeder::class,
             
-            // Demo data (facilities, slots, customers)
-            DemoDataSeeder::class,
-            
-            // Test booking data with realistic scenarios
-            TestBookingDataSeeder::class,
+            // Note: Depots, TippingLocations, TippingBays, Products, and test data
+            // are NOT included for production - create these manually as needed
         ]);
     }
 }
