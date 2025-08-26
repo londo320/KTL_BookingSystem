@@ -2,6 +2,9 @@
 set -e
 
 echo "===== KTL Booking System - Complete Setup ====="
+echo "🔧 Includes automatic permission fixes and depot map corrections"
+echo "🚀 Fully automated - no manual steps required!"
+echo ""
 
 # Configuration
 PROJECT_DIR="/mnt/user/appdata/ktl-booking"
