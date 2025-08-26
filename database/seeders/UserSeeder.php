@@ -17,17 +17,23 @@ class UserSeeder extends Seeder
             return;
         }
 
-        // Ensure at least one depot exists
+        // Ensure at least one depot exists with map file
         $depot = Depot::first() ?? Depot::create([
             'name' => 'Main Depot',
             'location' => 'Default Location',
+            'map_file' => 'Wimblington.svg',
         ]);
+        
+        // Set map file if depot exists but doesn't have one
+        if (!$depot->map_file) {
+            $depot->update(['map_file' => 'Wimblington.svg']);
+        }
 
         $admin = User::create([
             'name' => 'Admin User',
             'email' => 'admin@example.com',
             'password' => Hash::make('password'),
-            'depot_id' => null,
+            'depot_id' => $depot->id,
         ]);
         $admin->assignRole('admin');
 

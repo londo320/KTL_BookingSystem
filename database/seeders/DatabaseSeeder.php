@@ -18,7 +18,10 @@ class DatabaseSeeder extends Seeder
             TrailerTypeSeeder::class,
             PalletTypeSeeder::class,
             
-            // Note: Depots, TippingLocations, TippingBays, Products, and test data
+            // Basic depot setup for functional depot map
+            BasicDepotSetupSeeder::class,
+            
+            // Note: Additional depots, locations, bays, products, and test data
             // are NOT included for production - create these manually as needed
         ]);
     }

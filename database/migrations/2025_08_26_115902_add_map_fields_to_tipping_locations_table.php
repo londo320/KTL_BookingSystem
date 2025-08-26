@@ -1,0 +1,30 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('tipping_locations', function (Blueprint $table) {
+            $table->decimal('map_x', 8, 4)->nullable()->after('coordinates');
+            $table->decimal('map_y', 8, 4)->nullable()->after('map_x');
+            $table->boolean('show_on_map')->default(false)->after('map_y');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('tipping_locations', function (Blueprint $table) {
+            $table->dropColumn(['map_x', 'map_y', 'show_on_map']);
+        });
+    }
+};

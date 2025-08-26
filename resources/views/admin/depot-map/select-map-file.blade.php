@@ -54,8 +54,8 @@
                     <div>
                         <label class="text-sm font-medium text-gray-600 block mb-2">Current Map Preview:</label>
                         <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                            @if(file_exists(public_path('images/depot-maps/' . $depot->map_file)))
-                                <img src="{{ asset('images/depot-maps/' . $depot->map_file) }}" 
+                            @if(file_exists(public_path('storage/depot-maps/' . $depot->map_file)))
+                                <img src="{{ asset('storage/depot-maps/' . $depot->map_file) }}" 
                                      alt="{{ $depot->name }} Map" 
                                      class="max-w-full h-32 object-contain rounded">
                             @else
@@ -161,8 +161,8 @@
                                             </div>
                                         @endif
                                         <div class="aspect-video bg-gray-100 rounded mb-2 flex items-center justify-center overflow-hidden">
-                                            @if(file_exists(public_path('images/depot-maps/' . $file)))
-                                                <img src="{{ asset('images/depot-maps/' . $file) }}" 
+                                            @if(file_exists(public_path('storage/depot-maps/' . $file)))
+                                                <img src="{{ asset('storage/depot-maps/' . $file) }}" 
                                                      alt="{{ $file }}" 
                                                      class="max-w-full max-h-full object-contain">
                                             @else
@@ -172,7 +172,7 @@
                                         <div class="text-sm font-medium text-center">{{ $file }}</div>
                                         <div class="text-xs text-gray-500 text-center mb-2">
                                             {{ strtoupper(pathinfo($file, PATHINFO_EXTENSION)) }} • 
-                                            {{ number_format(filesize(public_path('images/depot-maps/' . $file)) / 1024, 1) }} KB
+                                            {{ number_format(filesize(public_path('storage/depot-maps/' . $file)) / 1024, 1) }} KB
                                         </div>
                                         <!-- Delete button -->
                                         <div class="text-center">

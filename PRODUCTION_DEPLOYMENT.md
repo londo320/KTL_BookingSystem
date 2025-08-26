@@ -12,10 +12,11 @@
 
 ### **Production Seeders (Only Essential):**
 - ✅ **RoleSeeder** - Creates admin/user roles
-- ✅ **UserSeeder** - Creates single admin user
+- ✅ **UserSeeder** - Creates users and main depot with map file
 - ✅ **BookingTypeSeeder** - Creates essential booking types
 - ✅ **TrailerTypeSeeder** - Creates standard trailer types
 - ✅ **PalletTypeSeeder** - Creates standard pallet types
+- ✅ **BasicDepotSetupSeeder** - Creates essential locations and bays for depot map
 
 ## 🔄 **Production Reset Commands**
 
@@ -24,9 +25,8 @@
 # 1. Reset database with production-only data
 php artisan migrate:fresh --seed
 
-# 2. Create storage structure
-php artisan storage:link
-mkdir -p storage/app/public/depot-maps
+# 2. Setup depot map storage and files
+./setup-depot-maps.sh
 
 # 3. Clear and optimize
 php artisan config:clear
@@ -95,19 +95,21 @@ php artisan view:cache
 ## 📊 **What You'll Have After Seeding:**
 
 ### **Users:**
-- 1 Admin user (needs password change)
+- 4 essential users (admin, depot admin, site admin, customer) - all need password changes
 
 ### **System Configuration:**
 - ✅ Roles and permissions structure
 - ✅ Standard booking types
 - ✅ Standard trailer types  
 - ✅ Standard pallet types
-- ✅ Clean database ready for your data
+- ✅ Main Depot with Wimblington.svg map file
+- ✅ 3 essential tipping locations positioned on map
+- ✅ 4 essential tipping bays positioned on map
 
-### **Empty/Ready for Your Data:**
-- 📝 Depots (create via admin)
-- 📝 Tipping locations (create via admin)
-- 📝 Tipping bays (create via admin)
+### **Ready for Your Data:**
+- 📝 Additional depots (create via admin)
+- 📝 Additional tipping locations (create via admin)
+- 📝 Additional tipping bays (create via admin)
 - 📝 Products (create via admin)
 - 📝 Customers (create via admin)
 - 📝 Import templates (create via admin)

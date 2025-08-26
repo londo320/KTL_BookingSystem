@@ -53,7 +53,7 @@
                 <div class="relative bg-gray-100 rounded-lg border-2 border-gray-300" style="min-height: 600px;">
                     <!-- Depot Map Image -->
                     <div class="absolute inset-0 flex items-center justify-center">
-                        <img src="{{ asset('images/depot-maps/Wimblington.png') }}" 
+                        <img src="{{ asset('storage/depot-maps/Wimblington.png') }}" 
                              alt="Wimblington Depot Layout" 
                              class="max-w-full max-h-full object-contain rounded-lg shadow-lg"
                              id="depot-map-image">

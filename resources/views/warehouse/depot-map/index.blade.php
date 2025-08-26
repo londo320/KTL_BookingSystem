@@ -112,9 +112,9 @@
                         <div class="relative bg-gray-100 rounded-lg border-2 border-gray-300 overflow-hidden" style="min-height: 700px;">
                             <!-- Depot Map Image with Overlays -->
                             <div class="absolute inset-0 flex items-center justify-center p-4">
-                                @if($depot->map_file && file_exists(public_path('images/depot-maps/' . $depot->map_file)))
+                                @if($depot->map_file && file_exists(public_path('storage/depot-maps/' . $depot->map_file)))
                                     <div class="relative max-w-full max-h-full" id="map-image-container">
-                                        <img src="{{ asset('images/depot-maps/' . $depot->map_file) }}" 
+                                        <img src="{{ asset('storage/depot-maps/' . $depot->map_file) }}" 
                                              alt="{{ $depot->name }} Layout" 
                                              class="max-w-full max-h-full object-contain rounded-lg"
                                              id="depot-map-image"
@@ -305,7 +305,7 @@
                                             You have {{ \App\Models\TippingBay::where('depot_id', $depot->id)->count() }} tipping bays and {{ \App\Models\TippingLocation::where('depot_id', $depot->id)->count() }} locations for {{ $depot->name }}, but none have been positioned on the map yet.
                                         </p>
                                         <div class="space-y-3">
-                                            <a href="{{ route($routePrefix . 'depot-map.manage-positions') }}?depot_id={{ $depot->id }}" 
+                                            <a href="{{ route($routePrefix . 'depot-map.manage-positions', $depot->id) }}" 
                                                class="inline-block w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                                                 🎯 Position Items Now
                                             </a>
@@ -314,7 +314,7 @@
                                             </p>
                                             <p class="text-xs text-gray-400 mt-2">
                                                 Debug: Route = {{ $routePrefix }}depot-map.manage-positions<br>
-                                                URL = {{ route($routePrefix . 'depot-map.manage-positions') }}
+                                                URL = {{ route($routePrefix . 'depot-map.manage-positions', $depot->id) }}
                                             </p>
                                         </div>
                                     </div>
@@ -460,7 +460,7 @@
                             <div class="text-center py-8">
                                 <div class="text-gray-400 text-4xl mb-2">🎯</div>
                                 <div class="text-sm text-gray-500 mb-3">No bays positioned</div>
-                                <a href="{{ route($routePrefix . 'depot-map.manage-positions') }}?depot_id={{ $depot->id }}" 
+                                <a href="{{ route($routePrefix . 'depot-map.manage-positions', $depot->id) }}" 
                                    class="inline-block px-4 py-2 bg-green-600 text-white rounded text-xs hover:bg-green-700">
                                     Position Bays
                                 </a>
