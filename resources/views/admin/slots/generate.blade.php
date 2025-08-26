@@ -7,7 +7,7 @@
 <div class="mb-4 text-sm text-gray-600">
   <p>Server Time ({{ config('app.timezone') }}): {{ \Carbon\Carbon::now()->toDateTimeString() }}</p>
 </div>
-  <form action="{{ route('admin.slots.generate') }}" method="POST" class="space-y-4">
+  <form action="{{ route('app.slots.generate') }}" method="POST" class="space-y-4">
     @csrf
 
     {{-- Depot selector --}}

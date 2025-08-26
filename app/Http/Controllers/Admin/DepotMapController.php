@@ -13,6 +13,11 @@ use Illuminate\Support\Facades\Auth;
 
 class DepotMapController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(['auth', 'role:admin|depot-admin|site-admin|warehouse']);
+    }
+    
     public function index(Request $request)
     {
         // Get user's depot or specific depot if provided
@@ -143,7 +148,7 @@ class DepotMapController extends Controller
                 $userDepots = Depot::orderBy('name')->get();
             }
 
-            return view('admin.depot-map.index', compact(
+            return view('warehouse.depot-map.index', compact(
                 'depot',
                 'bays', 
                 'bayStatuses',
@@ -198,13 +203,56 @@ class DepotMapController extends Controller
                 ->orderBy('name')
                 ->get();
 
-            return view('admin.depot-map.manage-positions', compact('depot', 'bays', 'locations'));
+            return view('warehouse.depot-map.manage-positions', compact('depot', 'bays', 'locations'));
         } catch (\Exception $e) {
             \Log::error('Bay positioning error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
             
             return redirect()->route('admin.bookings.index')
+                ->with('error', 'Error loading bay positioning: ' . $e->getMessage());
+        }
+    }
+    
+    public function managePositions(Request $request, $depot = null)
+    {
+        try {
+            // Get the specific depot from parameter
+            if ($depot) {
+                $depot = Depot::findOrFail($depot);
+            } elseif ($request->depot_id) {
+                $depot = Depot::findOrFail($request->depot_id);
+            } elseif (Auth::check() && Auth::user()->depot_id) {
+                $depot = Auth::user()->depot;
+            } else {
+                // Always fallback to first depot if none found
+                $depot = Depot::first();
+            }
+
+            if (!$depot) {
+                return redirect()->route('app.depot-map.index')
+                    ->with('error', 'No depots exist in the system');
+            }
+
+            // Get all bays for this depot
+            $bays = TippingBay::where('depot_id', $depot->id)
+                ->active()
+                ->orderBy('name')
+                ->get();
+                
+            // Get all tipping locations for this depot
+            $locations = TippingLocation::where('depot_id', $depot->id)
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get();
+
+            return view('warehouse.depot-map.manage-positions', compact('depot', 'bays', 'locations'));
+        } catch (\Exception $e) {
+            \Log::error('Bay positioning error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('app.depot-map.index')
                 ->with('error', 'Error loading bay positioning: ' . $e->getMessage());
         }
     }
@@ -317,7 +365,7 @@ class DepotMapController extends Controller
         // Get all depots for the dropdown
         $allDepots = Depot::orderBy('name')->get();
         
-        return view('admin.depot-map.select-map-file', compact('depot', 'availableFiles', 'allDepots'));
+        return view('warehouse.depot-map.select-map-file', compact('depot', 'availableFiles', 'allDepots'));
     }
     
     public function updateMapFile(Request $request)

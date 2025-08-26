@@ -1,6 +1,4 @@
 <x-app-layout>
-    @include('layouts.admin-nav')
-
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div>
@@ -8,14 +6,13 @@
                 <p class="text-sm text-gray-600 mt-1">Booking #{{ $booking->id }} - {{ $booking->customer->name ?? 'No Customer' }}</p>
             </div>
             <div class="flex space-x-2">
-                <a href="{{ route('admin.bookings.show', $booking) }}" 
+                <a href="{{ route('app.bookings.show', $booking) }}" 
                    class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                     ← Back to Booking
                 </a>
             </div>
         </div>
     </x-slot>
-
     <div class="py-6 max-w-4xl mx-auto">
         @if ($errors->any())
             <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
@@ -27,7 +24,6 @@
                 </ul>
             </div>
         @endif
-
         {{-- Current Bay Information --}}
         <div class="mb-6 p-6 bg-blue-50 border border-blue-200 rounded-lg">
             <h3 class="text-lg font-semibold text-blue-800 mb-3">🚛 Current Bay Assignment</h3>
@@ -45,14 +41,12 @@
                     <div>{!! $booking->tipping_status_badge !!}</div>
                 </div>
             </div>
-            
             @if($booking->moved_to_bay_at)
                 <div class="mt-4">
                     <p class="text-sm text-gray-600">Moved to Current Bay</p>
                     <p class="text-gray-800">{{ $booking->moved_to_bay_at->format('M j, Y H:i') }}</p>
                 </div>
             @endif
-
             @if($booking->bay_transferred_at)
                 <div class="mt-4 p-3 bg-orange-50 border border-orange-200 rounded">
                     <p class="text-sm font-medium text-orange-800">Previous Transfer</p>
@@ -65,16 +59,13 @@
                 </div>
             @endif
         </div>
-
         {{-- Transfer Form --}}
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="p-6 border-b border-gray-200">
                 <h3 class="text-xl font-semibold text-gray-800">🔄 Transfer to New Bay</h3>
             </div>
-            
-            <form method="POST" action="{{ route('admin.bookings.transfer-bay', $booking) }}" class="p-6">
+            <form method="POST" action="{{ route('app.bookings.transfer-bay', $booking) }}" class="p-6">
                 @csrf
-                
                 {{-- New Bay Selection --}}
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Select New Bay</label>
@@ -95,7 +86,6 @@
                         <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
-
                 {{-- Transfer Reason --}}
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Transfer Reason</label>
@@ -112,7 +102,6 @@
                         <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
-
                 {{-- Warning Message --}}
                 <div class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <div class="flex">
@@ -133,10 +122,9 @@
                         </div>
                     </div>
                 </div>
-
                 {{-- Action Buttons --}}
                 <div class="flex justify-end space-x-3">
-                    <a href="{{ route('admin.bookings.show', $booking) }}" 
+                    <a href="{{ route('app.bookings.show', $booking) }}" 
                        class="px-6 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                         Cancel
                     </a>
@@ -147,7 +135,6 @@
                 </div>
             </form>
         </div>
-
         {{-- Available Bays Information --}}
         @if($availableBays->isEmpty())
             <div class="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">

@@ -12,7 +12,7 @@ class OperationsController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth', 'role:admin|depot-admin|site-admin']);
+        $this->middleware(['auth', 'role:admin|depot-admin|site-admin|warehouse']);
     }
 
     /**

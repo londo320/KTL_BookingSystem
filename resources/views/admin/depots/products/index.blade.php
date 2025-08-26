@@ -9,7 +9,7 @@
       <div class="bg-green-100 p-3 rounded text-green-800">{{ session('success') }}</div>
     @endif
 
-    <form method="POST" action="{{ route('admin.depots.products.update', $depot) }}">
+    <form method="POST" action="{{ route('app.depots.products.update', $depot) }}">
       @csrf
 
       <table class="min-w-full text-sm border">
@@ -46,7 +46,7 @@
 
               <td class="p-2 text-center">
                 @if(isset($assigned[$product->id]))
-                  <form method="POST" action="{{ route('admin.depots.products.destroy', [$depot, $product]) }}"
+                  <form method="POST" action="{{ route('app.depots.products.destroy', [$depot, $product]) }}"
                         onsubmit="return confirm('Remove this product from depot?');" class="inline-block">
                     @csrf
                     @method('DELETE')

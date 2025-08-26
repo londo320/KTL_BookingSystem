@@ -9,11 +9,11 @@ use Illuminate\Http\Request;
 class DepotController extends Controller
 {
     /**
-     * Apply auth + admin middleware to every action.
+     * Apply auth + function-based access control to every action.
      */
     public function __construct()
     {
-        $this->middleware(['auth', 'role:admin']);
+        $this->middleware(['auth', 'function-access']);
     }
 
     /**

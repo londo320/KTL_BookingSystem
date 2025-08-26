@@ -1,6 +1,4 @@
 <x-app-layout>
-    @include('layouts.admin-nav')
-
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div>
@@ -19,7 +17,7 @@
             </div>
             <div class="flex space-x-2">
                 @if($canTakeAction)
-                    <a href="{{ route('admin.tipping-bays.edit', $tippingBay) }}" 
+                    <a href="{{ route('app.tipping-bays.edit', $tippingBay) }}" 
                        class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">
                         Edit Bay
                     </a>
@@ -29,21 +27,19 @@
                         Edit Bay
                     </span>
                 @endif
-                <a href="{{ route('admin.tipping-bays.index') }}" 
+                <a href="{{ route('app.tipping-bays.index') }}" 
                    class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                     ← Back to Bays
                 </a>
             </div>
         </div>
     </x-slot>
-
     <div class="py-6 max-w-6xl mx-auto">
         @if (session('success'))
             <div class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
                 {{ session('success') }}
             </div>
         @endif
-
         {{-- Bay Information --}}
         <div class="mb-6 p-6 bg-blue-50 border border-blue-200 rounded-lg">
             <h3 class="text-lg font-semibold text-blue-800 mb-3">🚛 Bay Information</h3>
@@ -72,7 +68,6 @@
                 </div>
             @endif
         </div>
-
         {{-- Equipment --}}
         @if(!empty($tippingBay->equipment))
             <div class="mb-6 bg-white rounded-lg shadow overflow-hidden">
@@ -88,7 +83,6 @@
                 </div>
             </div>
         @endif
-
         {{-- Current Booking --}}
         @if($currentBooking)
             <div class="mb-6 bg-white rounded-lg shadow overflow-hidden">
@@ -110,13 +104,12 @@
                             <div>{!! $currentBooking->tipping_status_badge !!}</div>
                         </div>
                     </div>
-                    
                     <div class="flex space-x-2">
-                        <a href="{{ route('admin.bookings.show', $currentBooking) }}" 
+                        <a href="{{ route('app.bookings.show', $currentBooking) }}" 
                            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
                             View Booking Details
                         </a>
-                        <a href="{{ route('admin.tipping-workflow.show', $currentBooking) }}" 
+                        <a href="{{ route('app.tipping-workflow.show', $currentBooking) }}" 
                            class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600">
                             Manage Tipping
                         </a>
@@ -135,7 +128,6 @@
                 </div>
             </div>
         @endif
-
         {{-- Recent Bookings --}}
         @if($tippingBay->bookings->isNotEmpty())
             <div class="bg-white rounded-lg shadow overflow-hidden">
@@ -167,7 +159,7 @@
                             @foreach($tippingBay->bookings as $booking)
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <a href="{{ route('admin.bookings.show', $booking) }}" 
+                                        <a href="{{ route('app.bookings.show', $booking) }}" 
                                            class="text-blue-600 hover:text-blue-900">
                                             #{{ $booking->id }}
                                         </a>

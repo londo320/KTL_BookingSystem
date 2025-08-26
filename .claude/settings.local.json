@@ -39,7 +39,14 @@
       "Bash(git add:*)",
       "Bash(git push:*)",
       "Bash(mv:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(true)",
+      "Bash(./update_routes.sh)",
+      "Bash(./update_routes_fixed.sh:*)",
+      "Bash(for:*)",
+      "Bash(do sed -i '' \"s/@method(''PATCH'')/@method(''PUT'')/g\" \"$file\")",
+      "Bash(do if [ -f \"$file\" ])",
+      "Bash(fi)"
     ],
     "deny": []
   }

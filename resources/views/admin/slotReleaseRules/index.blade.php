@@ -4,7 +4,7 @@
 <div class="py-6 max-w-7xl mx-auto">
   <div class="flex justify-between items-center mb-6">
     <h1 class="text-2xl font-semibold">Slot Release Rules</h1>
-    <a href="{{ route('admin.slotReleaseRules.create') }}" 
+    <a href="{{ route('app.slotReleaseRules.create') }}" 
        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
       Create New Rule
     </a>
@@ -49,9 +49,9 @@
               <td class="px-3 py-2">{{ $rule->lock_cutoff_days }}d @ {{ \Carbon\Carbon::createFromFormat('H:i:s', $rule->lock_cutoff_time)->format('H:i') }}</td>
               <td class="px-3 py-2">{{ $rule->priority }}</td>
               <td class="px-3 py-2 space-x-2">
-                <a href="{{ route('admin.slotReleaseRules.edit', $rule) }}"
+                <a href="{{ route('app.slotReleaseRules.edit', $rule) }}"
                    class="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs">Edit</a>
-                <form action="{{ route('admin.slotReleaseRules.destroy', $rule) }}" method="POST" class="inline" onsubmit="return confirm('Delete this rule?');">
+                <form action="{{ route('app.slotReleaseRules.destroy', $rule) }}" method="POST" class="inline" onsubmit="return confirm('Delete this rule?');">
                   @csrf @method('DELETE')
                   <button class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs">Delete</button>
                 </form>

@@ -13,12 +13,12 @@
             </div>
             <div class="flex gap-3">
                 @if(!$trailerType->trashed())
-                    <a href="{{ route('admin.trailer-types.edit', $trailerType) }}" 
+                    <a href="{{ route('app.trailer-types.edit', $trailerType) }}" 
                        class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
                         ✏️ Edit
                     </a>
                 @endif
-                <a href="{{ route('admin.trailer-types.index') }}" 
+                <a href="{{ route('app.trailer-types.index') }}" 
                    class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
                     ← Back to List
                 </a>
@@ -41,7 +41,7 @@
                 </p>
             </div>
             <div class="ml-3">
-                <form action="{{ route('admin.trailer-types.restore', $trailerType->id) }}" method="POST" class="inline">
+                <form action="{{ route('app.trailer-types.restore', $trailerType->id) }}" method="POST" class="inline">
                     @csrf
                     <button type="submit" 
                             class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
@@ -65,7 +65,7 @@
                 </p>
             </div>
             <div class="ml-3">
-                <form action="{{ route('admin.trailer-types.toggle', $trailerType->id) }}" method="POST" class="inline">
+                <form action="{{ route('app.trailer-types.toggle', $trailerType->id) }}" method="POST" class="inline">
                     @csrf
                     <button type="submit" 
                             class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
@@ -147,7 +147,7 @@
                     <h3 class="text-lg font-medium text-gray-900">Actions</h3>
                 </div>
                 <div class="p-6 space-y-3">
-                    <form action="{{ route('admin.trailer-types.toggle', $trailerType->id) }}" method="POST">
+                    <form action="{{ route('app.trailer-types.toggle', $trailerType->id) }}" method="POST">
                         @csrf
                         <button type="submit" 
                                 class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white {{ $trailerType->is_active ? 'bg-amber-600 hover:bg-amber-700' : 'bg-green-600 hover:bg-green-700' }} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
@@ -160,7 +160,7 @@
                     </form>
                     
                     @if($trailerType->canBeDeleted())
-                        <form action="{{ route('admin.trailer-types.destroy', $trailerType) }}" method="POST"
+                        <form action="{{ route('app.trailer-types.destroy', $trailerType) }}" method="POST"
                               onsubmit="return confirm('Are you sure you want to delete this trailer type? This action cannot be undone.')">
                             @csrf
                             @method('DELETE')
@@ -219,7 +219,7 @@
                                     {{ $booking->created_at->format('M j, Y') }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <a href="{{ route('admin.bookings.show', $booking) }}" 
+                                    <a href="{{ route('app.bookings.show', $booking) }}" 
                                        class="text-blue-600 hover:text-blue-900">
                                         View
                                     </a>
@@ -232,7 +232,7 @@
                 
                 @if($trailerType->bookings_count > 10)
                 <div class="p-4 border-t bg-gray-50 text-center">
-                    <a href="{{ route('admin.bookings.index', ['trailer_type_id' => $trailerType->id]) }}" 
+                    <a href="{{ route('app.bookings.index', ['trailer_type_id' => $trailerType->id]) }}" 
                        class="text-blue-600 hover:text-blue-900 text-sm font-medium">
                         View all {{ $trailerType->bookings_count }} bookings →
                     </a>

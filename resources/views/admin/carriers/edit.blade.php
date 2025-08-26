@@ -12,11 +12,11 @@
                 <p class="mt-2 text-gray-600">Update carrier: {{ $carrier->name }}</p>
             </div>
             <div class="flex gap-3">
-                <a href="{{ route('admin.carriers.show', $carrier) }}" 
+                <a href="{{ route('app.carriers.show', $carrier) }}" 
                    class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
                     👁️ View Details
                 </a>
-                <a href="{{ route('admin.carriers.index') }}" 
+                <a href="{{ route('app.carriers.index') }}" 
                    class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
                     ← Back to Carriers
                 </a>
@@ -26,7 +26,7 @@
 
     <!-- Form -->
     <div class="bg-white rounded-lg shadow-sm border">
-        <form action="{{ route('admin.carriers.update', $carrier) }}" method="POST">
+        <form action="{{ route('app.carriers.update', $carrier) }}" method="POST">
             @csrf
             @method('PUT')
             
@@ -206,7 +206,7 @@
 
             <!-- Actions -->
             <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-                <a href="{{ route('admin.carriers.show', $carrier) }}" 
+                <a href="{{ route('app.carriers.show', $carrier) }}" 
                    class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg font-medium transition-colors">
                     Cancel
                 </a>

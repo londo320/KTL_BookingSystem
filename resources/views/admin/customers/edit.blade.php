@@ -14,7 +14,7 @@
     </div>
   @endif
 
-  <form action="{{ route('admin.customers.update', $customer) }}" method="POST" class="space-y-4 bg-white shadow rounded p-6">
+  <form action="{{ route('app.customers.update', $customer) }}" method="POST" class="space-y-4 bg-white shadow rounded p-6">
     @csrf
     @method('PATCH')
 
@@ -48,7 +48,7 @@
     </div>
 
     <div class="flex justify-end space-x-2">
-      <a href="{{ route('admin.customers.index') }}"
+      <a href="{{ route('app.customers.index') }}"
          class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">
         Cancel
       </a>

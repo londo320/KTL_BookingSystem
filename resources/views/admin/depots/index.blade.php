@@ -8,7 +8,7 @@
   <h2 class="text-xl font-semibold mb-4">Depots</h2>
 
   <div class="mb-4">
-    <a href="{{ route('admin.depots.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded">+ New Depot</a>
+    <a href="{{ route('app.depots.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded">+ New Depot</a>
   </div>
 
   @if(session('success'))
@@ -31,8 +31,8 @@
           <td class="p-2 border">{{ $depot->name }}</td>
           <td class="p-2 border">{{ $depot->location ?? '-' }}</td>
           <td class="p-2 border space-x-2">
-            <a href="{{ route('admin.depots.edit', $depot) }}" class="text-blue-600">Edit</a>
-            <form action="{{ route('admin.depots.destroy', $depot) }}" method="POST" class="inline">
+            <a href="{{ route('app.depots.edit', $depot) }}" class="text-blue-600">Edit</a>
+            <form action="{{ route('app.depots.destroy', $depot) }}" method="POST" class="inline">
               @csrf
               @method('DELETE')
               <button type="submit" class="text-red-600" onclick="return confirm('Are you sure?')">Delete</button>

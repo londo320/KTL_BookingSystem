@@ -1,6 +1,4 @@
 <x-app-layout>
-    @include('layouts.admin-nav')
-
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div>
@@ -8,25 +6,23 @@
                 <p class="text-sm text-gray-600 mt-1">{{ $tippingLocation->name }} - {{ $tippingLocation->depot->name }}</p>
             </div>
             <div class="flex space-x-2">
-                <a href="{{ route('admin.tipping-locations.show', $tippingLocation) }}" 
+                <a href="{{ route('app.tipping-locations.show', $tippingLocation) }}" 
                    class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
                     View Location
                 </a>
-                <a href="{{ route('admin.tipping-locations.index') }}" 
+                <a href="{{ route('app.tipping-locations.index') }}" 
                    class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                     ← Back to Locations
                 </a>
             </div>
         </div>
     </x-slot>
-
     <div class="py-6 max-w-4xl mx-auto">
         @if (session('success'))
             <div class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
                 {{ session('success') }}
             </div>
         @endif
-
         @if ($errors->any())
             <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
                 <h4 class="font-medium">Please fix the following errors:</h4>
@@ -37,17 +33,14 @@
                 </ul>
             </div>
         @endif
-
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="p-6 border-b border-gray-200">
                 <h3 class="text-xl font-semibold text-gray-800">📍 Edit Location</h3>
                 <p class="text-sm text-gray-600 mt-1">Update location settings and capacity</p>
             </div>
-
-            <form method="POST" action="{{ route('admin.tipping-locations.update', $tippingLocation) }}" class="p-6">
+            <form method="POST" action="{{ route('app.tipping-locations.update', $tippingLocation) }}" class="p-6">
                 @csrf
                 @method('PUT')
-
                 <div class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
@@ -63,7 +56,6 @@
                                 @endforeach
                             </select>
                         </div>
-
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2" for="name">
                                 Location Name <span class="text-red-500">*</span>
@@ -73,7 +65,6 @@
                                    placeholder="e.g., Drop Zone A, Trailer Park 1" required>
                         </div>
                     </div>
-
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2" for="code">
@@ -84,7 +75,6 @@
                                    placeholder="e.g., DZ-A, TP-1">
                             <p class="text-xs text-gray-500 mt-1">Short code for easy identification (optional)</p>
                         </div>
-
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2" for="location_type">
                                 Location Type <span class="text-red-500">*</span>
@@ -96,7 +86,6 @@
                             </select>
                             <p class="text-xs text-gray-500 mt-1">Drop zones for incoming trailers, collection zones for awaiting pickup</p>
                         </div>
-
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2" for="capacity">
                                 Capacity <span class="text-red-500">*</span>
@@ -112,7 +101,6 @@
                             </p>
                         </div>
                     </div>
-
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2" for="description">
                             Description
@@ -121,7 +109,6 @@
                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                                   placeholder="Additional details about this location...">{{ old('description', $tippingLocation->description) }}</textarea>
                     </div>
-
                     <div>
                         <div class="flex items-center">
                             <input type="hidden" name="is_active" value="0">
@@ -140,9 +127,8 @@
                         </p>
                     </div>
                 </div>
-
                 <div class="flex items-center justify-between pt-6 border-t border-gray-200">
-                    <a href="{{ route('admin.tipping-locations.show', $tippingLocation) }}" 
+                    <a href="{{ route('app.tipping-locations.show', $tippingLocation) }}" 
                        class="px-6 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                         Cancel
                     </a>

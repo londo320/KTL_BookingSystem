@@ -1,6 +1,4 @@
 <x-app-layout>
-  @include('layouts.admin-nav')
-
   <x-slot name="header">
     <div class="bg-white border-b border-gray-200 px-6 py-4">
       {{-- Header with Factory Badge --}}
@@ -16,23 +14,21 @@
             </div>
           </div>
         </div>
-        
         {{-- Reference Badge --}}
         <div class="text-right">
           <div class="text-sm text-gray-500">Factory Reference</div>
           <div class="text-2xl font-bold text-orange-600">#{{ $factoryBooking->reference }}</div>
         </div>
       </div>
-      
       {{-- Navigation --}}
       <div class="flex flex-wrap gap-3">
         <div class="flex items-center space-x-2 bg-gray-50 p-2 rounded-lg border">
           <span class="text-xs font-medium text-gray-600 uppercase">Navigation</span>
-          <a href="{{ route('admin.factory-bookings.show', $factoryBooking) }}"
+          <a href="{{ route('app.factory-bookings.show', $factoryBooking) }}"
              class="inline-flex items-center px-3 py-1.5 bg-orange-600 text-white text-sm font-medium rounded-md hover:bg-orange-700 transition-colors">
             ← Factory Booking Details
           </a>
-          <a href="{{ route('admin.tipping-workflow.dashboard') }}"
+          <a href="{{ route('app.tipping-workflow.dashboard') }}"
              class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
             📊 Tipping Dashboard
           </a>
@@ -40,14 +36,12 @@
       </div>
     </div>
   </x-slot>
-
   <div class="py-6 max-w-7xl mx-auto px-4">
     @if(session('success'))
       <div class="mb-4 p-3 bg-green-100 text-green-800 rounded">
         {{ session('success') }}
       </div>
     @endif
-
     @if($errors->any())
       <div class="mb-4 p-3 bg-red-100 text-red-800 rounded">
         <ul class="list-disc pl-5">
@@ -57,7 +51,6 @@
         </ul>
       </div>
     @endif
-
     {{-- Current Status --}}
     @php
       $movement = $factoryBooking->movements->last();
@@ -65,7 +58,6 @@
       $currentLocation = $movement?->tippingLocation;
       $currentBay = $movement?->tippingBay;
     @endphp
-
     <div class="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
       <div class="flex items-center justify-between">
         <div>
@@ -86,18 +78,15 @@
         </div>
       </div>
     </div>
-
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {{-- Workflow Actions --}}
       <div class="bg-white rounded-lg shadow-sm border p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">🔄 Workflow Actions</h3>
-        
         {{-- Vehicle Movement --}}
         <div class="mb-6">
           <h4 class="font-medium text-gray-800 mb-3">🚛 Vehicle Movement</h4>
-          
           {{-- Drop at Location --}}
-          <form method="POST" action="{{ route('admin.factory-booking-workflow.drop-trailer', $factoryBooking) }}" class="mb-3">
+          <form method="POST" action="{{ route('app.factory-booking-workflow.drop-trailer', $factoryBooking) }}" class="mb-3">
             @csrf
             <div class="flex flex-wrap items-end gap-2">
               <div class="flex-1 min-w-0">
@@ -120,9 +109,8 @@
               </button>
             </div>
           </form>
-
           {{-- Move to Bay --}}
-          <form method="POST" action="{{ route('admin.factory-booking-workflow.move-to-bay', $factoryBooking) }}" class="mb-3">
+          <form method="POST" action="{{ route('app.factory-booking-workflow.move-to-bay', $factoryBooking) }}" class="mb-3">
             @csrf
             <div class="flex flex-wrap items-end gap-2">
               <div class="flex-1 min-w-0">
@@ -144,14 +132,12 @@
             </div>
           </form>
         </div>
-
         {{-- Tipping Operations --}}
         <div class="mb-6">
           <h4 class="font-medium text-gray-800 mb-3">⚡ Tipping Operations</h4>
-          
           @if(!$movement || !$movement->unloading_completed_at)
             {{-- Start Tipping --}}
-            <form method="POST" action="{{ route('admin.factory-booking-workflow.start-tipping', $factoryBooking) }}" class="mb-3">
+            <form method="POST" action="{{ route('app.factory-booking-workflow.start-tipping', $factoryBooking) }}" class="mb-3">
               @csrf
               <div class="flex flex-wrap items-end gap-2">
                 <div class="flex-1">
@@ -163,31 +149,25 @@
                 </button>
               </div>
             </form>
-
             {{-- Complete Tipping --}}
             <div class="p-4 bg-gray-50 rounded-lg">
               <h5 class="font-medium text-gray-800 mb-3">Complete Tipping</h5>
-              
-              <form method="POST" action="{{ route('admin.factory-booking-workflow.complete-tipping', $factoryBooking) }}">
+              <form method="POST" action="{{ route('app.factory-booking-workflow.complete-tipping', $factoryBooking) }}">
                 @csrf
-                
                 {{-- PO Lines Actual Quantities --}}
                 @if($factoryBooking->poNumbers->count() > 0)
                   <div class="mb-4">
                     <h6 class="font-medium text-gray-700 mb-2">📦 Record Actual Quantities</h6>
-                    
                     @foreach($factoryBooking->poNumbers as $po)
                       @if($po->lines->count() > 0)
                         <div class="mb-4 p-3 border border-gray-200 rounded">
                           <h7 class="font-medium text-gray-700">PO: {{ $po->po_number }}</h7>
-                          
                           @foreach($po->lines as $line)
                             <div class="mt-3 p-3 bg-white rounded border">
                               <div class="flex items-center justify-between mb-2">
                                 <span class="font-medium">{{ $line->expectedPalletType->name ?? 'Unknown Type' }}</span>
                                 <span class="text-sm text-gray-600">Expected: {{ $line->expected_cases }} cases</span>
                               </div>
-                              
                               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {{-- Actual Cases --}}
                                 <div>
@@ -198,7 +178,6 @@
                                          class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm" 
                                          min="1" required>
                                 </div>
-                                
                                 {{-- Actual Pallets --}}
                                 <div>
                                   <label class="block text-sm font-medium text-gray-700">Actual Pallets</label>
@@ -226,13 +205,11 @@
                     @endforeach
                   </div>
                 @endif
-                
                 {{-- Completion Notes --}}
                 <div class="mb-4">
                   <label class="block text-sm font-medium text-gray-700 mb-2">Completion Notes</label>
                   <textarea name="notes" rows="3" class="block w-full border-gray-300 rounded-md shadow-sm text-sm" placeholder="Any notes about the tipping completion..."></textarea>
                 </div>
-                
                 {{-- Issues --}}
                 <div class="mb-4">
                   <label class="block text-sm font-medium text-gray-700 mb-2">Issues (if any)</label>
@@ -241,7 +218,6 @@
                     <input type="text" name="issues[]" class="block w-full border-gray-300 rounded-md shadow-sm text-sm" placeholder="Additional issue...">
                   </div>
                 </div>
-                
                 <button type="submit" class="w-full px-4 py-2 bg-green-600 text-white font-medium rounded hover:bg-green-700">
                   Complete Tipping
                 </button>
@@ -253,12 +229,10 @@
             </div>
           @endif
         </div>
-
         {{-- Departure --}}
         <div>
           <h4 class="font-medium text-gray-800 mb-3">🏁 Departure</h4>
-          
-          <form method="POST" action="{{ route('admin.factory-booking-workflow.trailer-depart', $factoryBooking) }}">
+          <form method="POST" action="{{ route('app.factory-booking-workflow.trailer-depart', $factoryBooking) }}">
             @csrf
             <div class="flex flex-wrap items-end gap-2">
               <div class="flex-1">
@@ -272,13 +246,11 @@
           </form>
         </div>
       </div>
-
       {{-- Information Panel --}}
       <div class="space-y-6">
         {{-- Factory Booking Details --}}
         <div class="bg-white rounded-lg shadow-sm border p-6">
           <h4 class="font-medium text-gray-800 mb-3">📋 Factory Booking Details</h4>
-          
           <div class="space-y-2 text-sm">
             <div><strong>Reference:</strong> {{ $factoryBooking->reference }}</div>
             <div><strong>Customer:</strong> {{ $factoryBooking->customer->name }}</div>
@@ -294,12 +266,10 @@
             <div><strong>Time on Site:</strong> {{ $factoryBooking->getTimeOnSite() }}</div>
           </div>
         </div>
-
         {{-- PO Information --}}
         @if($factoryBooking->poNumbers->count() > 0)
           <div class="bg-white rounded-lg shadow-sm border p-6">
             <h4 class="font-medium text-gray-800 mb-3">📦 PO Numbers</h4>
-            
             <div class="space-y-3">
               @foreach($factoryBooking->poNumbers as $po)
                 <div class="p-3 bg-gray-50 rounded-md">
@@ -317,12 +287,10 @@
             </div>
           </div>
         @endif
-
         {{-- Movement History --}}
         @if($factoryBooking->movements->count() > 0)
           <div class="bg-white rounded-lg shadow-sm border p-6">
             <h4 class="font-medium text-gray-800 mb-3">📊 Movement History</h4>
-            
             <div class="space-y-2 text-sm">
               @foreach($factoryBooking->movements as $mov)
                 <div class="flex justify-between">

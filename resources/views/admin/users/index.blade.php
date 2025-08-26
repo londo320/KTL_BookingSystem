@@ -11,7 +11,7 @@
 
     {{-- Create User Button --}}
     <div class="mb-4">
-        <a href="{{ route('admin.users.create') }}"
+        <a href="{{ route('app.users.create') }}"
            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
             Create New User
         </a>
@@ -84,11 +84,11 @@
               {{-- Actions --}}
               <td class="px-4 py-2 align-top">
                 <div class="flex flex-col space-y-1">
-                  <a href="{{ route('admin.users.edit', $user) }}"
+                  <a href="{{ route('app.users.edit', $user) }}"
                      class="inline-block text-center px-2 py-1 bg-yellow-500 text-white rounded-full hover:bg-yellow-600 text-xs">
                     Edit
                   </a>
-                  <form action="{{ route('admin.users.destroy', $user) }}" method="POST">
+                  <form action="{{ route('app.users.destroy', $user) }}" method="POST">
                     @csrf @method('DELETE')
                     <button type="submit"
                             class="inline-block text-center px-2 py-1 bg-red-500 text-white rounded-full hover:bg-red-600 text-xs">

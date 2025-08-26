@@ -1,18 +1,14 @@
 <x-app-layout>
-  @include('layouts.admin-nav')
-
   <x-slot name="header">
     <div class="flex items-center justify-between">
       <h2 class="font-semibold text-xl">Booking History #{{ $booking->id }}</h2>
-      <a href="{{ route('admin.bookings.show', $booking) }}"
+      <a href="{{ route('app.bookings.show', $booking) }}"
          class="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">
         Back to Booking
       </a>
     </div>
   </x-slot>
-
   <div class="py-6 max-w-6xl mx-auto">
-    
     {{-- Current Booking Info --}}
     <div class="mb-6 p-6 bg-blue-50 border border-blue-200 rounded-lg">
       <h3 class="text-lg font-semibold text-blue-800 mb-3">📅 Current Booking Details</h3>
@@ -60,7 +56,6 @@
         </div>
       </div>
     </div>
-
     {{-- Timeline --}}
     <div class="bg-white rounded-lg shadow overflow-hidden">
       <div class="p-6 border-b border-gray-200">
@@ -74,11 +69,11 @@
           <div class="flex items-center space-x-2">
             <span class="text-sm text-gray-600">Sort:</span>
             <div class="flex bg-gray-100 rounded-lg p-1">
-              <a href="{{ route('admin.bookings.history', $booking) }}?sort=asc" 
+              <a href="{{ route('app.bookings.history', $booking) }}?sort=asc" 
                  class="px-3 py-1 text-xs rounded-md {{ $sortOrder === 'asc' ? 'bg-blue-500 text-white' : 'text-gray-600 hover:text-gray-800' }}">
                 📈 Oldest First
               </a>
-              <a href="{{ route('admin.bookings.history', $booking) }}?sort=desc" 
+              <a href="{{ route('app.bookings.history', $booking) }}?sort=desc" 
                  class="px-3 py-1 text-xs rounded-md {{ $sortOrder === 'desc' ? 'bg-blue-500 text-white' : 'text-gray-600 hover:text-gray-800' }}">
                 📉 Newest First
               </a>
@@ -86,7 +81,6 @@
           </div>
         </div>
       </div>
-
       @if($history->isEmpty())
         <div class="p-6 text-center text-gray-500">
           <p>No history records found for this booking.</p>
@@ -96,7 +90,6 @@
         <div class="mb-6">
           <div class="bg-white rounded-lg p-4 border">
             <h4 class="text-lg font-semibold text-gray-800 mb-4">🚛 Movement Timeline</h4>
-            
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {{-- Booking Created --}}
               <div class="text-center p-3 bg-green-50 rounded-lg border">
@@ -107,7 +100,6 @@
                 <div class="text-xs text-gray-600">{{ $booking->created_at->format('d M Y, H:i') }}</div>
                 <div class="text-xs text-gray-500">{{ $booking->slot->depot->name }}</div>
               </div>
-
               {{-- Arrival --}}
               @if($booking->arrived_at)
                 <div class="text-center p-3 bg-blue-50 rounded-lg border">
@@ -129,7 +121,6 @@
                   <div class="text-xs text-gray-400">Expected: {{ $booking->slot->start_at->format('d M Y, H:i') }}</div>
                 </div>
               @endif
-
               {{-- Tipping Status --}}
               @if($booking->tipping_completed_at)
                 <div class="text-center p-3 bg-purple-50 rounded-lg border">
@@ -179,7 +170,6 @@
                   @endif
                 </div>
               @endif
-
               {{-- Departure --}}
               @if($booking->departed_at)
                 <div class="text-center p-3 bg-gray-50 rounded-lg border">
@@ -214,19 +204,16 @@
             </div>
           </div>
         </div>
-
         {{-- Simple Timeline (Essential Events Only) --}}
         <div class="bg-white rounded-lg border">
           <div class="p-4 border-b border-gray-200">
             <h4 class="text-lg font-semibold text-gray-800">📋 Event Timeline</h4>
             <p class="text-sm text-gray-600">Key milestones and movements in chronological order</p>
           </div>
-
           <div class="p-4">
             @php
               // Create simplified timeline with only essential events
               $timeline = collect();
-              
               // Add booking creation
               $timeline->push((object)[
                 'timestamp' => $booking->created_at,
@@ -236,7 +223,6 @@
                 'icon' => '📅',
                 'color' => 'green'
               ]);
-              
               // Add arrival if available
               if($booking->arrived_at) {
                 $timeline->push((object)[
@@ -248,7 +234,6 @@
                   'color' => 'blue'
                 ]);
               }
-              
               // Add trailer drop if available
               if($booking->trailer_dropped_at) {
                 $timeline->push((object)[
@@ -260,7 +245,6 @@
                   'color' => 'purple'
                 ]);
               }
-              
               // Add bay movement if available
               if($booking->moved_to_bay_at) {
                 $timeline->push((object)[
@@ -272,7 +256,6 @@
                   'color' => 'indigo'
                 ]);
               }
-              
               // Add tipping start if available
               if($booking->tipping_started_at) {
                 $timeline->push((object)[
@@ -284,7 +267,6 @@
                   'color' => 'yellow'
                 ]);
               }
-              
               // Add tipping completion if available
               if($booking->tipping_completed_at) {
                 $duration = $booking->tipping_started_at ? $booking->tipping_started_at->diffInMinutes($booking->tipping_completed_at) : null;
@@ -297,7 +279,6 @@
                   'color' => 'green'
                 ]);
               }
-              
               // Add departure if available
               if($booking->departed_at) {
                 $totalTime = $booking->arrived_at ? $booking->arrived_at->diffInMinutes($booking->departed_at) : null;
@@ -310,7 +291,6 @@
                   'color' => 'gray'
                 ]);
               }
-              
               // Add cancellation if applicable
               if($booking->cancelled_at) {
                 $timeline->push((object)[
@@ -322,7 +302,6 @@
                   'color' => 'red'
                 ]);
               }
-              
               // Add any rebooks from history (only major ones)
               foreach($history->where('action', 'rebooked') as $rebook) {
                 if($rebook->originalSlot && $rebook->newSlot) {
@@ -336,11 +315,9 @@
                   ]);
                 }
               }
-              
               // Sort timeline chronologically
               $timeline = $timeline->sortBy('timestamp');
             @endphp
-
             <div class="space-y-3">
               @foreach($timeline as $event)
                 <div class="flex items-start space-x-3">
@@ -350,7 +327,6 @@
                       <span class="text-{{ $event->color }}-600 text-sm">{{ $event->icon }}</span>
                     </div>
                   </div>
-                  
                   {{-- Event content --}}
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center justify-between">
@@ -361,7 +337,6 @@
                   </div>
                 </div>
               @endforeach
-              
               @if($timeline->isEmpty())
                 <div class="text-center py-8 text-gray-500">
                   <p class="text-sm">No timeline events recorded yet.</p>
@@ -369,7 +344,6 @@
               @endif
             </div>
           </div>
-          
           {{-- Full History Toggle --}}
           @if($history->count() > 0)
             <div class="border-t border-gray-200 p-4">
@@ -386,7 +360,6 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </button>
-              
               <div id="fullHistoryContent" class="hidden mt-3 pt-3 border-t border-gray-100">
                 <div class="space-y-2 max-h-96 overflow-y-auto">
                   @foreach($history->sortBy('created_at') as $record)
@@ -408,12 +381,10 @@
             </div>
           @endif
         </div>
-
         <script>
           function toggleFullHistory() {
             const content = document.getElementById('fullHistoryContent');
             const icon = document.getElementById('fullHistoryIcon');
-            
             if (content.classList.contains('hidden')) {
               content.classList.remove('hidden');
               icon.classList.add('rotate-180');
@@ -425,7 +396,6 @@
         </script>
       @endif
     </div>
-
     {{-- Summary Statistics --}}
     <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
       <div class="bg-white p-4 rounded-lg shadow text-center">
@@ -445,6 +415,5 @@
         <div class="text-sm text-gray-600">Last Minute</div>
       </div>
     </div>
-
   </div>
 </x-app-layout>

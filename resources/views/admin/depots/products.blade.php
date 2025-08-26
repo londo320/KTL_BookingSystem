@@ -1,10 +1,7 @@
 <x-app-layout>
-    @include('layouts.admin-nav')
-
     <div class="max-w-4xl mx-auto py-6">
         <h2 class="text-xl font-bold mb-4">Depot Products for {{ $depot->name }}</h2>
-
-        <form method="POST" action="{{ route('admin.depots.products.store', $depot) }}" class="mb-6 bg-white p-4 rounded shadow space-y-4">
+        <form method="POST" action="{{ route('app.depots.products.store', $depot) }}" class="mb-6 bg-white p-4 rounded shadow space-y-4">
             @csrf
             <div>
                 <label class="block font-medium">Product (SKU)</label>
@@ -14,7 +11,6 @@
                     @endforeach
                 </select>
             </div>
-
             <div class="grid grid-cols-3 gap-4">
                 <div>
                     <label class="block">Min Cases</label>
@@ -29,12 +25,10 @@
                     <input type="number" name="duration_override_minutes" class="w-full border p-2" min="0" step="15">
                 </div>
             </div>
-
             <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
                 ➕ Add Product to Depot
             </button>
         </form>
-
         <table class="w-full text-sm bg-white shadow rounded">
             <thead>
                 <tr class="bg-gray-100 text-left">

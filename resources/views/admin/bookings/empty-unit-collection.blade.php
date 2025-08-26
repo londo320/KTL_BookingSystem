@@ -1,18 +1,14 @@
 <x-app-layout>
-  @include('layouts.admin-nav')
-
   <x-slot name="header">
     <div class="flex items-center justify-between">
       <h2 class="font-semibold text-xl">🚛 Empty Unit Collection</h2>
-      <a href="{{ route('admin.bookings.index') }}"
+      <a href="{{ route('app.bookings.index') }}"
          class="px-3 py-1 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-sm">
         ← Back to Bookings
       </a>
     </div>
   </x-slot>
-
   <div class="py-6 max-w-6xl mx-auto">
-    
     <!-- Collection Form -->
     <div class="bg-white p-6 rounded shadow mb-6">
       <div class="flex items-center space-x-3 mb-4">
@@ -27,17 +23,13 @@
           </p>
         </div>
       </div>
-      
-      <form action="{{ route('admin.empty-unit-collection.process') }}" method="POST">
+      <form action="{{ route('app.empty-unit-collection.process') }}" method="POST">
         @csrf
-        
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
           <!-- Vehicle Details -->
           <div class="col-span-2 border-t pt-4">
             <h4 class="font-medium text-gray-800 mb-3">🚛 Vehicle Information</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">
                   Vehicle Registration <span class="text-red-500">*</span>
@@ -48,8 +40,6 @@
                        class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                 @error('vehicle_registration')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
               </div>
-              
-              
               <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Carrier Company</label>
                 <div class="relative">
@@ -60,19 +50,16 @@
                          placeholder="Search or type carrier name..."
                          autocomplete="off"
                          class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 pr-10">
-                  
                   {{-- Hidden carrier_id field --}}
                   <input type="hidden" 
                          id="collection-carrier-id" 
                          name="carrier_id" 
                          value="{{ old('carrier_id') }}">
-                  
                   {{-- Search dropdown --}}
                   <div id="collection-carrier-dropdown" 
                        class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                     {{-- Results will be populated by JavaScript --}}
                   </div>
-                  
                   {{-- Status indicators --}}
                   <div class="absolute inset-y-0 right-0 flex items-center pr-3">
                     <span id="collection-carrier-status" class="text-xs"></span>
@@ -84,12 +71,10 @@
               </div>
             </div>
           </div>
-          
           <!-- Collection Details -->
           <div class="col-span-2 border-t pt-4">
             <h4 class="font-medium text-gray-800 mb-3">📦 Collection Information</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">
                   Trailer Number/ID
@@ -101,7 +86,6 @@
                 <p class="text-xs text-gray-500 mt-1">This will be filled automatically when you select a trailer</p>
                 @error('collected_trailer_number')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
               </div>
-              
               <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Select Trailer to Collect <span class="text-red-500">*</span></label>
                 <select name="collected_from_booking_id" required
@@ -120,7 +104,6 @@
               </div>
             </div>
           </div>
-          
           <!-- Selected Trailer Details (Hidden by default) -->
           <div id="trailer-details" class="col-span-2 border-t pt-4 hidden">
             <h4 class="font-medium text-gray-800 mb-3">📋 Selected Trailer Details</h4>
@@ -153,12 +136,10 @@
               </div>
             </div>
           </div>
-          
         </div>
-        
         <!-- Form Actions -->
         <div class="mt-6 pt-4 border-t flex justify-end space-x-3">
-          <a href="{{ route('admin.bookings.index') }}"
+          <a href="{{ route('app.bookings.index') }}"
              class="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400">
             Cancel
           </a>
@@ -169,7 +150,6 @@
         </div>
       </form>
     </div>
-    
     <!-- Available Trailers -->
     @if($availableTrailers->count() > 0)
     <div class="bg-white p-6 rounded shadow">
@@ -239,7 +219,6 @@
       </div>
     </div>
     @endif
-    
     <!-- Footer with Logo -->
     <div class="border-t border-gray-200 bg-gray-50 px-6 py-4 rounded-b shadow">
       <div class="flex items-center justify-between">
@@ -256,14 +235,12 @@
       </div>
     </div>
   </div>
-
   <script>
     document.addEventListener('DOMContentLoaded', function() {
         const bookingSelect = document.querySelector('select[name="collected_from_booking_id"]');
         const trailerNumberInput = document.querySelector('input[name="collected_trailer_number"]');
         const carrierSearchInput = document.querySelector('#collection-carrier-search');
         const trailerDetails = document.getElementById('trailer-details');
-        
         // Booking data for auto-population
         const bookingData = {
             @foreach($availableTrailers as $booking)
@@ -278,23 +255,18 @@
             },
             @endforeach
         };
-        
         // Auto-populate form when booking is selected
         if (bookingSelect && trailerNumberInput) {
             bookingSelect.addEventListener('change', function() {
                 const selectedBookingId = this.value;
-                
                 if (selectedBookingId && bookingData[selectedBookingId]) {
                     const data = bookingData[selectedBookingId];
-                    
                     // Auto-populate trailer number
                     trailerNumberInput.value = data.trailer_number;
-                    
                     // Auto-populate carrier name
                     if (carrierSearchInput && data.carrier_name) {
                         carrierSearchInput.value = data.carrier_name;
                     }
-                    
                     // Show and populate trailer details
                     if (trailerDetails) {
                         document.getElementById('detail-booking-ref').textContent = data.booking_reference;
@@ -303,7 +275,6 @@
                         document.getElementById('detail-customer').textContent = data.customer_name;
                         document.getElementById('detail-container').textContent = data.trailer_number;
                         document.getElementById('detail-carrier').textContent = data.carrier_name || 'Not specified';
-                        
                         trailerDetails.classList.remove('hidden');
                     }
                 } else {
@@ -318,14 +289,12 @@
                 }
             });
         }
-        
         // Carrier search functionality (simplified version like other views)
         const searchInput = document.getElementById('collection-carrier-search');
         const dropdown = document.getElementById('collection-carrier-dropdown');
         const carrierIdInput = document.getElementById('collection-carrier-id');
         const statusSpan = document.getElementById('collection-carrier-status');
         let isLoading = false;
-
         if (searchInput && dropdown) {
             function searchCarriers(query) {
                 if (query.length < 2) {
@@ -333,17 +302,13 @@
                     if (statusSpan) statusSpan.textContent = '';
                     return;
                 }
-                
                 if (isLoading) return;
                 isLoading = true;
-                
                 if (statusSpan) statusSpan.textContent = '⏳';
-                
                 fetch(`{{ route('api.carriers.search') }}?q=${encodeURIComponent(query)}`)
                     .then(response => response.json())
                     .then(data => {
                         dropdown.innerHTML = '';
-                        
                         if (data.carriers && data.carriers.length > 0) {
                             // Show total results if more than displayed
                             if (data.total > data.carriers.length) {
@@ -352,7 +317,6 @@
                                 headerItem.innerHTML = `Showing ${data.carriers.length} of ${data.total} carriers`;
                                 dropdown.appendChild(headerItem);
                             }
-                            
                             data.carriers.forEach(carrier => {
                                 const item = document.createElement('div');
                                 item.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0';
@@ -378,7 +342,6 @@
                             dropdown.classList.remove('hidden');
                             if (statusSpan) statusSpan.textContent = 'Create new';
                         }
-                        
                         isLoading = false;
                     })
                     .catch(error => {
@@ -388,7 +351,6 @@
                         isLoading = false;
                     });
             }
-
             function selectCarrier(carrier) {
                 searchInput.value = carrier.name;
                 if (carrierIdInput) {
@@ -399,13 +361,11 @@
                     statusSpan.textContent = carrier.isNew ? '✨ New' : '✓';
                 }
             }
-
             // Search input events
             searchInput.addEventListener('input', function() {
                 const query = this.value.trim();
                 searchCarriers(query);
             });
-
             // Close dropdown when clicking outside
             document.addEventListener('click', function(e) {
                 if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {

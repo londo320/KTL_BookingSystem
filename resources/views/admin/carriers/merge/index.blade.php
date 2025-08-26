@@ -12,11 +12,11 @@
                 <p class="mt-2 text-gray-600">Combine duplicate carriers and update all historical records</p>
             </div>
             <div class="flex gap-3">
-                <a href="{{ route('admin.carriers.merge.history') }}" 
+                <a href="{{ route('app.carriers.merge.history') }}" 
                    class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
                     📋 Merge History
                 </a>
-                <a href="{{ route('admin.carriers.index') }}" 
+                <a href="{{ route('app.carriers.index') }}" 
                    class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
                     ← Back to Carriers
                 </a>
@@ -70,7 +70,7 @@
         </div>
 
         <div class="p-6">
-            <form id="merge-form" action="{{ route('admin.carriers.merge.execute') }}" method="POST">
+            <form id="merge-form" action="{{ route('app.carriers.merge.execute') }}" method="POST">
                 @csrf
                 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -169,7 +169,7 @@
                     </button>
                     
                     <div class="flex gap-3">
-                        <a href="{{ route('admin.carriers.index') }}" 
+                        <a href="{{ route('app.carriers.index') }}" 
                            class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg font-medium transition-colors">
                             Cancel
                         </a>
@@ -301,7 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
         contentDiv.innerHTML = '<div class="text-center py-4">🔄 Loading preview...</div>';
         previewDiv.classList.remove('hidden');
         
-        fetch(`{{ route('admin.carriers.merge.preview') }}?source_carrier_id=${sourceId}&target_carrier_id=${targetId}`)
+        fetch(`{{ route('app.carriers.merge.preview') }}?source_carrier_id=${sourceId}&target_carrier_id=${targetId}`)
             .then(response => response.json())
             .then(data => {
                 if (!data.can_merge) {

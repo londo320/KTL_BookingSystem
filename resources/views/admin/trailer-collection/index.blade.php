@@ -1,6 +1,4 @@
 <x-app-layout>
-    @include('layouts.admin-nav')
-
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div>
@@ -28,14 +26,12 @@
             </div>
         </div>
     </x-slot>
-
     <div class="py-6">
         @if (session('success'))
             <div class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded max-w-6xl mx-auto">
                 {{ session('success') }}
             </div>
         @endif
-
         @if ($errors->any())
             <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded max-w-6xl mx-auto">
                 <ul class="list-disc list-inside text-sm">
@@ -45,7 +41,6 @@
                 </ul>
             </div>
         @endif
-
         <div class="max-w-6xl mx-auto">
             <!-- Summary Stats -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -65,7 +60,6 @@
                     <p class="text-sm text-gray-600">Ready for Collection</p>
                 </div>
             </div>
-
             <!-- Regular Bookings -->
             @if($trailers->count() > 0)
                 <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
@@ -73,7 +67,6 @@
                         <h3 class="text-xl font-semibold text-gray-800">📦 Regular Bookings - Collection List</h3>
                         <p class="text-sm text-gray-600 mt-1">{{ $trailers->count() }} trailers awaiting collection</p>
                     </div>
-
                     <div class="overflow-x-auto">
                         <table class="w-full">
                             <thead class="bg-gray-50">
@@ -149,7 +142,6 @@
                     </div>
                 </div>
             @endif
-
             <!-- Factory Bookings -->
             @if($factoryTrailers->count() > 0)
                 <div class="bg-white rounded-lg shadow overflow-hidden">
@@ -157,7 +149,6 @@
                         <h3 class="text-xl font-semibold text-gray-800">🏭 Factory Bookings - Collection List</h3>
                         <p class="text-sm text-gray-600 mt-1">{{ $factoryTrailers->count() }} factory trailers awaiting collection</p>
                     </div>
-
                     <div class="overflow-x-auto">
                         <table class="w-full">
                             <thead class="bg-gray-50">
@@ -228,7 +219,6 @@
                     </div>
                 </div>
             @endif
-
             @if($trailers->count() === 0 && $factoryTrailers->count() === 0)
                 <div class="bg-white rounded-lg shadow p-12 text-center">
                     <div class="text-6xl mb-4">🚚</div>
@@ -238,7 +228,6 @@
             @endif
         </div>
     </div>
-
     <!-- Collection Modal -->
     <div id="collectionModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
@@ -286,23 +275,19 @@
             </div>
         </div>
     </div>
-
     <script>
         function collectTrailer(bookingId) {
             document.getElementById('collectionForm').action = `/admin/trailer-collection/${bookingId}/collect`;
             document.getElementById('collectionModal').classList.remove('hidden');
         }
-
         function collectFactoryTrailer(bookingId) {
             document.getElementById('collectionForm').action = `/admin/factory-trailer-collection/${bookingId}/collect`;
             document.getElementById('collectionModal').classList.remove('hidden');
         }
-
         function closeCollectionModal() {
             document.getElementById('collectionModal').classList.add('hidden');
             document.getElementById('collectionForm').reset();
         }
-
         // Close modal when clicking outside
         document.getElementById('collectionModal').addEventListener('click', function(e) {
             if (e.target === this) {

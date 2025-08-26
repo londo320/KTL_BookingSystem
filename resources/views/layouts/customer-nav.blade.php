@@ -1,8 +1,8 @@
 <nav class="bg-gray-800 text-white">
     <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
         <div class="flex space-x-4">
-            <a href="{{ route('depot.dashboard') }}"
-               class="hover:bg-gray-700 px-3 py-2 rounded {{ request()->routeIs('depot.dashboard') ? 'bg-gray-700' : '' }}">
+            <a href="{{ route('customer.dashboard') }}"
+               class="hover:bg-gray-700 px-3 py-2 rounded {{ request()->routeIs('customer.dashboard') ? 'bg-gray-700' : '' }}">
                 Dashboard
             </a>
 

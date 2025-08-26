@@ -119,12 +119,23 @@
         </thead>
         <tbody>
           @foreach($bookings as $booking)
-            <tr class="border-t hover:bg-gray-50">
+            @php
+              $isFactory = isset($booking->type) && $booking->type === 'factory';
+              $rowBg = $isFactory ? 'bg-purple-25' : '';
+            @endphp
+            <tr class="border-t hover:bg-gray-50 {{ $rowBg }}">
               <td class="px-4 py-2">
-                <span class="font-mono text-sm font-semibold text-blue-600">
-                  {{ $booking->booking_reference ?? 'N/A' }}
-                </span>
-                @if($booking->reference)
+                @if($isFactory)
+                  <span class="font-mono text-sm font-semibold text-purple-600">
+                    🏭 {{ $booking->booking_reference ?? 'N/A' }}
+                  </span>
+                  <br><span class="text-xs bg-purple-100 px-2 py-1 rounded text-purple-700">Factory</span>
+                @else
+                  <span class="font-mono text-sm font-semibold text-blue-600">
+                    {{ $booking->booking_reference ?? 'N/A' }}
+                  </span>
+                @endif
+                @if($booking->reference && !$isFactory)
                   <br><span class="text-xs text-gray-500">{{ $booking->reference }}</span>
                 @endif
               </td>
@@ -169,13 +180,23 @@
                 @if($booking->vehicle_registration)
                   🚛 {{ $booking->vehicle_registration }}<br>
                 @endif
+                @if($isFactory && $booking->trailer_registration)
+                  🚚 {{ $booking->trailer_registration }}<br>
+                @endif
                 @if($booking->container_number)
                   📦 {{ $booking->container_number }}<br>
                 @endif
               </td>
               <td class="px-4 py-2">
                 <div class="text-xs">
-                  @if($booking->poNumbers->count() > 0)
+                  @if($isFactory)
+                    <div class="text-purple-600">
+                      🏭 Factory Delivery
+                      @if($booking->original_factory_booking->tipping_type)
+                        <br><span class="text-gray-600">{{ ucfirst($booking->original_factory_booking->tipping_type) }}</span>
+                      @endif
+                    </div>
+                  @elseif($booking->poNumbers->count() > 0)
                     @foreach($booking->poNumbers as $po)
                       <div class="mb-2">
                         <strong>PO: {{ $po->po_number }}</strong><br>
@@ -238,45 +259,52 @@
               </td>
               <td class="px-4 py-2">
                 <div class="flex space-x-1">
-                  {{-- Show History button FIRST if booking has been rebooked/has history --}}
-                  @php
-                    $hasHistory = false;
-                    // Check if this booking has history (was rebooked or is part of a rebook chain)
-                    try {
-                      $hasHistory = $booking->original_booking_id || 
-                                   $booking->is_rebooked || 
-                                   ($booking->cancellation_reason && str_contains($booking->cancellation_reason, 'Rebooked'));
-                    } catch (\Exception $e) {
+                  @if($isFactory)
+                    {{-- Factory bookings have limited actions --}}
+                    <span class="px-2 py-1 bg-purple-400 text-white rounded text-xs">
+                      🏭 Factory Vehicle
+                    </span>
+                  @else
+                    {{-- Show History button FIRST if booking has been rebooked/has history --}}
+                    @php
                       $hasHistory = false;
-                    }
-                  @endphp
-                  
-                  @if($hasHistory)
-                    <a href="{{ route('customer.bookings.history', $booking) }}"
-                       class="px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 text-xs" 
-                       title="This booking has history - view rebook/cancel history">
-                      📋 History
-                    </a>
-                  @endif
-                  
-                  {{-- Always show View button --}}
-                  <a href="{{ route('customer.bookings.show', $booking) }}"
-                     class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs">View</a>
-                  
-                  {{-- Show Edit button only if booking can be edited --}}
-                  @php
-                    $isLocked = $booking->slot->locked_at && $booking->slot->locked_at->isPast();
-                    $hasArrived = $booking->arrived_at;
-                    $isCancelled = $booking->cancelled_at && (!$booking->cancellation_reason || !str_contains($booking->cancellation_reason, 'Rebooked'));
-                  @endphp
-                  
-                  @if(!$isCancelled && !$hasArrived && !$isLocked && auth()->user()->can('update', $booking))
-                    <a href="{{ route('customer.bookings.edit', $booking) }}"
-                       class="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs">Edit</a>
-                  @elseif(!$isCancelled && $isLocked && !$hasArrived)
-                    <span class="px-2 py-1 bg-orange-500 text-white rounded text-xs" title="Cut-off time passed">🔒 Locked</span>
-                  @elseif(!$isCancelled && $hasArrived)
-                    <span class="px-2 py-1 bg-green-500 text-white rounded text-xs" title="Vehicle has arrived">⚫ Final</span>
+                      // Check if this booking has history (was rebooked or is part of a rebook chain)
+                      try {
+                        $hasHistory = $booking->original_booking_id || 
+                                     $booking->is_rebooked || 
+                                     ($booking->cancellation_reason && str_contains($booking->cancellation_reason, 'Rebooked'));
+                      } catch (\Exception $e) {
+                        $hasHistory = false;
+                      }
+                    @endphp
+                    
+                    @if($hasHistory)
+                      <a href="{{ route('customer.bookings.history', $booking) }}"
+                         class="px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 text-xs" 
+                         title="This booking has history - view rebook/cancel history">
+                        📋 History
+                      </a>
+                    @endif
+                    
+                    {{-- Always show View button for regular bookings --}}
+                    <a href="{{ route('customer.bookings.show', $booking) }}"
+                       class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs">View</a>
+                    
+                    {{-- Show Edit button only if booking can be edited --}}
+                    @php
+                      $isLocked = $booking->slot->locked_at && $booking->slot->locked_at->isPast();
+                      $hasArrived = $booking->arrived_at;
+                      $isCancelled = $booking->cancelled_at && (!$booking->cancellation_reason || !str_contains($booking->cancellation_reason, 'Rebooked'));
+                    @endphp
+                    
+                    @if(!$isCancelled && !$hasArrived && !$isLocked && auth()->user()->can('update', $booking))
+                      <a href="{{ route('customer.bookings.edit', $booking) }}"
+                         class="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs">Edit</a>
+                    @elseif(!$isCancelled && $isLocked && !$hasArrived)
+                      <span class="px-2 py-1 bg-orange-500 text-white rounded text-xs" title="Cut-off time passed">🔒 Locked</span>
+                    @elseif(!$isCancelled && $hasArrived)
+                      <span class="px-2 py-1 bg-green-500 text-white rounded text-xs" title="Vehicle has arrived">⚫ Final</span>
+                    @endif
                   @endif
                 </div>
               </td>

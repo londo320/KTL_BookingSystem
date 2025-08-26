@@ -78,6 +78,6 @@
             class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700">
         Save Rule
     </button>
-    <a href="{{ route('admin.customer-depot-products.index') }}"
+    <a href="{{ route('app.customer-depot-products.index') }}"
        class="ml-4 text-gray-600 hover:underline">Cancel</a>
 </div>

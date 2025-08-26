@@ -1,6 +1,4 @@
 <x-app-layout>
-  @include('layouts.admin-nav')
-
   <x-slot name="header">
     <div class="flex items-center justify-between">
       <div>
@@ -8,14 +6,13 @@
         <p class="text-sm text-gray-600 mt-1">{{ $factoryBooking->reference }} - Update delivery details</p>
       </div>
       <div class="flex gap-2">
-        <a href="{{ route('admin.factory-bookings.show', $factoryBooking) }}"
+        <a href="{{ route('app.factory-bookings.show', $factoryBooking) }}"
            class="px-3 py-1 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-sm">
           ← Back to Details
         </a>
       </div>
     </div>
   </x-slot>
-
   <div class="py-6 max-w-4xl mx-auto">
     @if($errors->any())
       <div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
@@ -27,18 +24,15 @@
         </ul>
       </div>
     @endif
-
-    <form method="POST" action="{{ route('admin.factory-bookings.update', $factoryBooking) }}" class="space-y-6">
+    <form method="POST" action="{{ route('app.factory-bookings.update', $factoryBooking) }}" class="space-y-6">
       @csrf
       @method('PUT')
-
       {{-- Basic Information --}}
       <div class="bg-white rounded-lg shadow-sm border p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <span class="mr-2">📋</span>
           Basic Information
         </h3>
-        
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           {{-- Reference (Read-only) --}}
           <div>
@@ -48,7 +42,6 @@
             </div>
             <p class="mt-1 text-xs text-gray-500">Reference cannot be changed</p>
           </div>
-
           {{-- Priority --}}
           <div>
             <label for="priority" class="block text-sm font-medium text-gray-700 mb-2">
@@ -63,14 +56,12 @@
           </div>
         </div>
       </div>
-
       {{-- Customer & Carrier Information --}}
       <div class="bg-white rounded-lg shadow-sm border p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <span class="mr-2">🏢</span>
           Customer & Carrier Information
         </h3>
-        
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           {{-- Customer --}}
           <div>
@@ -88,7 +79,6 @@
               @endforeach
             </select>
           </div>
-
           {{-- Carrier (Optional) --}}
           <div>
             <label for="carrier_id" class="block text-sm font-medium text-gray-700 mb-2">
@@ -107,14 +97,12 @@
           </div>
         </div>
       </div>
-
       {{-- Vehicle Information --}}
       <div class="bg-white rounded-lg shadow-sm border p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <span class="mr-2">🚛</span>
           Vehicle Information
         </h3>
-        
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           {{-- Vehicle Registration --}}
           <div>
@@ -126,7 +114,6 @@
                    placeholder="e.g., AB12 XYZ"
                    class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 uppercase">
           </div>
-
           {{-- Trailer Registration --}}
           <div>
             <label for="trailer_registration" class="block text-sm font-medium text-gray-700 mb-2">
@@ -137,7 +124,6 @@
                    placeholder="e.g., TR12 345"
                    class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 uppercase">
           </div>
-
           {{-- Trailer Type --}}
           <div>
             <label for="trailer_type_id" class="block text-sm font-medium text-gray-700 mb-2">
@@ -156,14 +142,12 @@
           </div>
         </div>
       </div>
-
       {{-- Driver Information --}}
       <div class="bg-white rounded-lg shadow-sm border p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <span class="mr-2">👤</span>
           Driver Information
         </h3>
-        
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           {{-- Driver Name --}}
           <div>
@@ -175,7 +159,6 @@
                    placeholder="e.g., John Smith"
                    class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
           </div>
-
           {{-- Driver Phone --}}
           <div>
             <label for="driver_phone" class="block text-sm font-medium text-gray-700 mb-2">
@@ -188,14 +171,12 @@
           </div>
         </div>
       </div>
-
       {{-- Additional Information --}}
       <div class="bg-white rounded-lg shadow-sm border p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <span class="mr-2">📝</span>
           Additional Information
         </h3>
-        
         <div class="space-y-4">
           {{-- Delivery Notes --}}
           <div>
@@ -206,7 +187,6 @@
                       placeholder="Any relevant information about the delivery..."
                       class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">{{ old('delivery_notes', $factoryBooking->delivery_notes) }}</textarea>
           </div>
-
           {{-- Gate Notes --}}
           <div>
             <label for="gate_notes" class="block text-sm font-medium text-gray-700 mb-2">
@@ -218,7 +198,6 @@
           </div>
         </div>
       </div>
-
       {{-- Current Status Display --}}
       <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h4 class="text-blue-800 font-medium mb-2">📊 Current Status</h4>
@@ -231,14 +210,12 @@
           <div><strong>Time on Site:</strong> {{ $factoryBooking->getTimeOnSite() }}</div>
         </div>
       </div>
-
       {{-- Action Buttons --}}
       <div class="flex items-center justify-between pt-6 border-t border-gray-200">
-        <a href="{{ route('admin.factory-bookings.show', $factoryBooking) }}" 
+        <a href="{{ route('app.factory-bookings.show', $factoryBooking) }}" 
            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
           Cancel
         </a>
-        
         <button type="submit" 
                 class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
           💾 Update Factory Booking
@@ -246,13 +223,11 @@
       </div>
     </form>
   </div>
-
   {{-- Auto-uppercase script for vehicle registrations --}}
   <script>
     document.getElementById('vehicle_registration').addEventListener('input', function(e) {
       e.target.value = e.target.value.toUpperCase();
     });
-    
     document.getElementById('trailer_registration').addEventListener('input', function(e) {
       e.target.value = e.target.value.toUpperCase();
     });

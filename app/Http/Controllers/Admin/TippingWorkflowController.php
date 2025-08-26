@@ -18,7 +18,7 @@ class TippingWorkflowController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth', 'role:admin|depot-admin|site-admin']);
+        $this->middleware(['auth', 'role:admin|depot-admin|site-admin|warehouse']);
     }
 
     public function show(Booking $booking)
@@ -62,7 +62,7 @@ class TippingWorkflowController extends Controller
         // Get all active pallet types for the tipping completion form
         $palletTypes = PalletType::active()->orderBy('name')->get();
 
-        return view('admin.tipping-workflow.show', compact(
+        return view('warehouse.tipping-workflow.show', compact(
             'booking',
             'availableLocations',
             'collectionZones',
@@ -655,7 +655,7 @@ class TippingWorkflowController extends Controller
 
         $allDepots = \App\Models\Depot::whereIn('id', $allowedDepotIds)->get();
 
-        return view('admin.tipping-workflow.dashboard', compact('tippingData', 'allDepots', 'currentDepotId'));
+        return view('warehouse.tipping-workflow.dashboard', compact('tippingData', 'allDepots', 'currentDepotId'));
     }
 
     private function getAllowedDepotIds(): array

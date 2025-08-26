@@ -1,6 +1,4 @@
 <x-app-layout>
-    @include('layouts.admin-nav')
-
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div>
@@ -23,18 +21,15 @@
             </div>
         </div>
     </x-slot>
-
     <div class="py-6">
         @if (session('success'))
             <div class="mb-6 max-w-7xl mx-auto p-4 bg-green-100 border border-green-400 text-green-700 rounded">
                 {{ session('success') }}
             </div>
         @endif
-
         {{-- Filters --}}
         <div class="max-w-7xl mx-auto mb-6 bg-white p-4 rounded-lg shadow">
             <form method="GET" class="flex flex-wrap items-end gap-4">
-                
                 {{-- Depot Filter --}}
                 <div class="min-w-48">
                     <label class="block text-sm font-medium text-gray-700 mb-1">View</label>
@@ -47,7 +42,6 @@
                         @endforeach
                     </select>
                 </div>
-
                 {{-- Status Filter --}}
                 <div class="min-w-48">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
@@ -60,19 +54,17 @@
                         @endforeach
                     </select>
                 </div>
-
                 {{-- Filter Buttons --}}
                 <div class="flex gap-2">
                     <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                         🔍 Filter
                     </button>
-                    <a href="{{ route('admin.dropped-trailers.index') }}" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                    <a href="{{ route('app.dropped-trailers.index') }}" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
                         Clear
                     </a>
                 </div>
             </form>
         </div>
-
         {{-- Summary Statistics --}}
         <div class="max-w-7xl mx-auto mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
@@ -92,7 +84,6 @@
                 <div class="text-sm text-purple-800">Ready for Departure</div>
             </div>
         </div>
-
         {{-- Trailers List --}}
         <div class="max-w-7xl mx-auto bg-white rounded-lg shadow overflow-hidden">
             @if($droppedTrailers->isEmpty())
@@ -136,7 +127,7 @@
                                         <div class="flex items-center">
                                             <div>
                                                 <div class="text-sm font-medium text-gray-900">
-                                                    <a href="{{ route('admin.bookings.show', $booking) }}" class="text-blue-600 hover:text-blue-900">
+                                                    <a href="{{ route('app.bookings.show', $booking) }}" class="text-blue-600 hover:text-blue-900">
                                                         #{{ $booking->id }}
                                                     </a>
                                                 </div>
@@ -182,15 +173,14 @@
                                         @endif
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                        <a href="{{ route('admin.bookings.show', $booking) }}" 
+                                        <a href="{{ route('app.bookings.show', $booking) }}" 
                                            class="text-blue-600 hover:text-blue-900">
                                             View
                                         </a>
-                                        
                                         @if(in_array($booking->tipping_status, ['tipping_completed']))
                                             @php $canTakeAction = $booking->slot->depot_id == $defaultDepotId; @endphp
                                             @if($canTakeAction)
-                                                <a href="{{ route('admin.dropped-trailers.reconnect.form', $booking) }}" 
+                                                <a href="{{ route('app.dropped-trailers.reconnect.form', $booking) }}" 
                                                    class="text-green-600 hover:text-green-900">
                                                     🔗 Reconnect
                                                 </a>
@@ -207,7 +197,6 @@
                         </tbody>
                     </table>
                 </div>
-                
                 {{-- Pagination --}}
                 <div class="px-6 py-3 border-t border-gray-200">
                     {{ $droppedTrailers->links() }}

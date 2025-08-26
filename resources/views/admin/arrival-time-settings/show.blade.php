@@ -14,11 +14,11 @@
                 <p class="mt-2 text-gray-600">View arrival time tolerance configuration and examples</p>
             </div>
             <div class="flex gap-3">
-                <a href="{{ route('admin.arrival-time-settings.edit', $arrivalTimeSetting) }}" 
+                <a href="{{ route('app.arrival-time-settings.edit', $arrivalTimeSetting) }}" 
                    class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
                     ✏️ Edit Setting
                 </a>
-                <a href="{{ route('admin.arrival-time-settings.index') }}" 
+                <a href="{{ route('app.arrival-time-settings.index') }}" 
                    class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
                     ← Back to Settings
                 </a>

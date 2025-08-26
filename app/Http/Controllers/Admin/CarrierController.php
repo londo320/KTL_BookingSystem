@@ -108,7 +108,7 @@ class CarrierController extends Controller
             ];
         }
 
-        return view('admin.carriers.index', compact('carriers', 'stats', 'showDeleted'));
+        return view('warehouse.carriers.index', compact('carriers', 'stats', 'showDeleted'));
     }
 
     public function show($id)
@@ -140,7 +140,7 @@ class CarrierController extends Controller
             ->limit(10)
             ->get();
 
-        return view('admin.carriers.show', compact('carrier', 'bookingsByDepot', 'recentBookings'));
+        return view('warehouse.carriers.show', compact('carrier', 'bookingsByDepot', 'recentBookings'));
     }
 
     public function create()
@@ -148,7 +148,7 @@ class CarrierController extends Controller
         $depots = Depot::orderBy('name')->get();
         $customers = Customer::orderBy('name')->get();
         
-        return view('admin.carriers.create', compact('depots', 'customers'));
+        return view('warehouse.carriers.create', compact('depots', 'customers'));
     }
 
     public function store(Request $request)
@@ -259,7 +259,7 @@ class CarrierController extends Controller
         $depots = Depot::orderBy('name')->get();
         $customers = Customer::orderBy('name')->get();
         
-        return view('admin.carriers.edit', compact('carrier', 'depots', 'customers'));
+        return view('warehouse.carriers.edit', compact('carrier', 'depots', 'customers'));
     }
 
     public function update(Request $request, $id)

@@ -45,7 +45,7 @@
                         </div>
 
                         <!-- Rebook Form -->
-                        <form action="{{ route('admin.bookings.rebook.store', $booking) }}" method="POST">
+                        <form action="{{ route('app.bookings.rebook.store', $booking) }}" method="POST">
                             @csrf
                             
                             <div class="form-group">
@@ -78,7 +78,7 @@
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-exchange-alt"></i> Rebook Booking
                                 </button>
-                                <a href="{{ route('admin.bookings.show', $booking) }}" class="btn btn-secondary">
+                                <a href="{{ route('app.bookings.show', $booking) }}" class="btn btn-secondary">
                                     <i class="fas fa-times"></i> Cancel
                                 </a>
                             </div>
@@ -110,7 +110,7 @@
                         </div>
                         @endforeach
                     </div>
-                    <a href="{{ route('admin.bookings.history', $booking) }}" class="btn btn-sm btn-outline-primary">
+                    <a href="{{ route('app.bookings.history', $booking) }}" class="btn btn-sm btn-outline-primary">
                         View Complete History
                     </a>
                 </div>
@@ -155,7 +155,7 @@
                         </div>
                     </div>
                     
-                    <a href="{{ route('admin.customer-behavior.show', $booking->customer) }}" class="btn btn-sm btn-outline-info btn-block mt-3">
+                    <a href="{{ route('app.customer-behavior.show', $booking->customer) }}" class="btn btn-sm btn-outline-info btn-block mt-3">
                         <i class="fas fa-analytics"></i> View Customer Analysis
                     </a>
                 </div>
@@ -185,7 +185,7 @@
 <div class="modal fade" id="cancelModal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <form action="{{ route('admin.bookings.cancel', $booking) }}" method="POST">
+            <form action="{{ route('app.bookings.cancel', $booking) }}" method="POST">
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title">Cancel Booking</h5>

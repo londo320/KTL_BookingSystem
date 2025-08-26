@@ -1,6 +1,4 @@
 <x-app-layout>
-  @include('layouts.admin-nav')
-
   <x-slot name="header">
     <div class="flex items-center justify-between">
       <div>
@@ -27,7 +25,6 @@
           <span class="font-mono bg-blue-100 text-blue-800 px-2 py-1 rounded">{{ $allDepots->first()->name }}</span>
         </div>
         @endif
-        
         {{-- Time Display --}}
         <div class="text-sm text-gray-600">
           {{ now()->format('D, M j Y - H:i') }} | <span class="font-mono">{{ now()->format('H:i:s') }}</span>
@@ -35,9 +32,7 @@
       </div>
     </div>
   </x-slot>
-
   <div class="py-6 max-w-full mx-auto px-4">
-    
     <!-- Workflow Status Overview -->
     <div class="mb-6 bg-white rounded-lg shadow p-4">
       <div class="flex items-center justify-between mb-4">
@@ -88,14 +83,12 @@
         </div>
       </div>
     </div>
-
     <!-- Operational Workflow Table -->
     <div class="bg-white rounded-lg shadow overflow-hidden">
       <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
         <h3 class="text-lg font-medium text-gray-900">🎮 Active Operations</h3>
         <p class="text-sm text-gray-600 mt-1">Click actions to progress through workflow • All times automatically recorded</p>
       </div>
-      
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
@@ -115,11 +108,9 @@
               $booking = $movement->booking;
               $customer = $booking->customer;
               $slot = $booking->slot;
-              
               // Calculate timing info
               $arrivalTime = $movement->arrived_at ?? $movement->created_at;
               $timeOnSite = $arrivalTime ? $arrivalTime->diffInMinutes(now()) : 0;
-              
               // Determine status styling and labels
               $statusConfig = [
                 'arrived' => ['icon' => '🚛', 'label' => 'Just Arrived', 'color' => 'bg-blue-100 text-blue-800', 'row' => 'hover:bg-blue-50'],
@@ -131,9 +122,7 @@
                 'empty' => ['icon' => '✅', 'label' => 'Tipped - Empty', 'color' => 'bg-green-100 text-green-800', 'row' => 'hover:bg-green-50'],
                 'trailer_collected' => ['icon' => '🚚', 'label' => 'Being Collected', 'color' => 'bg-purple-100 text-purple-800', 'row' => 'hover:bg-purple-50']
               ];
-              
               $config = $statusConfig[$movement->current_status] ?? ['icon' => '❓', 'label' => ucwords(str_replace('_', ' ', $movement->current_status)), 'color' => 'bg-gray-100 text-gray-800', 'row' => 'hover:bg-gray-50'];
-              
               // Determine current location
               $location = 'Unknown';
               $locationDetail = '';
@@ -147,16 +136,14 @@
                 $location = 'Gate Entry';
                 $locationDetail = 'No location assigned';
               }
-              
               // Vehicle status
               $isTrailerDropped = in_array($movement->current_status, ['trailer_dropped', 'empty', 'trailer_collected']);
               $isEmpty = in_array($movement->current_status, ['empty', 'trailer_collected']);
             @endphp
-            
             <tr class="{{ $config['row'] }}">
               <td class="px-4 py-4 whitespace-nowrap">
                 <div class="font-medium">
-                  <a href="{{ route('admin.bookings.show', $booking) }}" class="text-blue-600 hover:text-blue-800 hover:underline">
+                  <a href="{{ route('app.bookings.show', $booking) }}" class="text-blue-600 hover:text-blue-800 hover:underline">
                     {{ $booking->booking_reference ?: '#' . $booking->id }}
                   </a>
                 </div>
@@ -199,10 +186,9 @@
               </td>
               <td class="px-4 py-4 whitespace-nowrap">
                 @php $canTakeAction = $booking->slot->depot_id == $defaultDepotId; @endphp
-                
                 @if($movement->current_status === 'arrived')
                   @if($canTakeAction)
-                    <a href="{{ route('admin.tipping-workflow.show', $booking) }}" 
+                    <a href="{{ route('app.tipping-workflow.show', $booking) }}" 
                        class="inline-block px-3 py-1 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600">
                       📍 Assign Drop Zone
                     </a>
@@ -214,7 +200,7 @@
                   @endif
                 @elseif(in_array($movement->current_status, ['in_location']) && !$movement->unloading_started_at)
                   @if($canTakeAction)
-                    <a href="{{ route('admin.tipping-workflow.show', $booking) }}" 
+                    <a href="{{ route('app.tipping-workflow.show', $booking) }}" 
                        class="inline-block px-3 py-1 bg-orange-500 text-white text-sm rounded hover:bg-orange-600">
                       🚛 Shunt to Bay
                     </a>
@@ -226,7 +212,7 @@
                   @endif
                 @elseif($movement->current_status === 'trailer_dropped' && !$movement->unloading_started_at)
                   @if($canTakeAction)
-                    <a href="{{ route('admin.tipping-workflow.show', $booking) }}" 
+                    <a href="{{ route('app.tipping-workflow.show', $booking) }}" 
                        class="inline-block px-3 py-1 bg-orange-500 text-white text-sm rounded hover:bg-orange-600">
                       🚛 Shunt to Bay
                     </a>
@@ -238,7 +224,7 @@
                   @endif
                 @elseif($movement->current_status === 'trailer_dropped' && $movement->unloading_started_at)
                   @if($canTakeAction)
-                    <a href="{{ route('admin.tipping-workflow.show', $booking) }}" 
+                    <a href="{{ route('app.tipping-workflow.show', $booking) }}" 
                        class="inline-block px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600">
                       ✅ Complete Tipping
                     </a>
@@ -250,7 +236,7 @@
                   @endif
                 @elseif($movement->current_status === 'unloading')
                   @if($canTakeAction)
-                    <a href="{{ route('admin.tipping-workflow.show', $booking) }}" 
+                    <a href="{{ route('app.tipping-workflow.show', $booking) }}" 
                        class="inline-block px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600">
                       ✅ Complete Tipping
                     </a>
@@ -262,7 +248,7 @@
                   @endif
                 @elseif($movement->current_status === 'empty')
                   @if($canTakeAction)
-                    <a href="{{ route('admin.tipping-workflow.show', $booking) }}" 
+                    <a href="{{ route('app.tipping-workflow.show', $booking) }}" 
                        class="inline-block px-3 py-1 bg-purple-500 text-white text-sm rounded hover:bg-purple-600">
                       🔄 Move to Collection Zone
                     </a>
@@ -274,7 +260,7 @@
                   @endif
                 @elseif($movement->current_status === 'trailer_collected')
                   @if($canTakeAction)
-                    <a href="{{ route('admin.tipping-workflow.show', $booking) }}" 
+                    <a href="{{ route('app.tipping-workflow.show', $booking) }}" 
                        class="inline-block px-3 py-1 bg-indigo-500 text-white text-sm rounded hover:bg-indigo-600">
                       🚚 Record Collection
                     </a>
@@ -301,7 +287,6 @@
         </table>
       </div>
     </div>
-
     <!-- Quick Actions Panel -->
     <div class="mt-6 bg-white rounded-lg shadow p-4">
       <h3 class="text-lg font-semibold mb-4">⚡ Quick Actions</h3>
@@ -324,9 +309,7 @@
         </button>
       </div>
     </div>
-
   </div>
-
   <!-- Action Modal (hidden by default) -->
   <div id="actionModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
@@ -343,12 +326,10 @@
       </div>
     </div>
   </div>
-
   <script>
     let selectedBookingId = null;
     let selectedLocationId = null;
     let selectedBayId = null;
-
     // Show toast notification
     function showToast(message, type) {
       const toast = document.createElement('div');
@@ -356,28 +337,23 @@
         type === 'success' ? 'bg-green-600' : 'bg-red-600'
       }`;
       toast.textContent = message;
-      
       document.body.appendChild(toast);
-      
       setTimeout(() => {
         toast.remove();
       }, 3000);
     }
-
     // Modal functionality
     document.addEventListener('DOMContentLoaded', function() {
       const modal = document.getElementById('actionModal');
       const modalTitle = document.getElementById('modalTitle');
       const modalContent = document.getElementById('modalContent');
       const modalCancel = document.getElementById('modalCancel');
-
       // Show modal function
       window.showModal = function(title, content) {
         modalTitle.textContent = title;
         modalContent.innerHTML = content;
         modal.classList.remove('hidden');
       }
-
       // Hide modal function
       window.hideModal = function() {
         modal.classList.add('hidden');
@@ -385,10 +361,8 @@
         selectedLocationId = null;
         selectedBayId = null;
       }
-
       // Cancel button
       modalCancel.addEventListener('click', hideModal);
-
       // Click outside modal to close
       modal.addEventListener('click', function(e) {
         if (e.target === modal) {
@@ -396,20 +370,16 @@
         }
       });
     });
-
     // Assign Drop Zone
     async function assignDropZone(bookingId) {
       selectedBookingId = bookingId;
-      
       try {
         const response = await fetch('/admin/operations/available-locations?type=drop');
         const locations = await response.json();
-        
         if (locations.length === 0) {
           showToast('No available drop zones', 'error');
           return;
         }
-        
         let content = '<div class="space-y-2">';
         locations.forEach(location => {
           content += `
@@ -426,13 +396,11 @@
             <button onclick="confirmDropZoneAssignment()" class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">Assign Zone</button>
           </div>
         `;
-        
         showModal('Select Drop Zone', content);
       } catch (error) {
         showToast('Error loading drop zones', 'error');
       }
     }
-
     function selectLocation(locationId, element) {
       selectedLocationId = locationId;
       // Remove previous selections
@@ -444,13 +412,11 @@
       element.classList.add('bg-yellow-100', 'border-yellow-500');
       element.classList.remove('border-gray-200');
     }
-
     async function confirmDropZoneAssignment() {
       if (!selectedLocationId) {
         showToast('Please select a drop zone', 'error');
         return;
       }
-      
       try {
         const response = await fetch(`/admin/operations/${selectedBookingId}/assign-drop-zone`, {
           method: 'POST',
@@ -462,7 +428,6 @@
             location_id: selectedLocationId
           })
         });
-        
         const data = await response.json();
         if (data.success) {
           showToast('Drop zone assigned successfully!', 'success');
@@ -475,20 +440,16 @@
         showToast('Network error occurred', 'error');
       }
     }
-
     // Shunt to Bay
     async function shuntToBay(bookingId) {
       selectedBookingId = bookingId;
-      
       try {
         const response = await fetch('/admin/operations/available-bays');
         const bays = await response.json();
-        
         if (bays.length === 0) {
           showToast('No available bays', 'error');
           return;
         }
-        
         let content = '<div class="space-y-2">';
         bays.forEach(bay => {
           content += `
@@ -505,13 +466,11 @@
             <button onclick="confirmBayAssignment()" class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600">Assign Bay</button>
           </div>
         `;
-        
         showModal('Select Tipping Bay', content);
       } catch (error) {
         showToast('Error loading available bays', 'error');
       }
     }
-
     function selectBay(bayId, element) {
       selectedBayId = bayId;
       // Remove previous selections
@@ -523,13 +482,11 @@
       element.classList.add('bg-orange-100', 'border-orange-500');
       element.classList.remove('border-gray-200');
     }
-
     async function confirmBayAssignment() {
       if (!selectedBayId) {
         showToast('Please select a bay', 'error');
         return;
       }
-      
       try {
         const response = await fetch(`/admin/operations/${selectedBookingId}/shunt-to-bay`, {
           method: 'POST',
@@ -541,7 +498,6 @@
             bay_id: selectedBayId
           })
         });
-        
         const data = await response.json();
         if (data.success) {
           showToast('Trailer assigned to bay successfully!', 'success');
@@ -554,13 +510,11 @@
         showToast('Network error occurred', 'error');
       }
     }
-
     // Complete Tipping
     async function completeTipping(bookingId) {
       if (!confirm('Are you sure you want to mark tipping as complete?')) {
         return;
       }
-      
       try {
         const response = await fetch(`/admin/operations/bookings/${bookingId}/complete-tipping`, {
           method: 'POST',
@@ -569,7 +523,6 @@
             'X-CSRF-TOKEN': '{{ csrf_token() }}'
           }
         });
-        
         const data = await response.json();
         if (data.success) {
           showToast('Tipping completed successfully!', 'success');
@@ -581,13 +534,11 @@
         showToast('Network error occurred', 'error');
       }
     }
-
     // Move to Collection Zone
     async function moveToCollection(bookingId) {
       if (!confirm('Move empty trailer to collection zone?')) {
         return;
       }
-      
       try {
         const response = await fetch(`/admin/operations/bookings/${bookingId}/move-to-collection`, {
           method: 'POST',
@@ -596,7 +547,6 @@
             'X-CSRF-TOKEN': '{{ csrf_token() }}'
           }
         });
-        
         const data = await response.json();
         if (data.success) {
           showToast('Trailer moved to collection zone!', 'success');
@@ -608,13 +558,11 @@
         showToast('Network error occurred', 'error');
       }
     }
-
     // Record Collection
     async function recordCollection(bookingId) {
       if (!confirm('Record that this trailer has been collected?')) {
         return;
       }
-      
       try {
         const response = await fetch(`/admin/operations/bookings/${bookingId}/record-collection`, {
           method: 'POST',
@@ -623,7 +571,6 @@
             'X-CSRF-TOKEN': '{{ csrf_token() }}'
           }
         });
-        
         const data = await response.json();
         if (data.success) {
           showToast('Collection recorded successfully!', 'success');
@@ -635,11 +582,9 @@
         showToast('Network error occurred', 'error');
       }
     }
-
     // Auto-refresh every 30 seconds
     setTimeout(() => {
       window.location.reload();
     }, 30000);
   </script>
-
 </x-app-layout>

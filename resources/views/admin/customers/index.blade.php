@@ -4,7 +4,7 @@
 <div class="py-6 max-w-6xl mx-auto">
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-2xl font-semibold">Customers Management</h2>
-    <a href="{{ route('admin.customers.create') }}"
+    <a href="{{ route('app.customers.create') }}"
        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
       + New Customer
     </a>
@@ -40,15 +40,15 @@
             @endforelse
           </td>
           <td class="px-4 py-2 space-x-2">
-            <a href="{{ route('admin.customers.edit', $customer) }}"
+            <a href="{{ route('app.customers.edit', $customer) }}"
                class="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs">
                Edit
             </a>
-            <a href="{{ route('admin.customer-behavior.settings', $customer) }}"
+            <a href="{{ route('app.customer-behavior.settings', $customer) }}"
                class="px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 text-xs">
                🔧 Limits
             </a>
-            <form action="{{ route('admin.customers.destroy', $customer) }}"
+            <form action="{{ route('app.customers.destroy', $customer) }}"
                   method="POST"
                   class="inline-block"
                   onsubmit="return confirm('Delete this customer?');">

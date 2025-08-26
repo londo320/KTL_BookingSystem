@@ -14,7 +14,7 @@
                 <p class="mt-2 text-gray-600">Customers requiring management attention due to concerning booking patterns</p>
             </div>
             <div class="flex gap-3">
-                <a href="{{ route('admin.customer-behavior.index') }}" 
+                <a href="{{ route('app.customer-behavior.index') }}" 
                    class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
                     ← Back to Analysis
                 </a>
@@ -189,7 +189,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                 <div class="flex items-center justify-center gap-2">
-                                    <a href="{{ route('admin.customer-behavior.show', $customer->id) }}" 
+                                    <a href="{{ route('app.customer-behavior.show', $customer->id) }}" 
                                        class="inline-flex items-center px-3 py-1 border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md text-sm font-medium transition-colors"
                                        title="View Details">
                                         👁️ View

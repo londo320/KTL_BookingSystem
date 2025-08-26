@@ -1,6 +1,4 @@
 <x-app-layout>
-    @include('layouts.admin-nav')
-
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div>
@@ -8,14 +6,13 @@
                 <p class="text-sm text-gray-600 mt-1">Booking #{{ $booking->id }} - {{ $booking->customer->name ?? 'No Customer' }}</p>
             </div>
             <div class="flex space-x-2">
-                <a href="{{ route('admin.dropped-trailers.index') }}" 
+                <a href="{{ route('app.dropped-trailers.index') }}" 
                    class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                     ← Back to Dropped Trailers
                 </a>
             </div>
         </div>
     </x-slot>
-
     <div class="py-6 max-w-4xl mx-auto">
         @if ($errors->any())
             <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
@@ -27,7 +24,6 @@
                 </ul>
             </div>
         @endif
-
         {{-- Trailer Information --}}
         <div class="mb-6 p-6 bg-orange-50 border border-orange-200 rounded-lg">
             <h3 class="text-lg font-semibold text-orange-800 mb-3">🚛 Trailer Information</h3>
@@ -53,7 +49,6 @@
                     <div>{!! $booking->tipping_status_badge !!}</div>
                 </div>
             </div>
-            
             {{-- Original Vehicle Info --}}
             @if($booking->vehicle_registration)
                 <div class="mt-4 pt-4 border-t border-orange-200">
@@ -65,7 +60,6 @@
                     </div>
                 </div>
             @endif
-
             {{-- Timeline --}}
             <div class="mt-4 pt-4 border-t border-orange-200">
                 <p class="text-sm text-gray-600 mb-2">Timeline</p>
@@ -80,17 +74,14 @@
                 </div>
             </div>
         </div>
-
         {{-- Reconnection Form --}}
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="p-6 border-b border-gray-200">
                 <h3 class="text-xl font-semibold text-gray-800">🚚 New Vehicle Details</h3>
                 <p class="text-gray-600 mt-1">Enter details for the vehicle collecting the trailer</p>
             </div>
-            
-            <form method="POST" action="{{ route('admin.dropped-trailers.reconnect', $booking) }}" class="p-6">
+            <form method="POST" action="{{ route('app.dropped-trailers.reconnect', $booking) }}" class="p-6">
                 @csrf
-                
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {{-- Vehicle Registration (Required) --}}
                     <div class="md:col-span-2">
@@ -106,8 +97,6 @@
                         @enderror
                         <p class="text-xs text-gray-500 mt-1">Registration of the vehicle collecting the trailer</p>
                     </div>
-
-
                     {{-- Departure Notes --}}
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Departure Notes</label>
@@ -119,7 +108,6 @@
                         @enderror
                     </div>
                 </div>
-
                 {{-- Warning Message --}}
                 <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <div class="flex">
@@ -141,10 +129,9 @@
                         </div>
                     </div>
                 </div>
-
                 {{-- Action Buttons --}}
                 <div class="flex justify-end space-x-3 mt-6">
-                    <a href="{{ route('admin.dropped-trailers.index') }}" 
+                    <a href="{{ route('app.dropped-trailers.index') }}" 
                        class="px-6 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                         Cancel
                     </a>

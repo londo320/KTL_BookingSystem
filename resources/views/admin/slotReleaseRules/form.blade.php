@@ -12,7 +12,7 @@
     {{ isset($rule->id) ? 'Edit' : 'Create' }} Slot Release Rule
   </h1>
 
-  <form method="POST" action="{{ isset($rule->id) ? route('admin.slotReleaseRules.update', $rule) : route('admin.slotReleaseRules.store') }}">
+  <form method="POST" action="{{ isset($rule->id) ? route('app.slotReleaseRules.update', $rule) : route('app.slotReleaseRules.store') }}">
     @csrf
     @if(isset($rule->id))
       @method('PUT')

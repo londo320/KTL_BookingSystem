@@ -4,8 +4,8 @@
     <h3 class="text-lg font-medium text-blue-900 mb-3">📋 Required Information</h3>
     
     <div class="grid grid-cols-2 gap-4">
-      {{-- Customer (admin only) --}}
-      @if(auth()->user()->hasRole('admin'))
+      {{-- Customer --}}
+      @if(auth()->user()->hasRole('admin') || auth()->user()->hasFunction('customers.view') || auth()->user()->hasFunction('bookings.create') || request()->routeIs('app.*'))
         <div class="col-span-2">
           <label class="block text-sm font-medium text-blue-800">Customer <span class="text-red-500">*</span></label>
           <select name="customer_id" required class="mt-1 block w-full border-blue-300 rounded bg-white">
@@ -112,7 +112,7 @@
         </div>
         
         <div class="mt-2">
-          <a href="{{ route('admin.carriers.create') }}" target="_blank"
+          <a href="{{ route('app.carriers.create') }}" target="_blank"
              class="text-xs text-blue-600 hover:text-blue-800 underline">
             🏢 Manage carriers
           </a>

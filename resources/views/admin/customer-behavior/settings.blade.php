@@ -1,6 +1,4 @@
 <x-app-layout>
-    @include('layouts.admin-nav')
-
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div>
@@ -8,25 +6,23 @@
                 <p class="text-sm text-gray-600 mt-1">Customize behavior limits for {{ $customer->name }}</p>
             </div>
             <div class="flex space-x-2">
-                <a href="{{ route('admin.customers.index') }}" 
+                <a href="{{ route('app.customers.index') }}" 
                    class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                     ← Back to Customers
                 </a>
-                <a href="{{ route('admin.customer-behavior.show', $customer) }}" 
+                <a href="{{ route('app.customer-behavior.show', $customer) }}" 
                    class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
                     View Behavior Analytics
                 </a>
             </div>
         </div>
     </x-slot>
-
     <div class="py-6 max-w-4xl mx-auto">
         @if (session('success'))
             <div class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
                 {{ session('success') }}
             </div>
         @endif
-
         @if ($errors->any())
             <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
                 <h4 class="font-medium">Please fix the following errors:</h4>
@@ -37,7 +33,6 @@
                 </ul>
             </div>
         @endif
-
         {{-- Customer Information --}}
         <div class="mb-6 p-6 bg-blue-50 border border-blue-200 rounded-lg">
             <h3 class="text-lg font-semibold text-blue-800 mb-3">Customer Information</h3>
@@ -58,7 +53,6 @@
                 </div>
             </div>
         </div>
-
         {{-- Settings Form --}}
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="p-6 border-b border-gray-200">
@@ -67,11 +61,9 @@
                     Configure custom limits for this customer. Values that match defaults will not be stored.
                 </p>
             </div>
-
-            <form method="POST" action="{{ route('admin.customer-behavior.update-settings', $customer) }}" class="p-6">
+            <form method="POST" action="{{ route('app.customer-behavior.update-settings', $customer) }}" class="p-6">
                 @csrf
                 @method('PUT')
-
                 <div class="space-y-8">
                     {{-- Booking Limits --}}
                     <div class="border-b border-gray-200 pb-8">
@@ -96,7 +88,6 @@
                             @endforeach
                         </div>
                     </div>
-
                     {{-- Time-Based Limits --}}
                     <div class="border-b border-gray-200 pb-8">
                         <h4 class="text-lg font-medium text-gray-900 mb-4">⏰ Time-Based Limits</h4>
@@ -120,7 +111,6 @@
                             @endforeach
                         </div>
                     </div>
-
                     {{-- Special Permissions --}}
                     <div>
                         <h4 class="text-lg font-medium text-gray-900 mb-4">🔒 Special Permissions</h4>
@@ -148,17 +138,15 @@
                         </div>
                     </div>
                 </div>
-
                 {{-- Action Buttons --}}
                 <div class="flex items-center justify-between pt-8 border-t border-gray-200">
                     <button type="button" 
-                            onclick="if(confirm('Reset all settings to default values?')) { window.location.href='{{ route('admin.customer-behavior.reset-settings', $customer) }}'; }"
+                            onclick="if(confirm('Reset all settings to default values?')) { window.location.href='{{ route('app.customer-behavior.reset-settings', $customer) }}'; }"
                             class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
                         🔄 Reset to Defaults
                     </button>
-                    
                     <div class="flex space-x-3">
-                        <a href="{{ route('admin.customers.index') }}" 
+                        <a href="{{ route('app.customers.index') }}" 
                            class="px-6 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                             Cancel
                         </a>
@@ -170,7 +158,6 @@
                 </div>
             </form>
         </div>
-
         {{-- Current Custom Settings Summary --}}
         @if($customer->behaviorSettings->isNotEmpty())
             <div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-6">

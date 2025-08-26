@@ -13,7 +13,7 @@ class OperationalQueueController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth', 'role:admin|depot-admin|site-admin']);
+        $this->middleware(['auth', 'role:admin|depot-admin|site-admin|warehouse']);
     }
 
     /**
@@ -78,7 +78,7 @@ class OperationalQueueController extends Controller
         // Get allowed depots for filter dropdown
         $allDepots = \App\Models\Depot::whereIn('id', $allowedDepotIds)->get();
 
-        return view('admin.operations.queue-management', compact(
+        return view('warehouse.operations.queue-management', compact(
             'tippingQueue', 
             'bayStatus', 
             'collectionUrgency', 

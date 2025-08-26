@@ -14,7 +14,7 @@
                 <p class="mt-2 text-gray-600">Configure early/late arrival tolerances for global, depot, and customer levels</p>
             </div>
             <div>
-                <a href="{{ route('admin.arrival-time-settings.create') }}" 
+                <a href="{{ route('app.arrival-time-settings.create') }}" 
                    class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
                     ➕ Add New Setting
                 </a>
@@ -162,18 +162,18 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                 <div class="flex items-center justify-center gap-2">
-                                    <a href="{{ route('admin.arrival-time-settings.show', $setting) }}" 
+                                    <a href="{{ route('app.arrival-time-settings.show', $setting) }}" 
                                        class="inline-flex items-center px-3 py-1 border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md text-sm font-medium transition-colors"
                                        title="View Details">
                                         👁️ View
                                     </a>
-                                    <a href="{{ route('admin.arrival-time-settings.edit', $setting) }}" 
+                                    <a href="{{ route('app.arrival-time-settings.edit', $setting) }}" 
                                        class="inline-flex items-center px-3 py-1 border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-md text-sm font-medium transition-colors"
                                        title="Edit Setting">
                                         ✏️ Edit
                                     </a>
                                     @if($setting->level !== 'global' || $settings->where('level', 'global')->count() > 1)
-                                    <form method="POST" action="{{ route('admin.arrival-time-settings.destroy', $setting) }}" class="inline" 
+                                    <form method="POST" action="{{ route('app.arrival-time-settings.destroy', $setting) }}" class="inline" 
                                           onsubmit="return confirm('🗑️ Deactivate this arrival time setting?\\n\\nThis will make the setting inactive but preserve historical data.')">
                                         @csrf
                                         @method('DELETE')
@@ -201,7 +201,7 @@
                 <div class="text-6xl mb-4">⚙️</div>
                 <h3 class="text-lg font-medium text-gray-900 mb-2">No Arrival Time Settings Found</h3>
                 <p class="text-gray-600 mb-4">Create your first arrival time setting to define early/late tolerances.</p>
-                <a href="{{ route('admin.arrival-time-settings.create') }}" 
+                <a href="{{ route('app.arrival-time-settings.create') }}" 
                    class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
                     ➕ Create First Setting
                 </a>

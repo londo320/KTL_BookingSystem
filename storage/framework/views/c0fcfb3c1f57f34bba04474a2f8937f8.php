@@ -15,7 +15,6 @@
                 🏢 Dashboard
             </h2>
          <?php $__env->endSlot(); ?>
-        
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <!-- Depot Assignment Info -->
             <div class="mb-6 bg-blue-50 border-l-4 border-blue-400 p-4">
@@ -75,7 +74,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- Depot Filter -->
             <?php if($userDepots->count() > 1): ?>
             <div class="mb-6">
@@ -98,7 +96,6 @@
                 </form>
             </div>
             <?php endif; ?>
-
             <!-- Stats Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 max-w-4xl mx-auto">
                 <div class="bg-white overflow-hidden shadow rounded-lg">
@@ -121,7 +118,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="bg-white overflow-hidden shadow rounded-lg">
                     <div class="p-5">
                         <div class="flex items-center">
@@ -142,7 +138,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="bg-white overflow-hidden shadow rounded-lg">
                     <div class="p-5">
                         <div class="flex items-center">
@@ -164,7 +159,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- Second Row of Stats -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 max-w-4xl mx-auto">
                 <div class="bg-white overflow-hidden shadow rounded-lg">
@@ -187,7 +181,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="bg-white overflow-hidden shadow rounded-lg">
                     <div class="p-5">
                         <div class="flex items-center">
@@ -208,7 +201,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="bg-white overflow-hidden shadow rounded-lg">
                     <div class="p-5">
                         <div class="flex items-center">
@@ -230,16 +222,13 @@
                     </div>
                 </div>
             </div>
-
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
                 <!-- Upcoming Bookings -->
                 <div class="bg-white overflow-hidden shadow rounded-lg">
                     <div class="px-4 py-5 sm:p-6">
                         <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
                             🚛 Upcoming Arrivals (Next 3 Hours)
                         </h3>
-                        
                         <?php if($upcomingBookings->isEmpty()): ?>
                             <p class="text-gray-500 text-sm">No upcoming bookings in the next 3 hours.</p>
                         <?php else: ?>
@@ -286,14 +275,12 @@
                         <?php endif; ?>
                     </div>
                 </div>
-
                 <!-- Late Runners -->
                 <div class="bg-white overflow-hidden shadow rounded-lg">
                     <div class="px-4 py-5 sm:p-6">
                         <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
                             🚨 Late Runners (Overdue)
                         </h3>
-                        
                         <?php if($lateRunnersData->isEmpty()): ?>
                             <p class="text-gray-500 text-sm">No overdue bookings.</p>
                         <?php else: ?>
@@ -349,14 +336,12 @@
                         <?php endif; ?>
                     </div>
                 </div>
-
                 <!-- Current Arrivals -->
                 <div class="bg-white overflow-hidden shadow rounded-lg">
                     <div class="px-4 py-5 sm:p-6">
                         <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
                             🏢 Currently On Site
                         </h3>
-                        
                         <?php if($currentArrivals->isEmpty()): ?>
                             <p class="text-gray-500 text-sm">No vehicles currently on site.</p>
                         <?php else: ?>
@@ -402,7 +387,7 @@
                                                     View Details
                                                 </a>
                                             <?php else: ?>
-                                                <a href="<?php echo e(route('depot.bookings.show', $booking)); ?>" 
+                                                <a href="<?php echo e(route('app.bookings.show', $booking)); ?>" 
                                                    class="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600">
                                                     View Details
                                                 </a>
@@ -415,7 +400,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- Quick Actions -->
             <div class="mt-8 bg-white overflow-hidden shadow rounded-lg">
                 <div class="px-4 py-5 sm:p-6">
@@ -433,15 +417,15 @@
                                 📦 Book a Slot
                             </a>
                         <?php else: ?>
-                            <a href="<?php echo e(route('depot.bookings.index')); ?>" 
+                            <a href="<?php echo e(route('app.bookings.index')); ?>" 
                                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
                                 📋 View All Bookings
                             </a>
-                            <a href="<?php echo e(route('depot.slots.index')); ?>" 
+                            <a href="<?php echo e(route('app.slots.index')); ?>" 
                                class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
                                 ⏰ Manage Slots
                             </a>
-                            <a href="<?php echo e(route('depot.arrivals.index')); ?>" 
+                            <a href="<?php echo e(route('app.arrivals.index')); ?>" 
                                class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
                                 🚛 Live Arrivals
                             </a>
@@ -450,29 +434,24 @@
                 </div>
             </div>
         </div>
-
         <script>
             // Auto-refresh the page every 5 minutes (300,000 milliseconds)
             setTimeout(function() {
                 window.location.reload();
             }, 300000);
-
             // Show a refresh indicator in page title
             let refreshCounter = 300; // 5 minutes in seconds
             const originalTitle = document.title;
-            
             function updateRefreshIndicator() {
                 const minutes = Math.floor(refreshCounter / 60);
                 const seconds = refreshCounter % 60;
                 document.title = `${originalTitle} - Auto-refresh in ${minutes}:${seconds.toString().padStart(2, '0')}`;
-                
                 if (refreshCounter <= 0) {
                     document.title = `${originalTitle} - Refreshing...`;
                     return;
                 }
                 refreshCounter--;
             }
-
             // Update countdown every second
             setInterval(updateRefreshIndicator, 1000);
             updateRefreshIndicator(); // Initial call
@@ -498,13 +477,11 @@
 <?php $attributes = $attributes->except(\App\View\Components\AppLayout::ignoredParameterNames()); ?>
 <?php endif; ?>
 <?php $component->withAttributes([]); ?>
-        <?php echo $__env->make('layouts.admin-nav', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
          <?php $__env->slot('header', null, []); ?> 
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-800 leading-tight">
                 🏢 Depot Admin Dashboard
             </h2>
          <?php $__env->endSlot(); ?>
-        
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <!-- Depot Assignment Info -->
             <div class="mb-6 bg-blue-50 border-l-4 border-blue-400 p-4">
@@ -564,7 +541,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- Depot Filter -->
             <?php if($userDepots->count() > 1): ?>
             <div class="mb-6">
@@ -587,7 +563,6 @@
                 </form>
             </div>
             <?php endif; ?>
-
             <!-- Stats Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 max-w-4xl mx-auto">
                 <div class="bg-white overflow-hidden shadow rounded-lg">
@@ -610,7 +585,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="bg-white overflow-hidden shadow rounded-lg">
                     <div class="p-5">
                         <div class="flex items-center">
@@ -631,7 +605,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="bg-white overflow-hidden shadow rounded-lg">
                     <div class="p-5">
                         <div class="flex items-center">
@@ -653,7 +626,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- Second Row of Stats -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 max-w-4xl mx-auto">
                 <div class="bg-white overflow-hidden shadow rounded-lg">
@@ -676,7 +648,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="bg-white overflow-hidden shadow rounded-lg">
                     <div class="p-5">
                         <div class="flex items-center">
@@ -697,7 +668,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="bg-white overflow-hidden shadow rounded-lg">
                     <div class="p-5">
                         <div class="flex items-center">
@@ -719,16 +689,13 @@
                     </div>
                 </div>
             </div>
-
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
                 <!-- Upcoming Bookings -->
                 <div class="bg-white overflow-hidden shadow rounded-lg">
                     <div class="px-4 py-5 sm:p-6">
                         <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
                             🚛 Upcoming Arrivals (Next 3 Hours)
                         </h3>
-                        
                         <?php if($upcomingBookings->isEmpty()): ?>
                             <p class="text-gray-500 text-sm">No upcoming bookings in the next 3 hours.</p>
                         <?php else: ?>
@@ -775,14 +742,12 @@
                         <?php endif; ?>
                     </div>
                 </div>
-
                 <!-- Late Runners -->
                 <div class="bg-white overflow-hidden shadow rounded-lg">
                     <div class="px-4 py-5 sm:p-6">
                         <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
                             🚨 Late Runners (Overdue)
                         </h3>
-                        
                         <?php if($lateRunnersData->isEmpty()): ?>
                             <p class="text-gray-500 text-sm">No overdue bookings.</p>
                         <?php else: ?>
@@ -838,14 +803,12 @@
                         <?php endif; ?>
                     </div>
                 </div>
-
                 <!-- Current Arrivals -->
                 <div class="bg-white overflow-hidden shadow rounded-lg">
                     <div class="px-4 py-5 sm:p-6">
                         <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
                             🏢 Currently On Site
                         </h3>
-                        
                         <?php if($currentArrivals->isEmpty()): ?>
                             <p class="text-gray-500 text-sm">No vehicles currently on site.</p>
                         <?php else: ?>
@@ -885,7 +848,7 @@
                                                 On site: <?php echo e($booking->arrived_at->diffForHumans()); ?>
 
                                             </div>
-                                            <a href="<?php echo e(route('depot.bookings.show', $booking)); ?>" 
+                                            <a href="<?php echo e(route('app.bookings.show', $booking)); ?>" 
                                                class="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600">
                                                 View Details
                                             </a>
@@ -897,7 +860,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- Quick Actions -->
             <div class="mt-8 bg-white overflow-hidden shadow rounded-lg">
                 <div class="px-4 py-5 sm:p-6">
@@ -905,15 +867,15 @@
                         ⚡ Quick Actions
                     </h3>
                     <div class="flex flex-wrap gap-4">
-                        <a href="<?php echo e(route('depot.bookings.index')); ?>" 
+                        <a href="<?php echo e(route('app.bookings.index')); ?>" 
                            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
                             📋 View All Bookings
                         </a>
-                        <a href="<?php echo e(route('depot.slots.index')); ?>" 
+                        <a href="<?php echo e(route('app.slots.index')); ?>" 
                            class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
                             ⏰ Manage Slots
                         </a>
-                        <a href="<?php echo e(route('depot.arrivals.index')); ?>" 
+                        <a href="<?php echo e(route('app.arrivals.index')); ?>" 
                            class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
                             🚛 Live Arrivals
                         </a>
@@ -921,29 +883,24 @@
                 </div>
             </div>
         </div>
-
         <script>
             // Auto-refresh the page every 5 minutes (300,000 milliseconds)
             setTimeout(function() {
                 window.location.reload();
             }, 300000);
-
             // Show a refresh indicator in page title
             let refreshCounter = 300; // 5 minutes in seconds
             const originalTitle = document.title;
-            
             function updateRefreshIndicator() {
                 const minutes = Math.floor(refreshCounter / 60);
                 const seconds = refreshCounter % 60;
                 document.title = `${originalTitle} - Auto-refresh in ${minutes}:${seconds.toString().padStart(2, '0')}`;
-                
                 if (refreshCounter <= 0) {
                     document.title = `${originalTitle} - Refreshing...`;
                     return;
                 }
                 refreshCounter--;
             }
-
             // Update countdown every second
             setInterval(updateRefreshIndicator, 1000);
             updateRefreshIndicator(); // Initial call

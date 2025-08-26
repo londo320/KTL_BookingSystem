@@ -37,11 +37,11 @@
                 @endif
             </div>
             <div class="flex gap-3">
-                <a href="{{ route('admin.carriers.edit', $carrier) }}" 
+                <a href="{{ route('app.carriers.edit', $carrier) }}" 
                    class="inline-flex items-center px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors">
                     ✏️ Edit
                 </a>
-                <a href="{{ route('admin.carriers.index') }}" 
+                <a href="{{ route('app.carriers.index') }}" 
                    class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
                     ← Back to Carriers
                 </a>
@@ -198,7 +198,7 @@
                                     {{ $booking->booking_reference }}
                                 </td>
                                 <td class="px-6 py-4 text-center">
-                                    <a href="{{ route('admin.bookings.show', $booking) }}" 
+                                    <a href="{{ route('app.bookings.show', $booking) }}" 
                                        class="text-blue-600 hover:text-blue-800 text-sm">
                                         View →
                                     </a>
@@ -222,7 +222,7 @@
                 </div>
                 <div class="p-4 space-y-3">
                     @if($carrier->trashed())
-                        <form action="{{ route('admin.carriers.restore', $carrier->id) }}" method="POST">
+                        <form action="{{ route('app.carriers.restore', $carrier->id) }}" method="POST">
                             @csrf
                             <button type="submit" 
                                     class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
@@ -235,13 +235,13 @@
                             {{ $carrier->is_active ? '❌ Deactivate' : '✅ Activate' }}
                         </button>
                         
-                        <a href="{{ route('admin.carriers.edit', $carrier) }}" 
+                        <a href="{{ route('app.carriers.edit', $carrier) }}" 
                            class="w-full inline-block text-center px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors">
                             ✏️ Edit Details
                         </a>
                         
                         @if($carrier->bookings()->count() === 0)
-                        <form action="{{ route('admin.carriers.destroy', $carrier) }}" method="POST" 
+                        <form action="{{ route('app.carriers.destroy', $carrier) }}" method="POST" 
                               onsubmit="return confirm('Are you sure you want to delete this carrier? This action cannot be undone.')">
                             @csrf
                             @method('DELETE')

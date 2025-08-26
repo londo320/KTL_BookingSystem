@@ -1,12 +1,10 @@
   {{-- Admin Nav --}}
-  @include('layouts.admin-nav')
 <x-app-layout>
   <x-slot name="header">
     <h2 class="text-xl font-semibold">Slot Usage Viewer</h2>
   </x-slot>
-
   <div class="max-w-5xl mx-auto py-6">
-    <form method="GET" action="{{ route('admin.slot-usage.index') }}" class="flex items-end gap-4 mb-6">
+    <form method="GET" action="{{ route('app.slot-usage.index') }}" class="flex items-end gap-4 mb-6">
       <div>
         <label class="block text-sm mb-1">Depot</label>
         <select name="depot_id" class="border rounded p-2">
@@ -17,19 +15,16 @@
           @endforeach
         </select>
       </div>
-
       <div>
         <label class="block text-sm mb-1">Date</label>
         <input type="date" name="date" value="{{ $date }}" class="border rounded p-2">
       </div>
-
       <div>
         <button class="mt-5 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
           Filter
         </button>
       </div>
     </form>
-
     <table class="w-full table-auto text-sm border">
       <thead class="bg-gray-100">
         <tr>

@@ -1,5 +1,4 @@
 <x-app-layout>
-    @include('layouts.admin-nav')
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-800 leading-tight">
@@ -13,15 +12,12 @@
             </div>
         </div>
     </x-slot>
-
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        
         @if(session('success'))
             <div class="mb-4 p-3 bg-green-100 text-green-800 rounded">
                 {{ session('success') }}
             </div>
         @endif
-
         <!-- Filters -->
         <div class="bg-white p-4 rounded-lg shadow mb-6">
             <form method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
@@ -66,7 +62,6 @@
                 </div>
             </form>
         </div>
-
         <!-- Bookings Table -->
         <div class="bg-white shadow overflow-hidden sm:rounded-lg">
             <div class="overflow-x-auto">
@@ -209,7 +204,6 @@
                                                 </button>
                                             </form>
                                         @endif
-                                        
                                         <a href="{{ route('depot.bookings.edit', $booking) }}" 
                                            class="text-indigo-600 hover:text-indigo-900 text-xs bg-indigo-100 px-2 py-1 rounded text-center">
                                             Edit Details
@@ -227,7 +221,6 @@
                     </tbody>
                 </table>
             </div>
-            
             @if($bookings->hasPages())
                 <div class="bg-white px-4 py-3 border-t border-gray-200">
                     {{ $bookings->links() }}
@@ -235,7 +228,6 @@
             @endif
         </div>
     </div>
-
     <!-- Arrival Modal -->
     <div id="arrivalModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
         <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
@@ -249,18 +241,14 @@
                         </svg>
                     </button>
                 </div>
-
                 <!-- Booking Summary -->
                 <div id="bookingSummary" class="mt-4 p-4 bg-indigo-50 rounded-lg">
                     <!-- Will be populated by JavaScript -->
                 </div>
-
                 <!-- Arrival Form -->
                 <form id="arrivalForm" method="POST" class="mt-6">
                     @csrf
-                    
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        
                         <!-- Required Vehicle Registration -->
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -271,7 +259,6 @@
                                    class="w-full border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                             <p class="text-xs text-gray-500 mt-1">Required for arrival processing</p>
                         </div>
-
                         <!-- Container Number -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Container/Trailer Number</label>
@@ -279,22 +266,18 @@
                                    placeholder="e.g., CONT123456"
                                    class="w-full border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
-
-
                         <!-- Gate Number -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Gate Number</label>
                             <input type="text" id="gateNumber" name="gate_number"
                                    class="w-full border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
-
                         <!-- Bay Number -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Bay Number</label>
                             <input type="text" id="bayNumber" name="bay_number"
                                    class="w-full border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
-
                         <!-- Actual Cases -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Actual Cases</label>
@@ -302,7 +285,6 @@
                                    class="w-full border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                             <p id="expectedCases" class="text-xs text-gray-500 mt-1">Expected: 0</p>
                         </div>
-
                         <!-- Actual Pallets -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Actual Pallets</label>
@@ -310,21 +292,17 @@
                                    class="w-full border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                             <p id="expectedPallets" class="text-xs text-gray-500 mt-1">Expected: 0</p>
                         </div>
-
                     </div>
-
                     <!-- Special Instructions -->
                     <div id="specialInstructions" class="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200 hidden">
                         <h4 class="font-medium text-yellow-800 mb-2">⚠️ Special Instructions:</h4>
                         <p id="specialInstructionsText" class="text-yellow-700"></p>
                     </div>
-
                     <!-- Arrival Time Display -->
                     <div class="mt-4 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
                         <h4 class="font-medium text-indigo-800 mb-2">📅 Arrival Time:</h4>
                         <p class="text-indigo-700 font-semibold" id="arrivalTime">Will be recorded as: [Current Time]</p>
                     </div>
-
                     <!-- Form Actions -->
                     <div class="mt-6 flex justify-end space-x-4">
                         <button type="button" onclick="closeArrivalModal()" 
@@ -340,13 +318,10 @@
             </div>
         </div>
     </div>
-
     <script>
         let currentBookingId = null;
-
         function openArrivalModal(bookingId, bookingRef, customer, depot, scheduledTime, vehicleReg, containerNum, carrierCompany, gateNum, expectedCases, expectedPallets, specialInstructions) {
             currentBookingId = bookingId;
-            
             // Update booking summary
             document.getElementById('bookingSummary').innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -363,20 +338,16 @@
                     </div>
                 </div>
             `;
-
             // Update form action
             document.getElementById('arrivalForm').action = `/depot-admin/bookings/${bookingId}/arrival`;
-
             // Populate form fields
             document.getElementById('vehicleRegistration').value = vehicleReg;
             document.getElementById('containerNumber').value = containerNum;
             document.getElementById('carrierCompany').value = carrierCompany;
             document.getElementById('gateNumber').value = gateNum;
-
             // Update expected quantities display
             document.getElementById('expectedCases').textContent = `Expected: ${expectedCases}`;
             document.getElementById('expectedPallets').textContent = `Expected: ${expectedPallets}`;
-
             // Show special instructions if any
             if (specialInstructions && specialInstructions.trim() !== '') {
                 document.getElementById('specialInstructionsText').textContent = specialInstructions;
@@ -384,24 +355,19 @@
             } else {
                 document.getElementById('specialInstructions').classList.add('hidden');
             }
-
             // Update arrival time display
             updateArrivalTime();
-
             // Show modal
             document.getElementById('arrivalModal').classList.remove('hidden');
-            
             // Focus on vehicle registration field
             setTimeout(() => {
                 document.getElementById('vehicleRegistration').focus();
             }, 100);
         }
-
         function closeArrivalModal() {
             document.getElementById('arrivalModal').classList.add('hidden');
             currentBookingId = null;
         }
-
         function updateArrivalTime() {
             const now = new Date();
             const timeString = now.toLocaleString('en-GB', {
@@ -414,14 +380,12 @@
             });
             document.getElementById('arrivalTime').textContent = `Will be recorded as: ${timeString}`;
         }
-
         // Close modal when clicking outside
         document.getElementById('arrivalModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeArrivalModal();
             }
         });
-
         // Update time display every second
         setInterval(() => {
             if (!document.getElementById('arrivalModal').classList.contains('hidden')) {

@@ -28,7 +28,7 @@ class BookingController extends Controller
     
     public function __construct()
     {
-        $this->middleware(['auth', 'role:admin|depot-admin|site-admin']);
+        $this->middleware(['auth', 'role:admin|depot-admin|site-admin|warehouse']);
     }
 
     /**
@@ -159,7 +159,7 @@ class BookingController extends Controller
     {
         $filters = $this->getFiltersFromSession($request);
 
-        return redirect()->route('admin.bookings.index', $filters)->with('success', $message);
+        return redirect()->route('app.bookings.index', $filters)->with('success', $message);
     }
 
     public function index(Request $request)
@@ -482,7 +482,7 @@ class BookingController extends Controller
         // Rename depots to allDepots for consistency with other views
         $allDepots = $depots;
 
-        return view('admin.bookings.index', compact(
+        return view('warehouse.bookings.index', compact(
             'bookings', 'allDepots', 'customers', 'types', 'summaryByDepotCustomer', 'weeks', 'currentYear',
             'tippingLocations', 'tippingBays', 'trailerTypes', 'carriers', 'defaultDepotId', 'currentDepotId'
         ));
@@ -666,10 +666,10 @@ class BookingController extends Controller
 
         // For AJAX requests, return just the table rows
         if ($request->ajax()) {
-            return view('admin.bookings.partials.streamlined-rows', compact('bookings'))->render();
+            return view('warehouse.bookings.partials.streamlined-rows', compact('bookings'))->render();
         }
 
-        return view('admin.bookings.index-streamlined', compact(
+        return view('warehouse.bookings.index-streamlined', compact(
             'bookings', 'depots', 'customers', 'types', 'tippingLocations', 'tippingBays'
         ));
     }
@@ -706,7 +706,7 @@ class BookingController extends Controller
 
         $booking = new Booking; // 👈 avoids undefined variable errors
 
-        return view('admin.bookings.create', compact('slots', 'types', 'depots', 'customers', 'booking', 'tippingLocations', 'tippingBays', 'trailerTypes'));
+        return view('warehouse.bookings.create', compact('slots', 'types', 'depots', 'customers', 'booking', 'tippingLocations', 'tippingBays', 'trailerTypes'));
     }
 
     public function show(Booking $booking)
@@ -719,7 +719,7 @@ class BookingController extends Controller
             abort(403, 'You do not have access to this booking.');
         }
 
-        return view('admin.bookings.show', [
+        return view('warehouse.bookings.show', [
             'booking' => $booking->load([
                 'slot.depot',
                 'bookingType',
@@ -760,8 +760,8 @@ class BookingController extends Controller
             'po_numbers.*.lines.*.line_number' => 'required|integer|min:1',
             // Support new pallet_entries structure
             'po_numbers.*.lines.*.pallet_entries' => 'nullable|array',
-            'po_numbers.*.lines.*.pallet_entries.*.cases' => 'required|integer|min:0',
-            'po_numbers.*.lines.*.pallet_entries.*.pallets' => 'required|integer|min:0',
+            'po_numbers.*.lines.*.pallet_entries.*.cases' => 'nullable|integer|min:0',
+            'po_numbers.*.lines.*.pallet_entries.*.pallets' => 'nullable|integer|min:0',
             'po_numbers.*.lines.*.pallet_entries.*.type_id' => 'nullable|exists:pallet_types,id',
             // Legacy support for old structure
             'po_numbers.*.lines.*.expected_cases' => 'nullable|integer|min:0',
@@ -898,7 +898,7 @@ class BookingController extends Controller
     //        $depots    = auth()->user()->depots()->orderBy('name')->get();
     //        $customers = Customer::orderBy('name')->get();
 
-    //        return view('admin.bookings.edit', compact('booking','slots','types','depots','customers'));
+    //        return view('warehouse.bookings.edit', compact('booking','slots','types','depots','customers'));
     //    }
 
     public function edit(Booking $booking)
@@ -943,7 +943,7 @@ class BookingController extends Controller
         // Load PO numbers for the booking
         $booking->load('poNumbers');
 
-        return view('admin.bookings.edit', compact('booking', 'slots', 'types', 'depots', 'customers', 'tippingLocations', 'tippingBays', 'trailerTypes'));
+        return view('warehouse.bookings.edit', compact('booking', 'slots', 'types', 'depots', 'customers', 'tippingLocations', 'tippingBays', 'trailerTypes'));
     }
 
     public function update(Request $request, Booking $booking)
@@ -1177,7 +1177,7 @@ class BookingController extends Controller
 
         \App\Models\BookingHistory::recordAction($booking, 'modified', $message, null, null, $changes);
 
-        return redirect()->route('admin.bookings.index')->with('success', 'Vehicle assigned to bay '.$tippingBay->name.' successfully.');
+        return redirect()->route('app.bookings.index')->with('success', 'Vehicle assigned to bay '.$tippingBay->name.' successfully.');
     }
 
     public function markArrived(Request $request, Booking $booking)
@@ -1375,7 +1375,7 @@ class BookingController extends Controller
         } elseif ($user->hasRole('depot-admin')) {
             return view('depot-admin.bookings.arrival-form', compact('booking', 'tippingLocations', 'tippingBays', 'trailerTypes'));
         } else {
-            return view('admin.bookings.arrival-form', compact('booking', 'tippingLocations', 'tippingBays', 'trailerTypes'));
+            return view('warehouse.bookings.arrival-form', compact('booking', 'tippingLocations', 'tippingBays', 'trailerTypes'));
         }
     }
 
@@ -1564,7 +1564,7 @@ class BookingController extends Controller
                 'collected_at' => now(),
             ]);
 
-            return redirect()->route('admin.bookings.index')->with('success',
+            return redirect()->route('app.bookings.index')->with('success',
                 'Unit collection recorded - Vehicle '.$validated['vehicle_registration'].' collected trailer from booking');
         }
 
@@ -1626,7 +1626,7 @@ class BookingController extends Controller
             return $booking;
         })->sortBy('trailer_display_number'); // Sort alphabetically by trailer number
 
-        return view('admin.bookings.empty-unit-collection', compact('availableTrailers', 'collectionZones', 'tippingBays'));
+        return view('warehouse.bookings.empty-unit-collection', compact('availableTrailers', 'collectionZones', 'tippingBays'));
     }
 
     public function trailerLocationReport(Request $request)
@@ -1651,16 +1651,27 @@ class BookingController extends Controller
         // Filter movements by selected depot or show all
         $depotIds = $currentDepotId ? [$currentDepotId] : $allowedDepotIds;
 
-        // Get movements with trailers still on site - only from allowed depots
+        // Get movements with trailers still on site - including factory bookings
         $movementsOnSite = Movement::with([
             'booking.slot.depot', 
             'booking.customer', 
             'booking.poNumbers',
+            'factoryBooking.depot',
+            'factoryBooking.customer',
+            'factoryBooking.poNumbers',
             'tippingBay', 
             'tippingLocation'
         ])
-            ->whereNotNull('booking_id') // Only booked movements
-            ->whereHas('booking.slot', fn($q) => $q->whereIn('depot_id', $depotIds)) // Depot access control
+            ->where(function ($query) use ($depotIds) {
+                // Regular bookings
+                $query->whereNotNull('booking_id')
+                    ->whereHas('booking.slot', fn($q) => $q->whereIn('depot_id', $depotIds))
+                    // Factory bookings
+                    ->orWhere(function ($subQuery) use ($depotIds) {
+                        $subQuery->whereNotNull('factory_booking_id')
+                            ->whereHas('factoryBooking', fn($q) => $q->whereIn('depot_id', $depotIds));
+                    });
+            })
             ->whereIn('current_status', ['arrived', 'in_waiting', 'trailer_dropped', 'in_location', 'at_bay', 'unloading', 'empty'])
             ->orderBy('trailer_dropped_at', 'asc') // Oldest first
             ->get();
@@ -1673,7 +1684,9 @@ class BookingController extends Controller
         
         // Calculate time on site for all trailers
         $trailersWithTime = $movementsOnSite->map(function ($movement) {
-            $arrival = $movement->actual_arrival ?? $movement->booking->arrived_at;
+            // Get the bookable model (booking or factoryBooking)
+            $bookable = $movement->bookable;
+            $arrival = $movement->actual_arrival ?? $bookable?->arrived_at;
             $timeOnSite = $arrival ? now()->diffInHours($arrival) : 0;
             $movement->time_on_site_hours = $timeOnSite;
             
@@ -1681,6 +1694,21 @@ class BookingController extends Controller
             $movement->tipping_completed = $movement->current_status === 'empty';
             $movement->needs_tipping = in_array($movement->current_status, ['trailer_dropped', 'arrived']);
             $movement->being_tipped = in_array($movement->current_status, ['at_bay', 'unloading']);
+            
+            // Check if this is a factory booking and if it's overdue (>60 minutes)
+            $movement->is_factory_booking = $movement->factory_booking_id !== null;
+            $movement->factory_overdue = $movement->is_factory_booking && $timeOnSite > 1; // 60 minutes = 1 hour
+            
+            // Priority classification
+            if ($movement->factory_overdue) {
+                $movement->priority_class = 'urgent-factory';
+            } elseif ($movement->is_factory_booking) {
+                $movement->priority_class = 'factory';
+            } elseif ($timeOnSite > 4) {
+                $movement->priority_class = 'overdue';
+            } else {
+                $movement->priority_class = 'normal';
+            }
             
             return $movement;
         });
@@ -1693,12 +1721,14 @@ class BookingController extends Controller
             'being_tipped' => $currentlyTipping->count(),
             'in_waiting_areas' => $generalWaiting->count(),
             'overdue_collections' => $emptyTrailers->filter(fn($m) => $m->time_on_site_hours > 24)->count(),
+            'factory_bookings' => $trailersWithTime->where('is_factory_booking', true)->count(),
+            'factory_overdue' => $trailersWithTime->where('factory_overdue', true)->count(),
         ];
 
         // Get allowed depots for filter dropdown
         $allDepots = \App\Models\Depot::whereIn('id', $allowedDepotIds)->get();
 
-        return view('admin.bookings.trailer-location-report', compact(
+        return view('warehouse.bookings.trailer-location-report', compact(
             'movementsOnSite',
             'trailersWithTime',
             'waitingToTip',
@@ -1956,6 +1986,11 @@ class BookingController extends Controller
      */
     public function exportPDF(Request $request)
     {
+        // Allow admin or users with bookings.export.pdf function
+        if (!auth()->user()->hasRole('admin') && !auth()->user()->hasFunction('bookings.export.pdf')) {
+            abort(403, 'You do not have permission to export bookings to PDF.');
+        }
+        
         $this->ensureDepotAccess();
         $allowedDepotIds = $this->getAllowedDepotIds();
 
@@ -2001,6 +2036,11 @@ class BookingController extends Controller
      */
     public function exportCSV(Request $request)
     {
+        // Allow admin or users with bookings.export.csv function
+        if (!auth()->user()->hasRole('admin') && !auth()->user()->hasFunction('bookings.export.csv')) {
+            abort(403, 'You do not have permission to export bookings to CSV.');
+        }
+        
         $this->ensureDepotAccess();
         $allowedDepotIds = $this->getAllowedDepotIds();
 
@@ -2132,6 +2172,11 @@ class BookingController extends Controller
      */
     public function exportExcel(Request $request)
     {
+        // Allow admin or users with bookings.export.excel function
+        if (!auth()->user()->hasRole('admin') && !auth()->user()->hasFunction('bookings.export.excel')) {
+            abort(403, 'You do not have permission to export bookings to Excel.');
+        }
+        
         $this->ensureDepotAccess();
         $allowedDepotIds = $this->getAllowedDepotIds();
 
@@ -2667,7 +2712,7 @@ class BookingController extends Controller
 
             if ($booking->transferToBay($newBay, $validated['transfer_reason'])) {
                 return redirect()
-                    ->route('admin.bookings.show', $booking)
+                    ->route('app.bookings.show', $booking)
                     ->with('success', "Booking transferred to {$newBay->name} successfully.");
             } else {
                 return back()->withErrors(['transfer' => 'Unable to transfer booking. Check bay availability and booking status.']);
@@ -2683,7 +2728,7 @@ class BookingController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('admin.bookings.transfer-bay', compact('booking', 'availableBays'));
+        return view('warehouse.bookings.transfer-bay', compact('booking', 'availableBays'));
     }
 
     /**
@@ -2852,7 +2897,7 @@ class BookingController extends Controller
             ->orderBy('arrived_at', 'desc')
             ->get();
 
-        return view('admin.bookings.fix-historical-departures', compact('bookingsNeedingFix'));
+        return view('warehouse.bookings.fix-historical-departures', compact('bookingsNeedingFix'));
     }
 
     /**
@@ -3107,7 +3152,7 @@ class BookingController extends Controller
                 ['calculated_data.time_in_current_status_minutes', 'desc']
             ]);
 
-        return view('admin.bookings.trailer-operations-dashboard', compact('movementsOnSite'));
+        return view('warehouse.bookings.trailer-operations-dashboard', compact('movementsOnSite'));
     }
 
     public function operationsControl(Request $request)
@@ -3168,7 +3213,7 @@ class BookingController extends Controller
         // Get all allowed depots for depot selector
         $allDepots = \App\Models\Depot::whereIn('id', $allowedDepotIds)->get();
 
-        return view('admin.bookings.operations-control', compact(
+        return view('warehouse.bookings.operations-control', compact(
             'activeMovements', 
             'stats', 
             'allDepots', 

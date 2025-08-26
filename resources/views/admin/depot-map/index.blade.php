@@ -1,6 +1,4 @@
 <x-app-layout>
-    @include('layouts.admin-nav')
-
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-6">
@@ -8,7 +6,6 @@
                     <h2 class="font-semibold text-xl text-gray-800">🗺️ {{ $depot->name }} - Site Map</h2>
                     <p class="text-sm text-gray-600 mt-1">Real-time depot layout with live booking status</p>
                 </div>
-                
                 <!-- Depot Filter Dropdown -->
                 @if($userDepots->count() > 1)
                 <div>
@@ -33,7 +30,7 @@
                     🔄 Refresh
                 </button>
                 @php
-                    $routePrefix = request()->route()->getPrefix() === 'depot-admin' ? 'depot.' : 'admin.';
+                    $routePrefix = request()->route()->getPrefix() === 'depot-admin' ? 'app.' : 'app.';
                 @endphp
                 <a href="{{ route($routePrefix . 'depot-map.select-map-file', $depot->id) }}" class="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm">
                     📁 Upload Map
@@ -47,9 +44,7 @@
             </div>
         </div>
     </x-slot>
-
     <div class="py-6 max-w-full mx-auto px-4">
-        
         <!-- Status Summary Cards -->
         <div class="mb-6 grid grid-cols-2 md:grid-cols-6 gap-4">
             <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
@@ -77,10 +72,8 @@
                 <div class="text-2xl font-bold text-gray-600" id="total-count">{{ $activitySummary['total_locations'] }}</div>
             </div>
         </div>
-
         <!-- Main Map and Activity Panel -->
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            
             <!-- Main Map Area (3/4 width) -->
             <div class="lg:col-span-3">
                 <div class="bg-white rounded-lg shadow overflow-hidden">
@@ -114,11 +107,9 @@
                             </div>
                         </div>
                     </div>
-                    
                     <div class="p-6">
                         <!-- Map Container -->
                         <div class="relative bg-gray-100 rounded-lg border-2 border-gray-300 overflow-hidden" style="min-height: 700px;">
-                            
                             <!-- Depot Map Image with Overlays -->
                             <div class="absolute inset-0 flex items-center justify-center p-4">
                                 @if($depot->map_file && file_exists(public_path('images/depot-maps/' . $depot->map_file)))
@@ -128,14 +119,12 @@
                                              class="max-w-full max-h-full object-contain rounded-lg"
                                              id="depot-map-image"
                                              style="transform-origin: center; width: 100%; height: 100%;">
-                                        
                                         <!-- Interactive Bay Overlays - positioned on the map image -->
                                         @if($bays->count() > 0)
                                             @foreach($bays as $bay)
                                             @php
                                                 $status = $bayStatuses[$bay->id]['status'] ?? 'available';
                                                 $occupancy = $bayStatuses[$bay->id]['occupancy'] ?? 0;
-                                                
                                                 // Map status to colors
                                                 $colors = [
                                                     'available' => 'rgba(34, 197, 94, 0.8)', // Green
@@ -146,7 +135,6 @@
                                                     'offline' => 'rgba(107, 114, 128, 0.8)', // Dark Gray
                                                     'disabled' => 'rgba(239, 68, 68, 0.3)', // Red with low opacity - locked/disabled
                                                 ];
-                                                
                                                 $borderColors = [
                                                     'available' => '#16a34a',
                                                     'active' => '#dc2626',
@@ -156,10 +144,8 @@
                                                     'offline' => '#6b7280',
                                                     'disabled' => '#dc2626', // Red border for disabled
                                                 ];
-                                                
                                                 $bgColor = $colors[$status] ?? $colors['available'];
                                                 $borderColor = $borderColors[$status] ?? $borderColors['available'];
-                                                
                                                 // Use stored coordinates if available, otherwise default position
                                                 if ($bay->map_x !== null && $bay->map_y !== null && $bay->show_on_map) {
                                                     $position = [
@@ -170,7 +156,6 @@
                                                     // Skip bays without coordinates or marked as hidden
                                                     continue;
                                                 }
-                                                
                                                 // Use stored bay dimensions or defaults
                                                 $width = ($bay->map_width ?? 60) . 'px';
                                                 $height = ($bay->map_height ?? 40) . 'px';
@@ -178,7 +163,6 @@
                                                 $textSize = $bay->text_size ?? 'xs';
                                                 $textColor = $bay->text_color ?? '#ffffff';
                                             @endphp
-                                            
                                             <div class="absolute bay-overlay scalable-overlay" 
                                                  data-bay-id="{{ $bay->id }}"
                                                  data-status="{{ $status }}"
@@ -212,7 +196,6 @@
                                             </div>
                                             @endforeach
                                         @endif
-                                        
                                         <!-- Interactive Location Overlays - positioned on the map image -->
                                         @if($locations->count() > 0)
                                             @foreach($locations as $location)
@@ -221,7 +204,6 @@
                                                 $occupancy = $locationStatuses[$location->id]['occupancy'] ?? 0;
                                                 $capacity = $location->capacity;
                                                 $available = $capacity - $occupancy;
-                                                
                                                 // Map status to colors (same as bays)
                                                 $colors = [
                                                     'available' => 'rgba(34, 197, 94, 0.8)', // Green
@@ -231,7 +213,6 @@
                                                     'full' => 'rgba(156, 163, 175, 0.8)',    // Gray
                                                     'offline' => 'rgba(107, 114, 128, 0.8)', // Dark Gray
                                                 ];
-                                                
                                                 $borderColors = [
                                                     'available' => '#16a34a',
                                                     'active' => '#dc2626',
@@ -241,10 +222,8 @@
                                                     'offline' => '#6b7280',
                                                     'disabled' => '#dc2626', // Red border for disabled
                                                 ];
-                                                
                                                 $bgColor = $colors[$status] ?? $colors['available'];
                                                 $borderColor = $borderColors[$status] ?? $borderColors['available'];
-                                                
                                                 // Use stored coordinates if available
                                                 if ($location->map_x !== null && $location->map_y !== null && $location->show_on_map) {
                                                     $position = [
@@ -255,14 +234,12 @@
                                                     // Skip locations without coordinates or marked as hidden
                                                     continue;
                                                 }
-                                                
                                                 // Use stored location dimensions or defaults
                                                 $width = ($location->map_width ?? 100) . 'px';
                                                 $height = ($location->map_height ?? 60) . 'px';
                                                 $rotation = $location->map_rotation ?? 0;
                                                 $textSize = $location->text_size ?? 'xs';
                                                 $textColor = $location->text_color ?? '#ffffff';
-                                                
                                                 // Location type icons
                                                 $typeIcons = [
                                                     'drop_zone' => '📦',
@@ -271,7 +248,6 @@
                                                 ];
                                                 $icon = $typeIcons[$location->location_type] ?? '📍';
                                             @endphp
-                                            
                                             <div class="absolute location-overlay scalable-overlay" 
                                                  data-location-id="{{ $location->id }}"
                                                  data-status="{{ $status }}"
@@ -319,7 +295,6 @@
                                     </div>
                                 @endif
                             </div>
-                            
                             @if($bays->count() === 0 && $locations->count() === 0)
                                 <!-- No positioned items message -->
                                 <div class="absolute inset-0 flex items-center justify-center z-10">
@@ -345,7 +320,6 @@
                                     </div>
                                 </div>
                             @endif
-                            
                             <!-- Map Controls -->
                             <div class="absolute top-4 right-4 space-y-2">
                                 <button onclick="toggleFullScreen()" class="bg-white shadow-lg rounded p-2 hover:bg-gray-50 text-sm" id="fullscreen-btn" title="Full Screen Dashboard">
@@ -365,10 +339,8 @@
                     </div>
                 </div>
             </div>
-            
             <!-- Activity Panel (1/4 width) -->
             <div class="space-y-6">
-                
                 <!-- Recent Activity -->
                 <div class="bg-white rounded-lg shadow">
                     <div class="p-4 border-b border-gray-200">
@@ -393,7 +365,6 @@
                         </div>
                     </div>
                 </div>
-                
                 <!-- Quick Actions -->
                 <div class="bg-white rounded-lg shadow">
                     <div class="p-4 border-b border-gray-200">
@@ -409,12 +380,11 @@
                         <button onclick="openTippingWorkflow()" class="w-full px-3 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700">
                             🏗️ Tipping Workflow
                         </button>
-                        <a href="{{ route('admin.trailer-location-report') }}" class="block w-full px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 text-center">
+                        <a href="{{ route('app.trailer-location-report') }}" class="block w-full px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 text-center">
                             📍 Location Report
                         </a>
                     </div>
                 </div>
-                
                 <!-- Location List -->
                 <div class="bg-white rounded-lg shadow">
                     <div class="p-4 border-b border-gray-200">
@@ -451,7 +421,6 @@
                                 @endforeach
                             </div>
                         @endif
-                        
                         <!-- Tipping Locations Section -->
                         @if($locations->count() > 0)
                             @if($bays->count() > 0)
@@ -487,7 +456,6 @@
                                 @endforeach
                             </div>
                         @endif
-                        
                         @if($bays->count() === 0 && $locations->count() === 0)
                             <div class="text-center py-8">
                                 <div class="text-gray-400 text-4xl mb-2">🎯</div>
@@ -503,7 +471,6 @@
             </div>
         </div>
     </div>
-
     <!-- Location Details Modal -->
     <div id="location-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 max-w-lg w-full mx-4 shadow-xl">
@@ -526,20 +493,17 @@
             </div>
         </div>
     </div>
-
     <script>
         // Real bay data from Laravel
         const bays = @json($bays);
         const bayStatuses = @json($bayStatuses);
         let currentZoom = 1;
-
         // Auto-refresh every 60 seconds
         setInterval(refreshMapData, 60000);
-
         // Refresh map data
         async function refreshMapData() {
             try {
-                const response = await fetch('{{ route("admin.depot-map.refresh") }}', {
+                const response = await fetch('{{ route("app.depot-map.refresh") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -549,7 +513,6 @@
                         depot_id: {{ $depot->id }}
                     })
                 });
-                
                 if (response.ok) {
                     const data = await response.json();
                     updateLocationStatuses(data.location_statuses);
@@ -560,17 +523,14 @@
                 console.error('Failed to refresh map data:', error);
             }
         }
-
         // Update location visual status
         function updateLocationStatuses(newStatuses) {
             Object.keys(newStatuses).forEach(locationId => {
                 const status = newStatuses[locationId];
                 const overlay = document.querySelector(`[data-location-id="${locationId}"]`);
-                
                 if (overlay) {
                     const box = overlay.querySelector('.location-box');
                     overlay.setAttribute('data-status', status.status);
-                    
                     // Update colors based on status
                     const colors = {
                         'available': { bg: 'rgba(34, 197, 94, 0.8)', border: '#16a34a' },
@@ -581,14 +541,12 @@
                         'disabled': { bg: 'rgba(239, 68, 68, 0.3)', border: '#dc2626' },
                         'offline': { bg: 'rgba(107, 114, 128, 0.8)', border: '#6b7280' }
                     };
-                    
                     const colorScheme = colors[status.status] || colors['available'];
                     box.style.background = colorScheme.bg;
                     box.style.borderColor = colorScheme.border;
                 }
             });
         }
-
         // Update activity summary counts
         function updateActivitySummary(summary) {
             document.getElementById('available-count').textContent = summary.available_locations;
@@ -598,7 +556,6 @@
             document.getElementById('pending-count').textContent = summary.pending_arrivals;
             document.getElementById('total-count').textContent = summary.total_locations;
         }
-
         // Show bay details in modal
         async function showBayDetails(bayId) {
             try {
@@ -611,7 +568,6 @@
                 console.error('Failed to fetch bay details:', error);
             }
         }
-
         // Show location details in modal
         async function showLocationDetails(locationId) {
             try {
@@ -624,11 +580,9 @@
                 console.error('Failed to fetch location details:', error);
             }
         }
-
         // Display bay modal with data
         function displayBayModal(data) {
             document.getElementById('modal-title').textContent = `${data.bay_name} (Bay)`;
-            
             let content = `
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4 text-sm">
@@ -638,7 +592,6 @@
                         <div><strong>Occupied:</strong> ${data.is_occupied ? 'Yes' : 'No'}</div>
                     </div>
             `;
-            
             if (data.current_booking) {
                 const booking = data.current_booking;
                 content += `
@@ -656,9 +609,7 @@
                                 <div><strong>Scheduled:</strong> ${booking.scheduled_at || 'N/A'}</div>
                                 <div><strong>Arrived:</strong> ${booking.arrived_at || 'Not arrived'}</div>
                             </div>
-                            
                             ${booking.customer_phone ? `<div class="text-sm"><strong>Phone:</strong> <a href="tel:${booking.customer_phone}" class="text-blue-600">${booking.customer_phone}</a></div>` : ''}
-                            
                             <div class="flex space-x-2 mt-4">
                                 <a href="${booking.workflow_url}" target="_blank" class="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
                                     📋 View Booking Details
@@ -672,7 +623,6 @@
                         </div>
                     </div>
                 `;
-                
                 // Bay change option
                 if (data.can_change_bay && data.alternative_bays && data.alternative_bays.length > 0) {
                     content += `
@@ -683,11 +633,9 @@
                                 <select id="alternative-bay-select" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                                     <option value="">Select alternative bay...</option>
                     `;
-                    
                     data.alternative_bays.forEach(bay => {
                         content += `<option value="${bay.id}">${bay.name} ${bay.code ? '(' + bay.code + ')' : ''}</option>`;
                     });
-                    
                     content += `
                                 </select>
                                 <button onclick="changeBay(${data.bay_id}, ${booking.id})" class="w-full px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700">
@@ -706,14 +654,11 @@
                     </div>
                 `;
             }
-            
             content += '</div>';
-            
             document.getElementById('modal-content').innerHTML = content;
             document.getElementById('location-modal').classList.remove('hidden');
             document.getElementById('location-modal').classList.add('flex');
         }
-        
         function getStatusColor(status) {
             const colors = {
                 'available': 'green',
@@ -725,19 +670,16 @@
             };
             return colors[status] || 'gray';
         }
-        
         // Change bay function
         async function changeBay(currentBayId, bookingId) {
             const newBayId = document.getElementById('alternative-bay-select').value;
-            
             if (!newBayId) {
                 alert('Please select a bay to move to');
                 return;
             }
-            
             if (confirm('Are you sure you want to move this vehicle to the selected bay?')) {
                 try {
-                    const response = await fetch('{{ route("admin.depot-map.change-bay") }}', {
+                    const response = await fetch('{{ route("app.depot-map.change-bay") }}', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -749,9 +691,7 @@
                             new_bay_id: newBayId
                         })
                     });
-                    
                     const result = await response.json();
-                    
                     if (result.success) {
                         alert('Vehicle moved successfully!');
                         closeLocationModal();
@@ -766,11 +706,9 @@
                 }
             }
         }
-
         // Display location modal with data
         function displayLocationModal(data) {
             document.getElementById('modal-title').textContent = data.location_name;
-            
             let content = `
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4 text-sm">
@@ -780,14 +718,12 @@
                         <div><strong>Available:</strong> ${data.available_capacity}</div>
                     </div>
             `;
-            
             if (data.current_bookings && data.current_bookings.length > 0) {
                 content += `
                     <div>
                         <strong>Current Bookings:</strong>
                         <div class="mt-2 space-y-2">
                 `;
-                
                 data.current_bookings.forEach(booking => {
                     content += `
                         <div class="bg-gray-50 p-3 rounded text-sm">
@@ -802,50 +738,40 @@
                         </div>
                     `;
                 });
-                
                 content += '</div></div>';
             }
-            
             content += '</div>';
-            
             document.getElementById('modal-content').innerHTML = content;
             document.getElementById('location-modal').classList.remove('hidden');
             document.getElementById('location-modal').classList.add('flex');
         }
-
         // Close modal
         function closeLocationModal() {
             document.getElementById('location-modal').classList.add('hidden');
             document.getElementById('location-modal').classList.remove('flex');
         }
-
         // Map zoom controls
         function zoomIn() {
             currentZoom = Math.min(currentZoom * 1.2, 3);
             applyZoom();
         }
-        
         function zoomOut() {
             currentZoom = Math.max(currentZoom / 1.2, 0.5);
             applyZoom();
         }
-        
         function resetZoom() {
             currentZoom = 1;
             applyZoom();
         }
-        
         function applyZoom() {
             const mapImage = document.getElementById('depot-map-image');
             mapImage.style.transform = `scale(${currentZoom})`;
         }
-        
         // Full screen functionality
         function toggleFullScreen() {
             const body = document.body;
             const mapContainer = document.querySelector('.py-6.max-w-7xl.mx-auto');
             const fullscreenBtn = document.getElementById('fullscreen-btn');
-            
             if (body.classList.contains('fullscreen-mode')) {
                 // Exit full screen
                 body.classList.remove('fullscreen-mode');
@@ -860,30 +786,25 @@
                 fullscreenBtn.title = 'Exit Full Screen';
             }
         }
-        
         // ESC key to exit full screen
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && document.body.classList.contains('fullscreen-mode')) {
                 toggleFullScreen();
             }
         });
-
         // Depot switching
         function switchDepot(depotId) {
             if (depotId && depotId !== '{{ $depot->id }}') {
                 window.location.href = '{{ route($routePrefix . "depot-map.index") }}?depot_id=' + depotId;
             }
         }
-        
         // Quick actions
         function showAllBookings() {
-            window.location.href = '{{ route("admin.bookings.index") }}';
+            window.location.href = '{{ route("app.bookings.index") }}';
         }
-        
         function openTrailerCollection() {
-            window.open('{{ route("admin.empty-unit-collection") }}', '_blank', 'width=1200,height=800');
+            window.open('{{ route("app.empty-unit-collection") }}', '_blank', 'width=1200,height=800');
         }
-        
         function openTippingWorkflow() {
             // Find first active booking to redirect to workflow
             const activeBookings = Object.values(locationStatuses).filter(status => status.status === 'active');
@@ -894,32 +815,26 @@
             }
         }
     </script>
-
     <style>
         .location-overlay:hover .location-box {
             transform: scale(1.1);
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
-        
         #depot-map-image {
             transition: transform 0.3s ease;
         }
-        
         .location-box {
             transition: all 0.2s ease;
         }
-        
         /* Full screen mode styles */
         .fullscreen-mode {
             overflow: hidden;
         }
-        
         .fullscreen-mode header,
         .fullscreen-mode nav,
         .fullscreen-mode .sidebar {
             display: none !important;
         }
-        
         .fullscreen-container {
             position: fixed !important;
             top: 0 !important;
@@ -932,15 +847,12 @@
             padding: 1rem !important;
             margin: 0 !important;
         }
-        
         .fullscreen-container .grid {
             height: calc(100vh - 2rem) !important;
         }
-        
         .fullscreen-container .bg-white.rounded-lg.shadow {
             height: 100% !important;
         }
-        
         .fullscreen-container .relative.bg-gray-100.rounded-lg {
             height: calc(100% - 4rem) !important;
         }

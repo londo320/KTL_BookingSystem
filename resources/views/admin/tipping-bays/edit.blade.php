@@ -1,6 +1,4 @@
 <x-app-layout>
-    @include('layouts.admin-nav')
-
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div>
@@ -8,25 +6,23 @@
                 <p class="text-sm text-gray-600 mt-1">{{ $tippingBay->name }} - {{ $tippingBay->depot->name }}</p>
             </div>
             <div class="flex space-x-2">
-                <a href="{{ route('admin.tipping-bays.show', $tippingBay) }}" 
+                <a href="{{ route('app.tipping-bays.show', $tippingBay) }}" 
                    class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
                     View Bay
                 </a>
-                <a href="{{ route('admin.tipping-bays.index') }}" 
+                <a href="{{ route('app.tipping-bays.index') }}" 
                    class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                     ← Back to Bays
                 </a>
             </div>
         </div>
     </x-slot>
-
     <div class="py-6 max-w-4xl mx-auto">
         @if (session('success'))
             <div class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
                 {{ session('success') }}
             </div>
         @endif
-
         @if ($errors->any())
             <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
                 <h4 class="font-medium">Please fix the following errors:</h4>
@@ -37,17 +33,14 @@
                 </ul>
             </div>
         @endif
-
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="p-6 border-b border-gray-200">
                 <h3 class="text-xl font-semibold text-gray-800">🚛 Edit Tipping Bay</h3>
                 <p class="text-sm text-gray-600 mt-1">Update bay settings and equipment</p>
             </div>
-
-            <form method="POST" action="{{ route('admin.tipping-bays.update', $tippingBay) }}" class="p-6">
+            <form method="POST" action="{{ route('app.tipping-bays.update', $tippingBay) }}" class="p-6">
                 @csrf
                 @method('PUT')
-
                 <div class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
@@ -63,7 +56,6 @@
                                 @endforeach
                             </select>
                         </div>
-
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2" for="name">
                                 Bay Name <span class="text-red-500">*</span>
@@ -73,7 +65,6 @@
                                    placeholder="e.g., Bay 1, Tipping Bay A" required>
                         </div>
                     </div>
-
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2" for="code">
@@ -84,7 +75,6 @@
                                    placeholder="e.g., BAY-1, TB-A">
                             <p class="text-xs text-gray-500 mt-1">Short code for easy identification (optional)</p>
                         </div>
-
                         <div class="space-y-4">
                             <div class="flex items-center">
                                 <input type="hidden" name="is_active" value="0">
@@ -101,7 +91,6 @@
                                     <br><span class="text-orange-600">⚠️ Warning: This bay currently has a booking</span>
                                 @endif
                             </p>
-                            
                             <div class="flex items-center">
                                 <input type="hidden" name="show_on_map" value="0">
                                 <input type="checkbox" name="show_on_map" id="show_on_map" value="1" 
@@ -116,7 +105,6 @@
                             </p>
                         </div>
                     </div>
-
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2" for="description">
                             Description
@@ -125,11 +113,9 @@
                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                                   placeholder="Additional details about this bay...">{{ old('description', $tippingBay->description) }}</textarea>
                     </div>
-
                     <!-- Map Position Settings -->
                     <div class="border-t border-gray-200 pt-6">
                         <h4 class="text-lg font-medium text-gray-800 mb-4">🗺️ Map Position Settings</h4>
-                        
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2" for="map_x">
@@ -142,7 +128,6 @@
                                        placeholder="e.g., 25.5">
                                 <p class="text-xs text-gray-500 mt-1">Horizontal position on map (0-100%)</p>
                             </div>
-                            
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2" for="map_y">
                                     Map Y Position (%)
@@ -155,11 +140,9 @@
                                 <p class="text-xs text-gray-500 mt-1">Vertical position on map (0-100%)</p>
                             </div>
                         </div>
-                        
                         <!-- Advanced Styling Section -->
                         <div class="border-t border-gray-200 pt-6 mt-6">
                             <h5 class="text-md font-medium text-gray-800 mb-4">🎨 Visual Styling</h5>
-                            
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2" for="map_width">
@@ -171,7 +154,6 @@
                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                                            placeholder="60">
                                 </div>
-                                
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2" for="map_height">
                                         Height (px)
@@ -182,7 +164,6 @@
                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                                            placeholder="40">
                                 </div>
-                                
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2" for="map_rotation">
                                         Rotation (°)
@@ -193,7 +174,6 @@
                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                                            placeholder="0">
                                 </div>
-                                
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2" for="text_size">
                                         Text Size
@@ -207,7 +187,6 @@
                                     </select>
                                 </div>
                             </div>
-                            
                             <div class="mt-4">
                                 <label class="block text-sm font-medium text-gray-700 mb-2" for="text_color">
                                     Text Color
@@ -226,7 +205,6 @@
                                 <p class="text-xs text-gray-500 mt-1">Choose text color that contrasts well with your bay background</p>
                             </div>
                         </div>
-                        
                         <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                             <div class="flex items-start">
                                 <div class="flex-shrink-0">
@@ -236,7 +214,7 @@
                                     <h5 class="text-sm font-medium text-blue-800">Map Styling Tips:</h5>
                                     <ul class="mt-2 text-sm text-blue-700 space-y-1">
                                         <li>• Leave positions empty to position manually using the map editor</li>
-                                        <li>• Use the <a href="{{ route('admin.depot-map.manage-positions') }}" class="underline hover:no-underline">Interactive Map Editor</a> for drag-and-drop positioning and real-time styling</li>
+                                        <li>• Use the <a href="{{ route('app.depot-map.manage-positions') }}" class="underline hover:no-underline">Interactive Map Editor</a> for drag-and-drop positioning and real-time styling</li>
                                         <li>• Position values are percentages relative to the map image size</li>
                                         <li>• Rotation is useful for aligning bays with your depot layout</li>
                                         <li>• Choose text colors that contrast well with bay status colors</li>
@@ -245,7 +223,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Equipment Available
@@ -277,9 +254,8 @@
                         <p class="text-xs text-gray-500 mt-1">List any special equipment available at this bay</p>
                     </div>
                 </div>
-
                 <div class="flex items-center justify-between pt-6 border-t border-gray-200">
-                    <a href="{{ route('admin.tipping-bays.show', $tippingBay) }}" 
+                    <a href="{{ route('app.tipping-bays.show', $tippingBay) }}" 
                        class="px-6 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                         Cancel
                     </a>
@@ -291,7 +267,6 @@
             </form>
         </div>
     </div>
-
     <script>
         function addEquipment() {
             const container = document.getElementById('equipment-container');
@@ -308,16 +283,13 @@
             `;
             container.appendChild(div);
         }
-
         function removeEquipment(button) {
             button.parentElement.remove();
         }
-        
         // Sync color picker with hex input
         document.getElementById('text_color').addEventListener('input', function() {
             document.getElementById('text_color_hex').value = this.value;
         });
-        
         document.getElementById('text_color_hex').addEventListener('input', function() {
             if (/^#[0-9A-Fa-f]{6}$/.test(this.value)) {
                 document.getElementById('text_color').value = this.value;

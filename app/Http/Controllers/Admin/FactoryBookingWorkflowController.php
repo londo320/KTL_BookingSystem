@@ -17,7 +17,7 @@ class FactoryBookingWorkflowController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth', 'role:admin|depot-admin|site-admin']);
+        $this->middleware(['auth', 'function-access']);
     }
 
     public function show(FactoryBooking $factoryBooking)

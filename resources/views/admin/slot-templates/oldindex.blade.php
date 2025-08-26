@@ -1,15 +1,11 @@
 <x-app-layout>
-    @include('layouts.admin-nav')
-
 @section('content')
 <div class="p-6 space-y-4">
-  <a href="{{ route('admin.slot-templates.create') }}"
+  <a href="{{ route('app.slot-templates.create') }}"
      class="bg-blue-600 text-white px-4 py-2 rounded">New Template</a>
-
   @if(session('success'))
     <div class="bg-green-100 text-green-800 p-2 rounded">{{ session('success') }}</div>
   @endif
-
   <table class="min-w-full border">
     <thead>
       <tr class="bg-gray-200">
@@ -32,9 +28,9 @@
         <td class="p-2">{{ $tpl->bookingType->name }}</td>
         <td class="p-2">{{ $tpl->default_length }}m</td>
         <td class="p-2 space-x-2">
-          <a href="{{ route('admin.slot-templates.edit',$tpl) }}"
+          <a href="{{ route('app.slot-templates.edit',$tpl) }}"
              class="text-blue-600">Edit</a>
-          <form method="POST" action="{{ route('admin.slot-templates.destroy',$tpl) }}"
+          <form method="POST" action="{{ route('app.slot-templates.destroy',$tpl) }}"
                 class="inline">@csrf @method('DELETE')
             <button class="text-red-600"
                     onclick="return confirm('Really delete?')">Del</button>

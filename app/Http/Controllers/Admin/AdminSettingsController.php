@@ -12,15 +12,24 @@ class AdminSettingsController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth', 'role:admin']);
+        $this->middleware(['auth', 'function:settings.manage']);
     }
 
     public function dashboard()
     {
         $depots = Depot::orderBy('name')->get();
         $tippingWorkflowEnabled = Setting::isTippingWorkflowEnabled();
+        
+        // Module toggles
+        $outboundModuleEnabled = Setting::get('outbound_module_enabled', false);
+        $inboundModuleEnabled = Setting::get('inbound_module_enabled', true); // Default true for existing functionality
 
-        return view('admin.settings.dashboard', compact('depots', 'tippingWorkflowEnabled'));
+        return view('admin.settings.dashboard', compact(
+            'depots', 
+            'tippingWorkflowEnabled',
+            'outboundModuleEnabled',
+            'inboundModuleEnabled'
+        ));
     }
 
     public function updateTippingWorkflow(Request $request)
@@ -34,6 +43,32 @@ class AdminSettingsController extends Controller
         $status = $request->tipping_workflow_enabled ? 'enabled' : 'disabled';
 
         return back()->with('success', "Tipping workflow has been {$status}.");
+    }
+
+    public function updateOutboundModule(Request $request)
+    {
+        $request->validate([
+            'outbound_module_enabled' => 'required|boolean',
+        ]);
+
+        Setting::set('outbound_module_enabled', $request->outbound_module_enabled, 'boolean');
+
+        $status = $request->outbound_module_enabled ? 'enabled' : 'disabled';
+
+        return back()->with('success', "Outbound module has been {$status}.");
+    }
+
+    public function updateInboundModule(Request $request)
+    {
+        $request->validate([
+            'inbound_module_enabled' => 'required|boolean',
+        ]);
+
+        Setting::set('inbound_module_enabled', $request->inbound_module_enabled, 'boolean');
+
+        $status = $request->inbound_module_enabled ? 'enabled' : 'disabled';
+
+        return back()->with('success', "Inbound module has been {$status}.");
     }
 
     public function palletTypes()

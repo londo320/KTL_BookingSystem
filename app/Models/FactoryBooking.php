@@ -18,11 +18,10 @@ class FactoryBooking extends Model
         'customer_id',
         'carrier_id',
         'trailer_type_id',
+        'tipping_type',
         'arrived_at',
         'vehicle_registration',
         'trailer_registration',
-        'driver_name',
-        'driver_phone',
         'delivery_notes',
         'vehicle_details',
         'priority',
@@ -110,6 +109,49 @@ class FactoryBooking extends Model
         return $query->orderBy('priority', $order)->orderBy('arrived_at');
     }
 
+    /**
+     * Check if factory booking is overdue for tipping
+     */
+    public function isOverdueForTipping(): bool
+    {
+        if ($this->status !== 'arrived' || $this->completed_at || !$this->arrived_at) {
+            return false;
+        }
+
+        $targetMinutes = $this->depot->getFactoryTippingTimeTarget($this->customer_id);
+        $targetTime = $this->arrived_at->copy()->addMinutes($targetMinutes);
+        
+        return now()->greaterThan($targetTime);
+    }
+
+    /**
+     * Get time remaining until tipping target is exceeded
+     */
+    public function timeUntilOverdue(): ?Carbon
+    {
+        if ($this->status !== 'arrived' || $this->completed_at || !$this->arrived_at) {
+            return null;
+        }
+
+        $targetMinutes = $this->depot->getFactoryTippingTimeTarget($this->customer_id);
+        $targetTime = $this->arrived_at->copy()->addMinutes($targetMinutes);
+        
+        return now()->lessThan($targetTime) ? $targetTime : null;
+    }
+
+    /**
+     * Get minutes elapsed since arrival
+     */
+    public function minutesOnSite(): int
+    {
+        if (!$this->arrived_at) {
+            return 0;
+        }
+
+        $endTime = $this->completed_at ?? now();
+        return $this->arrived_at->diffInMinutes($endTime);
+    }
+
     // Helper methods
     public static function generateReference(): string
     {
@@ -135,8 +177,6 @@ class FactoryBooking extends Model
                 'current_status' => 'arrived',
                 'actual_arrival' => $this->arrived_at,
                 'carrier_company' => $this->carrier?->name,
-                'driver_name' => $this->driver_name,
-                'driver_phone' => $this->driver_phone,
                 'load_type' => 'factory_delivery',
             ]
         );

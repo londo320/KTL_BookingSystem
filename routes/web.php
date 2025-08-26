@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AdminSettingsController;
-use App\Http\Controllers\Admin\BookingController;
-use App\Http\Controllers\Admin\BookingRebookController;
+use App\Http\Controllers\Warehouse\BookingController;
+use App\Http\Controllers\Warehouse\BookingRebookController;
 use App\Http\Controllers\Admin\BookingRulesController;
 use App\Http\Controllers\Admin\BookingTypeController;
 use App\Http\Controllers\Admin\CarrierController;
@@ -16,7 +16,7 @@ use App\Http\Controllers\Admin\DepotController;
 use App\Http\Controllers\Admin\DroppedTrailersController;
 use App\Http\Controllers\Admin\FactoryBookingController;
 use App\Http\Controllers\Admin\ProductController;
-use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Warehouse\SettingsController as WarehouseSettingsController;
 use App\Http\Controllers\Admin\SlotCapacityController;
 use App\Http\Controllers\Admin\SlotController;
 use App\Http\Controllers\Admin\SlotGeneratorController;
@@ -24,22 +24,38 @@ use App\Http\Controllers\Admin\SlotReleaseRuleController;
 use App\Http\Controllers\Admin\SlotTemplateController;
 use App\Http\Controllers\Admin\SlotUsageController;
 use App\Http\Controllers\Admin\UserSwitchController;
+use App\Http\Controllers\Customer\CustomerDashboardController;
 use App\Http\Controllers\DepotAdmin\DepotAdminDashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SiteAdmin\SiteAdminDashboardController;
+use App\Http\Controllers\WarehouseController;
 use Illuminate\Support\Facades\Route;
 
 require __DIR__.'/auth.php';
 
 Route::get('/redirect-after-login', function () {
-    // Always redirect to depot-admin dashboard for all users
-    return redirect()->route('depot.dashboard');
+    $user = auth()->user();
+    
+    // Warehouse users (warehouse, depot-admin, site-admin, admin) go to app dashboard
+    if ($user->hasWarehouseAccess()) {
+        return redirect()->route('app.dashboard');
+    }
+    
+    // Customer-only users go to customer dashboard
+    if ($user->hasRole('customer')) {
+        return redirect()->route('customer.dashboard');
+    }
+    
+    // Fallback to app dashboard
+    return redirect()->route('app.dashboard');
 })->name('redirect-after-login');
 
 Route::get('/', function () {
-    return auth()->check()
-        ? redirect()->route('depot.dashboard')
-        : redirect()->route('login');
+    if (!auth()->check()) {
+        return redirect()->route('login');
+    }
+    
+    return redirect()->route('redirect-after-login');
 });
 
 Route::get('/depot-info-public', function () {
@@ -74,8 +90,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::get('/dashboard', function () {
-        // Always redirect to depot-admin dashboard for all users
-        return redirect()->route('depot.dashboard');
+        return redirect()->route('redirect-after-login');
     })->name('dashboard');
 
     // Universal switch-back route (accessible to all authenticated users during testing)
@@ -94,11 +109,290 @@ Route::middleware('auth')->group(function () {
     Route::post('api/carriers/quick-create', [CarrierController::class, 'quickCreate'])->name('api.carriers.quick-create');
 
     /**
+     * ───── Main Application Routes (Unified Function-Based Access) ─────
+     * All users access the application through these routes with function-based permissions
+     */
+    Route::prefix('app')->as('app.')->middleware(['auth', 'function-access'])->group(function () {
+        
+        // ──── Core Application Routes (Always Available) ────
+        Route::get('/dashboard', [WarehouseController::class, 'dashboard'])->name('dashboard');
+        
+        // ──── Inbound Module Routes ────
+        Route::middleware(['inbound-access'])->group(function () {
+            // ──── Bookings Management ────
+        Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
+        Route::get('/bookings-streamlined', [BookingController::class, 'indexStreamlined'])->name('bookings.streamlined');
+        Route::get('/bookings/create', [BookingController::class, 'create'])->name('bookings.create');
+        Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
+        Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
+        Route::get('/bookings/{booking}/edit', [BookingController::class, 'edit'])->name('bookings.edit');
+        Route::put('/bookings/{booking}', [BookingController::class, 'update'])->name('bookings.update');
+        Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])->name('bookings.destroy');
+        
+        // Booking specific actions
+        Route::post('/bookings/{booking}/arrived', [BookingController::class, 'markArrived'])->name('bookings.arrived');
+        Route::post('/bookings/{booking}/departed', [BookingController::class, 'markDeparted'])->name('bookings.departed');
+        Route::get('/bookings/{booking}/arrival', [BookingController::class, 'arrivalForm'])->name('bookings.arrival.form');
+        Route::post('/bookings/{booking}/arrival', [BookingController::class, 'arrival'])->name('bookings.arrival');
+        Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+        Route::post('/bookings/{booking}/clear-bay', [BookingController::class, 'clearBay'])->name('bookings.clear-bay');
+        Route::get('/bookings/{booking}/transfer-bay', [BookingController::class, 'transferBayForm'])->name('bookings.transfer-bay.form');
+        Route::post('/bookings/{booking}/transfer-bay', [BookingController::class, 'transferBay'])->name('bookings.transfer-bay');
+        
+        // Booking exports
+        Route::get('/bookings/export/pdf', [BookingController::class, 'exportPdf'])->name('bookings.export.pdf');
+        Route::get('/bookings/export/csv', [BookingController::class, 'exportCsv'])->name('bookings.export.csv');
+        Route::get('/bookings/export/excel', [BookingController::class, 'exportExcel'])->name('bookings.export.excel');
+        
+        // Additional booking actions
+        Route::get('/bookings/{booking}/download-pdf', [BookingController::class, 'downloadPdf'])->name('bookings.download-pdf');
+        Route::post('/bookings/{booking}/email-pdf', [BookingController::class, 'emailPdf'])->name('bookings.email-pdf');
+        Route::post('/bookings/{booking}/move-to-waiting', [BookingController::class, 'moveToWaiting'])->name('bookings.move-to-waiting');
+        Route::post('/bookings/{booking}/unbook', [BookingController::class, 'unbook'])->name('bookings.unbook');
+        Route::get('/bookings/{booking}/rebook', [BookingRebookController::class, 'show'])->name('bookings.rebook.show');
+        Route::post('/bookings/{booking}/rebook', [BookingRebookController::class, 'store'])->name('bookings.rebook.store');
+        Route::get('/bookings/{booking}/history', [BookingRebookController::class, 'history'])->name('bookings.history');
+        Route::get('bookings/fix-historical-departures', [BookingController::class, 'fixHistoricalDepartures'])->name('bookings.fix-historical-departures');
+        Route::post('bookings/fix-historical-departures', [BookingController::class, 'fixHistoricalDepartures'])->name('bookings.fix-historical-departures.process');
+        
+        // ──── Factory Bookings ────
+        Route::resource('factory-bookings', FactoryBookingController::class);
+        Route::post('/factory-bookings/{factoryBooking}/start-processing', [FactoryBookingController::class, 'startProcessing'])->name('factory-bookings.start-processing');
+        Route::post('/factory-bookings/{factoryBooking}/complete', [FactoryBookingController::class, 'complete'])->name('factory-bookings.complete');
+        Route::post('/factory-bookings/{factoryBooking}/mark-departed', [FactoryBookingController::class, 'markDeparted'])->name('factory-bookings.mark-departed');
+        Route::get('/factory-bookings/{factoryBooking}/workflow', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'show'])->name('factory-bookings.workflow.show');
+        
+        // ──── Customers ────
+        Route::resource('customers', CustomerController::class);
+        Route::post('/customers/{customer}/toggle', [CustomerController::class, 'toggle'])->name('customers.toggle');
+        Route::resource('customer-depot-products', CustomerDepotProductController::class);
+        
+        // ──── Carriers ────
+        Route::resource('carriers', CarrierController::class);
+        Route::post('/carriers/{carrier}/toggle', [CarrierController::class, 'toggle'])->name('carriers.toggle');
+        Route::post('/carriers/bulk-action', [CarrierController::class, 'bulkAction'])->name('carriers.bulk-action');
+        Route::get('/carriers/cleanup', [CarrierController::class, 'cleanup'])->name('carriers.cleanup');
+        Route::post('/carriers/{id}/restore', [CarrierController::class, 'restore'])->name('carriers.restore');
+        
+        // Carrier merge routes
+        Route::prefix('carriers/merge')->name('carriers.merge.')->group(function () {
+            Route::get('/', [CarrierMergeController::class, 'index'])->name('index');
+            Route::get('/preview', [CarrierMergeController::class, 'preview'])->name('preview');
+            Route::post('/execute', [CarrierMergeController::class, 'merge'])->name('execute');
+            Route::get('/history', [CarrierMergeController::class, 'history'])->name('history');
+        });
+        
+        // ──── Depots ────
+        Route::resource('depots', DepotController::class);
+        
+        // Depot case ranges management
+        Route::prefix('depots/{depot}/case-ranges')->name('depots.case-ranges.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\DepotCaseRangeController::class, 'index'])->name('index');
+            Route::get('/create', [\App\Http\Controllers\Admin\DepotCaseRangeController::class, 'create'])->name('create');
+            Route::get('/{caseRange}/edit', [\App\Http\Controllers\Admin\DepotCaseRangeController::class, 'edit'])->name('edit');
+            Route::delete('/{caseRange}', [\App\Http\Controllers\Admin\DepotCaseRangeController::class, 'destroy'])->name('destroy');
+        });
+        
+        // Depot products management
+        Route::prefix('depots/{depot}/products')->name('depots.products.')->group(function () {
+            Route::post('/', [\App\Http\Controllers\Admin\DepotProductController::class, 'store'])->name('store');
+            Route::put('/{product}', [\App\Http\Controllers\Admin\DepotProductController::class, 'update'])->name('update');
+            Route::delete('/{product}', [\App\Http\Controllers\Admin\DepotProductController::class, 'destroy'])->name('destroy');
+        });
+        
+        // ──── Users Management ────
+        Route::resource('users', AdminController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+        Route::post('/users/{user}/switch-to', [UserSwitchController::class, 'switchTo'])->name('users.switch-to');
+        
+        // ──── Custom Roles ────
+        Route::resource('custom-roles', \App\Http\Controllers\Admin\CustomRoleController::class);
+        Route::post('/custom-roles/{customRole}/toggle', [\App\Http\Controllers\Admin\CustomRoleController::class, 'toggle'])->name('custom-roles.toggle');
+        Route::post('/custom-roles/create-predefined', [\App\Http\Controllers\Admin\CustomRoleController::class, 'createPredefined'])->name('custom-roles.create-predefined');
+        
+        // ──── Reports & Analytics ────
+        Route::get('/trailer-report', [WarehouseController::class, 'trailerReport'])->name('trailer-report');
+        Route::get('/tipping-workflow', [WarehouseController::class, 'tippingWorkflow'])->name('tipping-workflow');
+        
+        // ──── Tipping Workflow Management ────
+        Route::get('/tipping-workflow/dashboard', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'dashboard'])->name('tipping-workflow.dashboard');
+        Route::get('/tipping-workflow/{booking}', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'show'])->name('tipping-workflow.show');
+        Route::post('/tipping-workflow/{booking}/drop-trailer', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'dropTrailer'])->name('tipping-workflow.drop-trailer');
+        Route::post('/tipping-workflow/{booking}/drop-trailer-detached', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'dropTrailerDetached'])->name('tipping-workflow.drop-trailer-detached');
+        Route::post('/tipping-workflow/{booking}/move-to-location', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'moveToLocation'])->name('tipping-workflow.move-to-location');
+        Route::post('/tipping-workflow/{booking}/move-to-bay', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'moveToBay'])->name('tipping-workflow.move-to-bay');
+        Route::post('/tipping-workflow/{booking}/start-tipping', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'startTipping'])->name('tipping-workflow.start-tipping');
+        Route::post('/tipping-workflow/{booking}/complete-tipping', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'completeTipping'])->name('tipping-workflow.complete-tipping');
+        Route::post('/tipping-workflow/{booking}/unit-depart', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'unitDepart'])->name('tipping-workflow.unit-depart');
+        Route::post('/tipping-workflow/{booking}/collection-arrival', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'collectionArrival'])->name('tipping-workflow.collection-arrival');
+        Route::post('/tipping-workflow/{booking}/collection-depart', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'collectionDepart'])->name('tipping-workflow.collection-depart');
+        Route::post('/tipping-workflow/{booking}/trailer-depart', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'trailerDepart'])->name('tipping-workflow.trailer-depart');
+        
+        // ──── System Management ────
+        Route::resource('booking-types', BookingTypeController::class);
+        Route::resource('slot-templates', SlotTemplateController::class);
+        Route::post('slot-templates/{slotTemplate}/duplicate', [SlotTemplateController::class, 'duplicate'])->name('slot-templates.duplicate');
+        Route::post('slot-templates/bulk-duplicate', [SlotTemplateController::class, 'bulkDuplicate'])->name('slot-templates.bulk-duplicate');
+        Route::resource('booking-rules', BookingRulesController::class)->only(['index', 'store']);
+        
+        // Settings management
+        Route::get('/settings/dashboard', [AdminSettingsController::class, 'dashboard'])->name('settings.dashboard');
+        Route::post('/settings/tipping-workflow', [AdminSettingsController::class, 'updateTippingWorkflow'])->name('settings.tipping-workflow');
+        Route::post('/settings/outbound-module', [AdminSettingsController::class, 'updateOutboundModule'])->name('settings.outbound-module');
+        Route::post('/settings/inbound-module', [AdminSettingsController::class, 'updateInboundModule'])->name('settings.inbound-module');
+        Route::get('/settings/pallet-types', [\App\Http\Controllers\Admin\PalletTypeController::class, 'index'])->name('settings.pallet-types');
+        Route::get('/settings/pallet-types/create', [\App\Http\Controllers\Admin\PalletTypeController::class, 'create'])->name('settings.pallet-types.create');
+        Route::post('/settings/pallet-types', [\App\Http\Controllers\Admin\PalletTypeController::class, 'store'])->name('settings.pallet-types.store');
+        Route::get('/settings/pallet-types/{palletType}', [\App\Http\Controllers\Admin\PalletTypeController::class, 'show'])->name('settings.pallet-types.show');
+        Route::get('/settings/pallet-types/{palletType}/edit', [\App\Http\Controllers\Admin\PalletTypeController::class, 'edit'])->name('settings.pallet-types.edit');
+        Route::put('/settings/pallet-types/{palletType}', [\App\Http\Controllers\Admin\PalletTypeController::class, 'update'])->name('settings.pallet-types.update');
+        Route::patch('/settings/pallet-types/{palletType}/toggle-active', [\App\Http\Controllers\Admin\PalletTypeController::class, 'toggleActive'])->name('settings.pallet-types.toggle-active');
+        Route::delete('/settings/pallet-types/{palletType}', [\App\Http\Controllers\Admin\PalletTypeController::class, 'destroy'])->name('settings.pallet-types.destroy');
+        Route::get('/settings/container-sizes', [AdminSettingsController::class, 'containerSizes'])->name('settings.container-sizes');
+        
+        // ──── Inbound Module Routes (Slot Management) ────
+        Route::middleware(['inbound-access'])->group(function () {
+            // Slot management
+            Route::resource('slots', SlotController::class);
+            Route::get('/slots/generate/form', [SlotGeneratorController::class, 'form'])->name('slots.generate.form');
+            Route::post('/slots/generate', [SlotGeneratorController::class, 'generate'])->name('slots.generate');
+            Route::get('/slot-usage', [SlotUsageController::class, 'index'])->name('slot-usage.index');
+            Route::get('/slot-capacity', [SlotCapacityController::class, 'index'])->name('slot-capacity.index');
+            Route::post('/slot-capacity', [SlotCapacityController::class, 'store'])->name('slot-capacity.store');
+            Route::resource('slot-release-rules', SlotReleaseRuleController::class)
+                ->names('slotReleaseRules')
+                ->parameters(['slot-release-rules' => 'rule']);
+            
+            // Arrival time settings
+            Route::resource('arrival-time-settings', \App\Http\Controllers\Admin\ArrivalTimeSettingController::class);
+            Route::get('arrival-time-settings-preview', [\App\Http\Controllers\Admin\ArrivalTimeSettingController::class, 'preview'])->name('arrival-time-settings.preview');
+        }); // End Inbound Module Routes (Slot Management)
+        
+        // Operations routes
+        Route::post('/operations/move-to-collection-zone/{booking}', [\App\Http\Controllers\Admin\OperationsController::class, 'moveToCollectionZone'])->name('operations.move-to-collection-zone');
+        
+        // Factory booking workflow  
+        Route::get('/factory-booking-workflow/{factoryBooking}', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'show'])->name('factory-booking-workflow.show');
+        Route::post('/factory-booking-workflow/{factoryBooking}/drop-trailer', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'dropTrailer'])->name('factory-booking-workflow.drop-trailer');
+        Route::post('/factory-booking-workflow/{factoryBooking}/move-to-bay', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'moveToBay'])->name('factory-booking-workflow.move-to-bay');
+        Route::post('/factory-booking-workflow/{factoryBooking}/start-tipping', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'startTipping'])->name('factory-booking-workflow.start-tipping');
+        Route::post('/factory-booking-workflow/{factoryBooking}/complete-tipping', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'completeTipping'])->name('factory-booking-workflow.complete-tipping');
+        Route::post('/factory-booking-workflow/{factoryBooking}/trailer-depart', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'trailerDepart'])->name('factory-booking-workflow.trailer-depart');
+        }); // End Inbound Module Routes
+        
+        // ──── General Management Routes (Always Available) ────
+        Route::resource('products', ProductController::class);
+        Route::resource('trailer-types', \App\Http\Controllers\Admin\TrailerTypeController::class);
+        Route::post('trailer-types/{id}/restore', [\App\Http\Controllers\Admin\TrailerTypeController::class, 'restore'])->name('trailer-types.restore');
+        Route::post('trailer-types/{id}/toggle', [\App\Http\Controllers\Admin\TrailerTypeController::class, 'toggle'])->name('trailer-types.toggle');
+        
+        // ──── Inbound Module Routes (Tipping Operations) ────
+        Route::middleware(['inbound-access'])->group(function () {
+            Route::resource('tipping-locations', \App\Http\Controllers\Admin\TippingLocationController::class);
+            Route::resource('tipping-bays', \App\Http\Controllers\Admin\TippingBayController::class);
+        
+        // Tipping location management
+        Route::patch('/tipping-locations/{tippingLocation}/toggle-active', [\App\Http\Controllers\Admin\TippingLocationController::class, 'toggleActive'])->name('tipping-locations.toggle-active');
+        
+            // Tipping bay management  
+            Route::post('/tipping-bays/{tippingBay}/mark-available', [\App\Http\Controllers\Admin\TippingBayController::class, 'markAvailable'])->name('tipping-bays.mark-available');
+            
+            // Customer behavior analysis routes
+            Route::prefix('customer-behavior')->name('customer-behavior.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Admin\CustomerBehaviorController::class, 'index'])->name('index');
+                Route::get('/flagged', [\App\Http\Controllers\Admin\CustomerBehaviorController::class, 'flagged'])->name('flagged');
+                Route::get('/export', [\App\Http\Controllers\Admin\CustomerBehaviorController::class, 'export'])->name('export');
+                Route::get('/{customer}', [\App\Http\Controllers\Admin\CustomerBehaviorController::class, 'show'])->name('show');
+                Route::get('/{customer}/settings', [\App\Http\Controllers\Admin\CustomerBehaviorController::class, 'settings'])->name('settings');
+                Route::put('/{customer}/settings', [\App\Http\Controllers\Admin\CustomerBehaviorController::class, 'updateSettings'])->name('update-settings');
+                Route::get('/{customer}/reset-settings', [\App\Http\Controllers\Admin\CustomerBehaviorController::class, 'resetSettings'])->name('reset-settings');
+            });
+            
+            // Tipping guide
+            Route::get('tipping-guide', function () {
+                return view('admin.tipping-guide');
+            })->name('tipping-guide');
+        }); // End Inbound Module Routes (Tipping Operations)
+        
+        // Factory Tipping Time Targets Settings (Warehouse Management)
+        Route::get('settings/factory-tipping-targets', [WarehouseSettingsController::class, 'index'])->name('settings.factory-tipping-targets');
+        Route::post('settings/factory-tipping-targets', [WarehouseSettingsController::class, 'store'])->name('settings.factory-tipping-targets.store');
+        
+        // Debug route to check user functions and navigation
+        Route::get('debug/user-functions', function () {
+            $user = auth()->user();
+            if (!$user) {
+                return 'Not logged in';
+            }
+            
+            try {
+                $debug = [
+                    'user' => [
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'roles' => $user->getRoleNames()->toArray(),
+                    ],
+                    'functions' => [
+                        'total_assigned' => $user->functions()->count(),
+                        'has_settings_manage' => $user->hasFunction('settings.manage'),
+                        'has_settings_global' => $user->hasFunction('settings.manage.global'),
+                        'assigned_functions' => $user->functions()->pluck('function_key')->toArray(),
+                    ],
+                    'navigation' => \App\Helpers\NavigationHelper::getNavigationItems(),
+                ];
+                
+                return response()->json($debug, JSON_PRETTY_PRINT);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ]);
+            }
+        })->name('debug.user-functions');
+        
+        // Operational management routes
+        Route::get('queue-management', [\App\Http\Controllers\Admin\OperationalQueueController::class, 'dashboard'])->name('queue-management');
+        Route::get('operations-control', [BookingController::class, 'operationsControl'])->name('operations-control');
+        Route::get('trailer-operations-dashboard', [BookingController::class, 'trailerOperationsDashboard'])->name('trailer-operations-dashboard');
+        Route::get('trailer-location-report', [BookingController::class, 'trailerLocationReport'])->name('trailer-location-report');
+        Route::get('empty-unit-collection', [BookingController::class, 'emptyUnitCollection'])->name('empty-unit-collection');
+        Route::post('empty-unit-collection', [BookingController::class, 'emptyUnitCollection'])->name('empty-unit-collection.process');
+        
+        // Depot map routes
+        Route::prefix('depot-map')->name('depot-map.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\DepotMapController::class, 'index'])->name('index');
+            Route::get('/manage-positions/{depot}', [\App\Http\Controllers\Admin\DepotMapController::class, 'managePositions'])->name('manage-positions');
+            Route::get('/select-map-file/{depot?}', [\App\Http\Controllers\Admin\DepotMapController::class, 'selectMapFile'])->name('select-map-file');
+            Route::post('/refresh', [\App\Http\Controllers\Admin\DepotMapController::class, 'refresh'])->name('refresh');
+            Route::post('/change-bay', [\App\Http\Controllers\Admin\DepotMapController::class, 'changeBay'])->name('change-bay');
+            Route::post('/update-position', [\App\Http\Controllers\Admin\DepotMapController::class, 'updatePosition'])->name('update-position');
+            Route::post('/update-location-position', [\App\Http\Controllers\Admin\DepotMapController::class, 'updateLocationPosition'])->name('update-location-position');
+            Route::post('/delete-map-file', [\App\Http\Controllers\Admin\DepotMapController::class, 'deleteMapFile'])->name('delete-map-file');
+            Route::post('/update-map-file', [\App\Http\Controllers\Admin\DepotMapController::class, 'updateMapFile'])->name('update-map-file');
+            Route::post('/upload-map-file', [\App\Http\Controllers\Admin\DepotMapController::class, 'uploadMapFile'])->name('upload-map-file');
+        });
+        
+        // Arrivals management
+        Route::get('/arrivals', [BookingController::class, 'arrivals'])->name('arrivals.index');
+    });
+    
+    /**
+     * ───── Legacy Warehouse Routes (Redirect to App Routes) ─────
+     */
+    Route::prefix('warehouse')->as('warehouse.')->middleware(['role:warehouse|depot-admin|site-admin|admin'])->group(function () {
+        Route::get('/dashboard', function() { return redirect()->route('app.dashboard'); })->name('dashboard');
+        Route::get('/bookings', function() { return redirect()->route('app.bookings.index'); })->name('bookings');
+        Route::get('/factory-bookings', function() { return redirect()->route('app.factory-bookings.index'); })->name('factory-bookings');
+        Route::get('/trailer-report', function() { return redirect()->route('app.trailer-report'); })->name('trailer-report');
+        Route::get('/tipping-workflow', function() { return redirect()->route('app.tipping-workflow'); })->name('tipping-workflow');
+    });
+
+    /**
      * ───── Admin Routes ─────
      */
-    Route::prefix('admin')->as('admin.')->middleware(['role:admin'])->group(function () {
+    Route::prefix('admin')->as('admin.')->middleware(['role:admin|depot-admin|site-admin|warehouse'])->group(function () {
         Route::get('/dashboard', function () {
-            return redirect()->route('depot.dashboard');
+            return redirect()->route('warehouse.dashboard');
         })->name('dashboard');
 
         // Carrier merge routes (MUST come before resource routes to avoid conflicts)
@@ -145,11 +439,16 @@ Route::middleware('auth')->group(function () {
             'trailer-types' => \App\Http\Controllers\Admin\TrailerTypeController::class,
             'tipping-locations' => \App\Http\Controllers\Admin\TippingLocationController::class,
             'tipping-bays' => \App\Http\Controllers\Admin\TippingBayController::class,
+            'custom-roles' => \App\Http\Controllers\Admin\CustomRoleController::class,
         ]);
 
         // Additional trailer type actions
         Route::post('trailer-types/{id}/restore', [\App\Http\Controllers\Admin\TrailerTypeController::class, 'restore'])->name('trailer-types.restore');
         Route::post('trailer-types/{id}/toggle', [\App\Http\Controllers\Admin\TrailerTypeController::class, 'toggle'])->name('trailer-types.toggle');
+
+        // Custom role management actions
+        Route::post('custom-roles/{customRole}/toggle', [\App\Http\Controllers\Admin\CustomRoleController::class, 'toggle'])->name('custom-roles.toggle');
+        Route::post('custom-roles/create-predefined', [\App\Http\Controllers\Admin\CustomRoleController::class, 'createPredefined'])->name('custom-roles.create-predefined');
 
         // Additional tipping location actions  
         Route::patch('tipping-locations/{tippingLocation}/toggle-active', [\App\Http\Controllers\Admin\TippingLocationController::class, 'toggleActive'])->name('tipping-locations.toggle-active');
@@ -172,12 +471,7 @@ Route::middleware('auth')->group(function () {
         Route::get('slots/generate', [SlotGeneratorController::class, 'index'])->name('slots.generate.form');
         Route::post('slots/generate', [SlotGeneratorController::class, 'store'])->name('slots.generate');
         Route::resource('slots', SlotController::class)->except(['show']);
-        Route::resource('slot-release-rules', SlotReleaseRuleController::class)
-            ->names('slotReleaseRules')
-            ->parameters(['slot-release-rules' => 'rule']);
 
-        Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
-        Route::post('settings', [SettingsController::class, 'store'])->name('settings.store');
 
         // User switching routes (testing only)
         Route::post('switch-user/{user}', [UserSwitchController::class, 'switchTo'])->name('switch-user');
@@ -192,6 +486,8 @@ Route::middleware('auth')->group(function () {
 
         Route::get('settings/dashboard', [AdminSettingsController::class, 'dashboard'])->name('settings.dashboard');
         Route::post('settings/tipping-workflow', [AdminSettingsController::class, 'updateTippingWorkflow'])->name('settings.tipping-workflow');
+        Route::post('settings/outbound-module', [AdminSettingsController::class, 'updateOutboundModule'])->name('settings.outbound-module');
+        Route::post('settings/inbound-module', [AdminSettingsController::class, 'updateInboundModule'])->name('settings.inbound-module');
         
         // Pallet Types Management
         Route::get('settings/pallet-types', [AdminSettingsController::class, 'palletTypes'])->name('settings.pallet-types');
@@ -217,13 +513,16 @@ Route::middleware('auth')->group(function () {
      */
     Route::prefix('admin')->as('admin.')->middleware(['role:admin|depot-admin|site-admin'])->group(function () {
         
-        // IMPORTANT: Specific routes MUST come before resource routes to avoid conflicts
-        // Historical data fixes
-        Route::get('bookings/fix-historical-departures', [BookingController::class, 'fixHistoricalDepartures'])->name('bookings.fix-historical-departures');
-        Route::post('bookings/fix-historical-departures', [BookingController::class, 'fixHistoricalDepartures'])->name('bookings.fix-historical-departures.process');
-        
-        Route::resource('bookings', BookingController::class);
-        Route::get('bookings-streamlined', [BookingController::class, 'indexStreamlined'])->name('bookings.streamlined');
+        // ──── Inbound Module Routes ────
+        Route::middleware(['inbound-access'])->group(function () {
+            // IMPORTANT: Specific routes MUST come before resource routes to avoid conflicts
+            // Historical data fixes
+            Route::get('bookings/fix-historical-departures', [BookingController::class, 'fixHistoricalDepartures'])->name('bookings.fix-historical-departures');
+            Route::post('bookings/fix-historical-departures', [BookingController::class, 'fixHistoricalDepartures'])->name('bookings.fix-historical-departures.process');
+            
+            Route::resource('bookings', BookingController::class);
+            Route::get('bookings-streamlined', [BookingController::class, 'indexStreamlined'])->name('bookings.streamlined');
+        }); // End Inbound Module Routes
         
         // Depot Map Routes
         Route::prefix('depot-map')->name('depot-map.')->group(function () {
@@ -711,7 +1010,7 @@ Route::middleware('auth')->group(function () {
      */
     Route::prefix('site-admin')->as('site.')->middleware(['role:admin|site-admin'])->group(function () {
         Route::get('/dashboard', function () {
-            return redirect()->route('depot.dashboard');
+            return redirect()->route('warehouse.dashboard');
         })->name('dashboard');
         Route::get('/search', [SiteAdminDashboardController::class, 'search'])->name('search');
         Route::get('/arrivals', [SiteAdminDashboardController::class, 'arrivals'])->name('arrivals.index');
@@ -726,9 +1025,7 @@ Route::middleware('auth')->group(function () {
      * ───── Customer Routes ─────
      */
     Route::prefix('customer')->middleware(['role:customer'])->as('customer.')->group(function () {
-        Route::get('/dashboard', function () {
-            return redirect()->route('depot.dashboard');
-        })->name('dashboard');
+        Route::get('/dashboard', [\App\Http\Controllers\Customer\CustomerDashboardController::class, 'index'])->name('dashboard');
 
         // Booking management
         Route::resource('bookings', \App\Http\Controllers\Customer\CustomerBookingController::class)->except(['destroy']);
@@ -786,6 +1083,73 @@ Route::middleware('auth')->group(function () {
             'customers' => $user->customers->pluck('name', 'id'),
         ]);
     })->name('test-roles');
+
+    // Outbound Module Routes (Beta Testing)
+    Route::prefix('outbound')->as('outbound.')->middleware(['role:admin|depot-admin|site-admin|warehouse', 'outbound-access'])->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [\App\Modules\Outbound\Controllers\Admin\OutboundDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/load-status-counts', [\App\Modules\Outbound\Controllers\Admin\OutboundDashboardController::class, 'getLoadStatusCounts'])->name('dashboard.load-status-counts');
+        Route::get('/order-status-counts', [\App\Modules\Outbound\Controllers\Admin\OutboundDashboardController::class, 'getOrderStatusCounts'])->name('dashboard.order-status-counts');
+        Route::get('/upcoming-collections', [\App\Modules\Outbound\Controllers\Admin\OutboundDashboardController::class, 'getUpcomingCollections'])->name('dashboard.upcoming-collections');
+        
+        // Load Management
+        Route::resource('loads', \App\Modules\Outbound\Controllers\Admin\OutboundLoadController::class);
+        Route::get('/loads/{load}/timing-analysis', [\App\Modules\Outbound\Controllers\Admin\OutboundLoadController::class, 'timingAnalysis'])->name('loads.timing-analysis');
+        Route::post('/loads/{load}/update-status', [\App\Modules\Outbound\Controllers\Admin\OutboundLoadController::class, 'updateStatus'])->name('loads.update-status');
+        Route::get('/loads/{load}/add-order', [\App\Modules\Outbound\Controllers\Admin\OutboundLoadController::class, 'addOrderForm'])->name('loads.add-order');
+        Route::post('/loads/{load}/add-order', [\App\Modules\Outbound\Controllers\Admin\OutboundLoadController::class, 'addOrder'])->name('loads.store-order');
+        Route::get('/loads/{load}/add-collection', [\App\Modules\Outbound\Controllers\Admin\OutboundLoadController::class, 'addCollectionForm'])->name('loads.add-collection');
+        Route::post('/loads/{load}/add-collection', [\App\Modules\Outbound\Controllers\Admin\OutboundLoadController::class, 'addCollection'])->name('loads.store-collection');
+        
+        // Customer Address Management
+        Route::resource('addresses', \App\Modules\Outbound\Controllers\Admin\CustomerAddressController::class);
+        Route::post('/addresses/{address}/set-default', [\App\Modules\Outbound\Controllers\Admin\CustomerAddressController::class, 'setDefault'])->name('addresses.set-default');
+        Route::post('/addresses/{address}/toggle-active', [\App\Modules\Outbound\Controllers\Admin\CustomerAddressController::class, 'toggleActive'])->name('addresses.toggle-active');
+        
+        // Physical Load Registration (Driver Arrivals)
+        Route::get('/arrivals', [\App\Modules\Outbound\Controllers\Admin\PhysicalLoadController::class, 'dashboard'])->name('arrivals.dashboard');
+        Route::get('/arrivals/register', [\App\Modules\Outbound\Controllers\Admin\PhysicalLoadController::class, 'create'])->name('arrivals.create');
+        Route::post('/arrivals/register', [\App\Modules\Outbound\Controllers\Admin\PhysicalLoadController::class, 'store'])->name('arrivals.store');
+        Route::get('/arrivals/{physicalLoad}', [\App\Modules\Outbound\Controllers\Admin\PhysicalLoadController::class, 'show'])->name('physical-loads.show');
+        Route::post('/arrivals/{physicalLoad}/match-orders', [\App\Modules\Outbound\Controllers\Admin\PhysicalLoadController::class, 'triggerMatching'])->name('physical-loads.trigger-matching');
+        Route::post('/arrivals/{physicalLoad}/update-status', [\App\Modules\Outbound\Controllers\Admin\PhysicalLoadController::class, 'updateStatus'])->name('physical-loads.update-status');
+        Route::post('/arrivals/process-all', [\App\Modules\Outbound\Controllers\Admin\PhysicalLoadController::class, 'processAllPending'])->name('arrivals.process-all');
+        
+        // File Import System
+        Route::prefix('imports')->name('imports.')->group(function () {
+            Route::get('/dashboard', [\App\Modules\Outbound\Controllers\Admin\ImportController::class, 'dashboard'])->name('dashboard');
+            Route::get('/upload', [\App\Modules\Outbound\Controllers\Admin\ImportController::class, 'create'])->name('create');
+            Route::post('/upload', [\App\Modules\Outbound\Controllers\Admin\ImportController::class, 'store'])->name('store');
+            Route::get('/{fileUpload}', [\App\Modules\Outbound\Controllers\Admin\ImportController::class, 'show'])->name('show');
+            Route::get('/{fileUpload}/review', [\App\Modules\Outbound\Controllers\Admin\ImportController::class, 'review'])->name('review');
+            Route::post('/{fileUpload}/approve', [\App\Modules\Outbound\Controllers\Admin\ImportController::class, 'approve'])->name('approve');
+            Route::post('/{fileUpload}/reject', [\App\Modules\Outbound\Controllers\Admin\ImportController::class, 'reject'])->name('reject');
+            Route::post('/{fileUpload}/reprocess', [\App\Modules\Outbound\Controllers\Admin\ImportController::class, 'reprocess'])->name('reprocess');
+            Route::get('/{fileUpload}/download', [\App\Modules\Outbound\Controllers\Admin\ImportController::class, 'download'])->name('download');
+            Route::delete('/{fileUpload}', [\App\Modules\Outbound\Controllers\Admin\ImportController::class, 'destroy'])->name('destroy');
+            
+            // Template management
+            Route::get('/templates/list', [\App\Modules\Outbound\Controllers\Admin\ImportController::class, 'templates'])->name('templates');
+            Route::get('/templates/create', [\App\Modules\Outbound\Controllers\Admin\ImportController::class, 'createTemplate'])->name('templates.create');
+            Route::post('/templates/create', [\App\Modules\Outbound\Controllers\Admin\ImportController::class, 'storeTemplate'])->name('templates.store');
+            Route::get('/templates/{template}/edit', [\App\Modules\Outbound\Controllers\Admin\ImportController::class, 'editTemplate'])->name('templates.edit');
+            Route::put('/templates/{template}', [\App\Modules\Outbound\Controllers\Admin\ImportController::class, 'updateTemplate'])->name('templates.update');
+            Route::patch('/templates/{template}/toggle', [\App\Modules\Outbound\Controllers\Admin\ImportController::class, 'toggleTemplate'])->name('templates.toggle');
+        });
+        
+        // Order Management (placeholder routes)
+        Route::get('/orders', function() { 
+            return redirect()->route('outbound.loads.index'); 
+        })->name('orders.index');
+        Route::get('/orders/{order}', function() { 
+            return redirect()->back(); 
+        })->name('orders.show');
+        
+        // Collection Management (placeholder routes)
+        Route::get('/collections/{collection}', function() { 
+            return redirect()->back(); 
+        })->name('collections.show');
+    });
 
     Route::fallback(function () {
         return auth()->check()

@@ -11,7 +11,7 @@ class TippingLocationController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth', 'role:admin|depot-admin|site-admin']);
+        $this->middleware(['auth', 'function-access']);
     }
 
     public function index(Request $request)

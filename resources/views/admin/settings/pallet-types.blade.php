@@ -1,6 +1,4 @@
 <x-app-layout>
-  @include('layouts.admin-nav')
-
   <x-slot name="header">
     <div class="flex items-center justify-between">
       <h2 class="font-semibold text-xl">Pallet Types Management</h2>
@@ -9,23 +7,20 @@
                 class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
           ➕ Add Pallet Type
         </button>
-        <a href="{{ route('admin.settings.dashboard') }}"
+        <a href="{{ route('app.settings.dashboard') }}"
            class="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">
           Back to Settings
         </a>
       </div>
     </div>
   </x-slot>
-
   <div class="py-6 max-w-7xl mx-auto">
-    
     {{-- Success/Error Messages --}}
     @if(session('success'))
       <div class="mb-6 p-4 bg-green-100 border border-green-300 rounded-lg">
         <p class="text-green-800">{{ session('success') }}</p>
       </div>
     @endif
-    
     @if($errors->any())
       <div class="mb-6 p-4 bg-red-100 border border-red-300 rounded-lg">
         <ul class="text-red-800">
@@ -35,14 +30,12 @@
         </ul>
       </div>
     @endif
-
     {{-- Pallet Types Table --}}
     <div class="bg-white rounded-lg shadow">
       <div class="px-6 py-4 border-b border-gray-200">
         <h3 class="text-lg font-semibold text-gray-800">📦 Pallet Types</h3>
         <p class="text-sm text-gray-600 mt-1">Manage pallet types used in bookings and tipping operations</p>
       </div>
-      
       <div class="overflow-x-auto">
         <table class="w-full">
           <thead class="bg-gray-50">
@@ -94,12 +87,11 @@
       </div>
     </div>
   </div>
-
   {{-- Add Pallet Type Modal --}}
   <div id="addModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
       <h3 class="text-lg font-semibold mb-4">Add New Pallet Type</h3>
-      <form action="{{ route('admin.settings.pallet-types.store') }}" method="POST">
+      <form action="{{ route('app.settings.pallet-types.store') }}" method="POST">
         @csrf
         <div class="space-y-4">
           <div>
@@ -141,7 +133,6 @@
       </form>
     </div>
   </div>
-
   {{-- Edit Pallet Type Modal --}}
   <div id="editModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
@@ -186,7 +177,6 @@
       </form>
     </div>
   </div>
-
   {{-- Delete Confirmation Modal --}}
   <div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
@@ -211,19 +201,16 @@
       </form>
     </div>
   </div>
-
   <script>
     // Add Modal Functions
     function openAddModal() {
       document.getElementById('addModal').classList.remove('hidden');
       document.getElementById('addModal').classList.add('flex');
     }
-
     function closeAddModal() {
       document.getElementById('addModal').classList.add('hidden');
       document.getElementById('addModal').classList.remove('flex');
     }
-
     // Edit Modal Functions
     function openEditModal(id, name, code, description, isActive) {
       document.getElementById('editForm').action = `/admin/settings/pallet-types/${id}`;
@@ -231,30 +218,24 @@
       document.getElementById('editCode').value = code;
       document.getElementById('editDescription').value = description;
       document.getElementById('editActive').checked = isActive;
-      
       document.getElementById('editModal').classList.remove('hidden');
       document.getElementById('editModal').classList.add('flex');
     }
-
     function closeEditModal() {
       document.getElementById('editModal').classList.add('hidden');
       document.getElementById('editModal').classList.remove('flex');
     }
-
     // Delete Modal Functions
     function confirmDelete(id, name) {
       document.getElementById('deleteForm').action = `/admin/settings/pallet-types/${id}`;
       document.getElementById('deleteName').textContent = name;
-      
       document.getElementById('deleteModal').classList.remove('hidden');
       document.getElementById('deleteModal').classList.add('flex');
     }
-
     function closeDeleteModal() {
       document.getElementById('deleteModal').classList.add('hidden');
       document.getElementById('deleteModal').classList.remove('flex');
     }
-
     // Close modals when clicking outside
     document.addEventListener('click', function(e) {
       if (e.target.id === 'addModal') closeAddModal();

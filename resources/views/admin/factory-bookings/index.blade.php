@@ -1,6 +1,4 @@
 <x-app-layout>
-  @include('layouts.admin-nav')
-
   <x-slot name="header">
     <div class="flex items-center justify-between">
       <div>
@@ -8,42 +6,38 @@
         <p class="text-sm text-gray-600 mt-1">Ad-hoc deliveries registered on arrival</p>
       </div>
       <div class="flex gap-2">
-        <a href="{{ route('admin.bookings.index') }}"
+        <a href="{{ route('app.bookings.index') }}"
            class="px-3 py-1 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-sm">
           📋 Scheduled Bookings
         </a>
-        <a href="{{ route('admin.factory-bookings.create') }}"
+        <a href="{{ route('app.factory-bookings.create') }}"
            class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
           + Register Factory Delivery
         </a>
       </div>
     </div>
   </x-slot>
-
   <div class="py-6 max-w-7xl mx-auto">
     @if(session('success'))
       <div class="mb-4 p-3 bg-green-100 text-green-800 rounded">
         {{ session('success') }}
       </div>
     @endif
-
     @if(session('error'))
       <div class="mb-4 p-3 bg-red-100 text-red-800 rounded">
         {{ session('error') }}
       </div>
     @endif
-
     {{-- Quick Search and Filters --}}
     <div class="mb-6 bg-white rounded-lg shadow-sm border p-4">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {{-- Search Box --}}
         <div>
-          <form method="GET" action="{{ route('admin.factory-bookings.index') }}" class="flex gap-2">
+          <form method="GET" action="{{ route('app.factory-bookings.index') }}" class="flex gap-2">
             {{-- Preserve existing filters --}}
             @foreach(request()->except(['search', 'page']) as $key => $value)
               <input type="hidden" name="{{ $key }}" value="{{ $value }}">
             @endforeach
-            
             <input type="text" 
                    name="search" 
                    value="{{ request('search') }}"
@@ -54,15 +48,13 @@
             </button>
           </form>
         </div>
-
         {{-- Depot Filter --}}
         <div>
-          <form method="GET" action="{{ route('admin.factory-bookings.index') }}" class="flex gap-2">
+          <form method="GET" action="{{ route('app.factory-bookings.index') }}" class="flex gap-2">
             {{-- Preserve existing filters --}}
             @foreach(request()->except(['depot_id', 'page']) as $key => $value)
               <input type="hidden" name="{{ $key }}" value="{{ $value }}">
             @endforeach
-            
             <select name="depot_id" onchange="this.form.submit()" class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm">
               <option value="">All Depots</option>
               @foreach($depots as $depot)
@@ -73,15 +65,13 @@
             </select>
           </form>
         </div>
-
         {{-- Status Filter --}}
         <div>
-          <form method="GET" action="{{ route('admin.factory-bookings.index') }}" class="flex gap-2">
+          <form method="GET" action="{{ route('app.factory-bookings.index') }}" class="flex gap-2">
             {{-- Preserve existing filters --}}
             @foreach(request()->except(['status', 'page']) as $key => $value)
               <input type="hidden" name="{{ $key }}" value="{{ $value }}">
             @endforeach
-            
             <select name="status" onchange="this.form.submit()" class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm">
               <option value="">All Status</option>
               <option value="arrived" {{ request('status') == 'arrived' ? 'selected' : '' }}>Arrived</option>
@@ -92,7 +82,6 @@
           </form>
         </div>
       </div>
-
       @if(request()->hasAny(['search', 'depot_id', 'status']))
         <div class="mt-3 pt-3 border-t border-gray-200">
           <div class="flex items-center justify-between">
@@ -107,14 +96,13 @@
                 <span class="mr-3">📊 <strong>Status:</strong> {{ ucfirst(request('status')) }}</span>
               @endif
             </div>
-            <a href="{{ route('admin.factory-bookings.index') }}" class="text-sm text-blue-600 hover:text-blue-800">
+            <a href="{{ route('app.factory-bookings.index') }}" class="text-sm text-blue-600 hover:text-blue-800">
               Clear Filters
             </a>
           </div>
         </div>
       @endif
     </div>
-
     {{-- Priority Guide --}}
     <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
       <h3 class="text-sm font-semibold text-blue-800 mb-2">🎯 Priority System</h3>
@@ -141,7 +129,6 @@
         </div>
       </div>
     </div>
-
     {{-- Factory Bookings Table --}}
     <div class="bg-white rounded-lg shadow overflow-hidden">
       <table class="min-w-full">
@@ -163,7 +150,6 @@
               @elseif($factoryBooking->status === 'completed') bg-green-50 
               @elseif($factoryBooking->status === 'processing') bg-blue-50 
               @endif">
-              
               {{-- Reference --}}
               <td class="px-4 py-3">
                 <div class="flex items-center">
@@ -183,7 +169,6 @@
                   </div>
                 </div>
               </td>
-
               {{-- Priority --}}
               <td class="px-4 py-3">
                 <div class="text-center">
@@ -192,7 +177,6 @@
                   </span>
                 </div>
               </td>
-
               {{-- Customer --}}
               <td class="px-4 py-3">
                 <div class="text-sm font-medium text-gray-900">{{ $factoryBooking->customer->name }}</div>
@@ -200,7 +184,6 @@
                   <div class="text-xs text-gray-500">via {{ $factoryBooking->carrier->name }}</div>
                 @endif
               </td>
-
               {{-- Vehicle Details --}}
               <td class="px-4 py-3">
                 <div class="text-sm">
@@ -213,7 +196,6 @@
                   @endif
                 </div>
               </td>
-
               {{-- Arrived --}}
               <td class="px-4 py-3">
                 <div class="text-sm">
@@ -221,7 +203,6 @@
                   <div class="text-xs text-gray-500">{{ $factoryBooking->getTimeOnSite() }} on site</div>
                 </div>
               </td>
-
               {{-- Status --}}
               <td class="px-4 py-3">
                 <div>
@@ -233,26 +214,23 @@
                   @endif
                 </div>
               </td>
-
               {{-- Actions --}}
               <td class="px-4 py-3">
                 <div class="flex flex-col space-y-1">
-                  <a href="{{ route('admin.factory-bookings.show', $factoryBooking) }}" 
+                  <a href="{{ route('app.factory-bookings.show', $factoryBooking) }}" 
                      class="text-sm text-blue-600 hover:text-blue-800">
                     View Details
                   </a>
-                  
                   @if($factoryBooking->status === 'arrived')
-                    <form method="POST" action="{{ route('admin.factory-bookings.start-processing', $factoryBooking) }}" class="inline">
+                    <form method="POST" action="{{ route('app.factory-bookings.start-processing', $factoryBooking) }}" class="inline">
                       @csrf
                       <button type="submit" class="text-sm text-green-600 hover:text-green-800">
                         Start Processing
                       </button>
                     </form>
                   @endif
-
                   @if(in_array($factoryBooking->status, ['arrived', 'processing']))
-                    <a href="{{ route('admin.factory-bookings.workflow.show', $factoryBooking) }}" 
+                    <a href="{{ route('app.factory-bookings.workflow.show', $factoryBooking) }}" 
                        class="text-sm text-orange-600 hover:text-orange-800">
                       🚛 Manage Workflow
                     </a>
@@ -269,12 +247,12 @@
                   <div class="text-sm text-gray-400 mb-4">
                     @if(request()->hasAny(['search', 'depot_id', 'status']))
                       Try adjusting your filters or
-                      <a href="{{ route('admin.factory-bookings.index') }}" class="text-blue-600 hover:text-blue-800">clear all filters</a>
+                      <a href="{{ route('app.factory-bookings.index') }}" class="text-blue-600 hover:text-blue-800">clear all filters</a>
                     @else
                       Register the first factory delivery to get started
                     @endif
                   </div>
-                  <a href="{{ route('admin.factory-bookings.create') }}" 
+                  <a href="{{ route('app.factory-bookings.create') }}" 
                      class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                     + Register Factory Delivery
                   </a>
@@ -284,7 +262,6 @@
           @endforelse
         </tbody>
       </table>
-
       {{-- Pagination --}}
       @if($factoryBookings->hasPages())
         <div class="px-4 py-3 border-t border-gray-200">
@@ -292,7 +269,6 @@
         </div>
       @endif
     </div>
-
     {{-- Summary Stats --}}
     @if($factoryBookings->count() > 0)
       <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">

@@ -15,5 +15,5 @@
 </div>
 <div class="mt-4">
   <button type="submit" class="btn">Save</button>
-  <a href="{{ route('admin.depots.case-ranges.index', \$depot) }}" class="btn-secondary">Cancel</a>
+  <a href="{{ route('app.depots.case-ranges.index', \$depot) }}" class="btn-secondary">Cancel</a>
 </div>

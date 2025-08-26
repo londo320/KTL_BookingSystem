@@ -2,25 +2,67 @@
 
 @php
     $palletTypes = \App\Models\PalletType::active()->orderBy('name')->get();
-    $existingData = $booking->poNumbers()->with('lines.expectedPalletType', 'lines.actualPalletType')->get()->map(function($po) {
-        return [
-            'po_number' => $po->po_number,
-            'lines' => $po->lines->map(function($line) {
-                return [
-                    'line_number' => $line->line_number,
-                    'expected_cases' => $line->expected_cases,
-                    'expected_pallets' => $line->expected_pallets,
-                    'expected_pallet_type_id' => $line->expected_pallet_type_id,
-                    'actual_cases' => $line->actual_cases,
-                    'actual_pallets' => $line->actual_pallets,
-                    'actual_pallet_type_id' => $line->actual_pallet_type_id,
-                ];
-            })->toArray()
-        ];
-    });
+    
+    // Check if we have old input data (from validation errors)
+    $oldPoNumbers = old('po_numbers', []);
+    
+    if (!empty($oldPoNumbers)) {
+        // Use old input data if available (validation failed)
+        $existingData = collect($oldPoNumbers)->map(function($po) {
+            return [
+                'po_number' => $po['po_number'] ?? '',
+                'lines' => collect($po['lines'] ?? [])->map(function($line) {
+                    return [
+                        'line_number' => $line['line_number'] ?? 1,
+                        'expected_cases' => $line['expected_cases'] ?? null,
+                        'expected_pallets' => $line['expected_pallets'] ?? null,
+                        'expected_pallet_type_id' => $line['expected_pallet_type_id'] ?? '',
+                        'actual_cases' => $line['actual_cases'] ?? null,
+                        'actual_pallets' => $line['actual_pallets'] ?? null,
+                        'actual_pallet_type_id' => $line['actual_pallet_type_id'] ?? '',
+                        'pallet_entries' => $line['pallet_entries'] ?? [['cases' => '', 'pallets' => '', 'type_id' => '']],
+                    ];
+                })->toArray()
+            ];
+        });
+    } else {
+        // Use existing booking data - transform to new pallet_entries structure
+        $existingData = $booking->poNumbers()->with('lines.expectedPalletType', 'lines.actualPalletType')->get()->map(function($po) {
+            return [
+                'po_number' => $po->po_number,
+                'lines' => $po->lines->map(function($line) {
+                    // Convert existing expected_cases/pallets to pallet_entries format
+                    $palletEntries = [];
+                    if ($line->expected_cases > 0 || $line->expected_pallets > 0) {
+                        $palletEntries[] = [
+                            'cases' => $line->expected_cases ?: '',
+                            'pallets' => $line->expected_pallets ?: '',
+                            'type_id' => $line->expected_pallet_type_id ?: '',
+                        ];
+                    }
+                    
+                    // If no entries, add empty one for form
+                    if (empty($palletEntries)) {
+                        $palletEntries[] = ['cases' => '', 'pallets' => '', 'type_id' => ''];
+                    }
+                    
+                    return [
+                        'line_number' => $line->line_number,
+                        'expected_cases' => $line->expected_cases,
+                        'expected_pallets' => $line->expected_pallets,
+                        'expected_pallet_type_id' => $line->expected_pallet_type_id,
+                        'actual_cases' => $line->actual_cases,
+                        'actual_pallets' => $line->actual_pallets,
+                        'actual_pallet_type_id' => $line->actual_pallet_type_id,
+                        'pallet_entries' => $palletEntries, // Add the new format for editing
+                    ];
+                })->toArray()
+            ];
+        });
+    }
 @endphp
 
-<div x-data="poNumbersManager()" x-init="init({{ $existingData->toJson() }}); window.poNumbersManagerInstance = this;">
+<div x-data="poNumbersManager()" x-init="init({{ $existingData->toJson() }}); window.poNumbersManagerInstance = this;" @if($readonly) data-readonly="true" @endif>
     <div class="bg-white border rounded-lg p-4">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-medium text-gray-900">PO Numbers & Lines</h3>
@@ -315,6 +357,12 @@ function poNumbersManager() {
         
         init(existingData = []) {
             this.poNumbers = existingData.length > 0 ? existingData : [];
+            
+            // If no existing PO data and not readonly, add a default empty PO for customer creation
+            if (this.poNumbers.length === 0 && !document.querySelector('[data-readonly="true"]')) {
+                this.addPoNumber();
+                this.addPoLine(0);
+            }
         },
         
         addPoNumber() {

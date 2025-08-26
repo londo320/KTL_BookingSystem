@@ -15,7 +15,7 @@ class CustomerBehaviorController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth', 'role:admin|depot-admin|site-admin']);
+        $this->middleware(['auth', 'function-access']);
     }
 
     public function settings(Customer $customer)
@@ -25,7 +25,7 @@ class CustomerBehaviorController extends Controller
         $currentSettings = CustomerBehaviorSetting::getCustomerSettings($customer->id);
         $availableSettings = CustomerBehaviorSetting::getAvailableSettings();
 
-        return view('admin.customer-behavior.settings', compact(
+        return view('warehouse.customer-behavior.settings', compact(
             'customer',
             'currentSettings',
             'availableSettings'
@@ -109,7 +109,7 @@ class CustomerBehaviorController extends Controller
         // Overall stats
         $overallStats = $this->getOverallStats($days);
 
-        return view('admin.customer-behavior.index', compact(
+        return view('warehouse.customer-behavior.index', compact(
             'customers',
             'overallStats',
             'days',
@@ -164,7 +164,7 @@ class CustomerBehaviorController extends Controller
         // Behavioral patterns over time
         $patterns = $this->getCustomerPatterns($customer->id, $days);
 
-        return view('admin.customer-behavior.show', compact(
+        return view('warehouse.customer-behavior.show', compact(
             'customer',
             'customerStats',
             'recentHistory',
@@ -181,7 +181,7 @@ class CustomerBehaviorController extends Controller
         // Get customers flagged for excessive behavior
         $flaggedCustomers = $this->getFlaggedCustomers($days);
 
-        return view('admin.customer-behavior.flagged', compact(
+        return view('warehouse.customer-behavior.flagged', compact(
             'flaggedCustomers',
             'days'
         ));

@@ -1,12 +1,10 @@
 <x-app-layout>
-  @include('layouts.admin-nav')
-
   <x-slot name="header">
     <div class="flex items-center justify-between">
       <h2 class="font-semibold text-xl">🔧 Fix Historical Departure Records</h2>
       <div class="flex space-x-2">
         @php
-          $routePrefix = request()->route()->getPrefix() === 'depot-admin' ? 'depot.' : 'admin.';
+          $routePrefix = request()->route()->getPrefix() === 'depot-admin' ? 'app.' : 'app.';
         @endphp
         <a href="{{ route($routePrefix . 'bookings.index') }}" 
            class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
@@ -15,14 +13,12 @@
       </div>
     </div>
   </x-slot>
-
   <div class="py-6 max-w-7xl mx-auto">
     @if(session('success'))
       <div class="mb-6 p-4 bg-green-100 border border-green-300 rounded-lg">
         <p class="text-green-800">{{ session('success') }}</p>
       </div>
     @endif
-
     <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
       <div class="flex">
         <div class="flex-shrink-0">
@@ -37,7 +33,6 @@
         </div>
       </div>
     </div>
-
     @if($bookingsNeedingFix->count() > 0)
       <div class="bg-white rounded-lg shadow">
         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -53,7 +48,6 @@
             </button>
           </form>
         </div>
-        
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -122,7 +116,6 @@
         </div>
       </div>
     @endif
-
     <!-- Information Panel -->
     <div class="mt-6 bg-gray-50 rounded-lg p-6">
       <h4 class="text-sm font-medium text-gray-800 mb-3">How this fix works:</h4>

@@ -38,7 +38,7 @@ class BookingRebookController extends Controller
         // Check rebooking restrictions
         $restrictions = $this->checkRebookingRestrictions($booking);
 
-        return view('admin.bookings.rebook', compact(
+        return view('warehouse.bookings.rebook', compact(
             'booking',
             'availableSlots',
             'customerStats',
@@ -370,7 +370,7 @@ class BookingRebookController extends Controller
             $history = collect($history->values());
         }
 
-        return view('admin.bookings.history', compact('booking', 'history'))->with([
+        return view('warehouse.bookings.history', compact('booking', 'history'))->with([
             'sortOrder' => $sortOrder,
             'actualRebookCount' => $actualRebookCount,
         ]);

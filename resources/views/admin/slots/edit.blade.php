@@ -4,7 +4,7 @@
   </x-slot>
 
   <div class="max-w-xl mx-auto py-6">
-    <form method="POST" action="{{ route('admin.slots.update', $slot->id) }}">
+    <form method="POST" action="{{ route('app.slots.update', $slot->id) }}">
       @csrf
       @method('PUT')
 

@@ -1,31 +1,26 @@
 <x-app-layout>
-  @include('layouts.admin-nav')
-
   <x-slot name="header">
     <div class="flex items-center justify-between">
       <h2 class="font-semibold text-xl">Pallet Types Management</h2>
       <div class="flex gap-2">
-        <a href="{{ route('admin.pallet-types.create') }}"
+        <a href="{{ route('app.settings.pallet-types.create') }}"
            class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
           + Add Pallet Type
         </a>
       </div>
     </div>
   </x-slot>
-
   <div class="py-6 max-w-7xl mx-auto">
     @if(session('success'))
       <div class="mb-4 p-3 bg-green-100 text-green-800 rounded">
         {{ session('success') }}
       </div>
     @endif
-
     @if(session('error'))
       <div class="mb-4 p-3 bg-red-100 text-red-800 rounded">
         {{ session('error') }}
       </div>
     @endif
-
     {{-- Filters --}}
     <form method="GET" class="mb-4 flex flex-wrap gap-4 items-end bg-gray-50 p-4 rounded">
       <div>
@@ -44,10 +39,9 @@
       </div>
       <div class="flex space-x-2">
         <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Filter</button>
-        <a href="{{ route('admin.pallet-types.index') }}" class="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear</a>
+        <a href="{{ route('app.settings.pallet-types') }}" class="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear</a>
       </div>
     </form>
-
     {{-- Pallet Types Table --}}
     <div class="bg-white shadow rounded overflow-hidden">
       <table class="min-w-full">
@@ -99,12 +93,11 @@
               </td>
               <td class="px-4 py-2">
                 <div class="flex items-center space-x-2">
-                  <a href="{{ route('admin.pallet-types.show', $palletType) }}"
+                  <a href="{{ route('app.settings.pallet-types.show', $palletType) }}"
                      class="text-blue-600 hover:text-blue-800 text-sm">View</a>
-                  <a href="{{ route('admin.pallet-types.edit', $palletType) }}"
+                  <a href="{{ route('app.settings.pallet-types.edit', $palletType) }}"
                      class="text-green-600 hover:text-green-800 text-sm">Edit</a>
-                  
-                  <form method="POST" action="{{ route('admin.pallet-types.toggle-active', $palletType) }}" class="inline">
+                  <form method="POST" action="{{ route('app.settings.pallet-types.toggle-active', $palletType) }}" class="inline">
                     @csrf
                     @method('PATCH')
                     <button type="submit" 
@@ -112,9 +105,8 @@
                       {{ $palletType->is_active ? 'Deactivate' : 'Activate' }}
                     </button>
                   </form>
-
                   @if($totalUsage === 0)
-                    <form method="POST" action="{{ route('admin.pallet-types.destroy', $palletType) }}" 
+                    <form method="POST" action="{{ route('app.settings.pallet-types.destroy', $palletType) }}" 
                           class="inline" onsubmit="return confirm('Are you sure you want to delete this pallet type?')">
                       @csrf
                       @method('DELETE')
@@ -134,7 +126,6 @@
         </tbody>
       </table>
     </div>
-
     {{-- Pagination --}}
     @if($palletTypes->hasPages())
       <div class="mt-4">

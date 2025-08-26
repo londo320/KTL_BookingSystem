@@ -1,6 +1,4 @@
 <x-app-layout>
-  @include('layouts.admin-nav')
-
   <x-slot name="header">
     <div class="flex items-center justify-between">
       <h2 class="font-semibold text-xl">📍 Trailer Location Report</h2>
@@ -17,14 +15,13 @@
             @endforeach
           </select>
         </form>
-        
         {{-- Action Buttons --}}
         <div class="flex space-x-3">
-          <a href="{{ route('admin.empty-unit-collection') }}"
+          <a href="{{ route('app.empty-unit-collection') }}"
              class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
             🚛 Empty Collection
           </a>
-          <a href="{{ route('admin.bookings.index') }}"
+          <a href="{{ route('app.bookings.index') }}"
              class="px-3 py-1 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-sm">
             ← Back to Bookings
           </a>
@@ -32,9 +29,7 @@
       </div>
     </div>
   </x-slot>
-
   <div class="py-6 max-w-7xl mx-auto">
-    
     <!-- Summary Stats -->
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
       <div class="bg-white p-4 rounded-lg shadow">
@@ -62,7 +57,6 @@
         <div class="text-sm text-gray-600">Overdue Collections</div>
       </div>
     </div>
-
     <!-- Trailers Waiting to Start Tipping -->
     @if(isset($waitingToTip) && $waitingToTip->count() > 0)
     <div class="bg-white rounded-lg shadow mb-6">
@@ -90,7 +84,7 @@
             @php $booking = $movement->booking @endphp
             <tr class="hover:bg-gray-50">
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                <a href="{{ route('admin.bookings.show', $booking) }}" class="hover:underline">
+                <a href="{{ route('app.bookings.show', $booking) }}" class="hover:underline">
                   {{ $booking->booking_reference }}
                 </a>
               </td>
@@ -156,7 +150,6 @@
       </div>
     </div>
     @endif
-
     <!-- Currently Being Tipped -->
     @if(isset($currentlyTipping) && $currentlyTipping->count() > 0)
     <div class="bg-white rounded-lg shadow mb-6">
@@ -184,7 +177,7 @@
             @php $booking = $movement->booking @endphp
             <tr class="hover:bg-gray-50">
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                <a href="{{ route('admin.bookings.show', $booking) }}" class="hover:underline">
+                <a href="{{ route('app.bookings.show', $booking) }}" class="hover:underline">
                   {{ $booking->booking_reference }}
                 </a>
               </td>
@@ -237,7 +230,6 @@
       </div>
     </div>
     @endif
-
     <!-- Empty Trailers Ready for Collection -->
     @if(isset($emptyTrailers) && $emptyTrailers->count() > 0)
     <div class="bg-white rounded-lg shadow mb-6">
@@ -266,7 +258,7 @@
             @php $booking = $movement->booking @endphp
             <tr class="hover:bg-gray-50">
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                <a href="{{ route('admin.bookings.show', $booking) }}" class="hover:underline">
+                <a href="{{ route('app.bookings.show', $booking) }}" class="hover:underline">
                   {{ $booking->booking_reference }}
                 </a>
               </td>
@@ -319,7 +311,7 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm">
                 @if($movement->tippingBay)
                   {{-- If trailer is in bay, offer to clear it --}}
-                  <form method="POST" action="{{ route('admin.bookings.clear-bay', $booking) }}" class="inline">
+                  <form method="POST" action="{{ route('app.bookings.clear-bay', $booking) }}" class="inline">
                     @csrf
                     <button type="submit" class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
                             title="Clear bay for next vehicle">
@@ -338,7 +330,6 @@
       </div>
     </div>
     @endif
-
     <!-- No Trailers Message (if none in any category) -->
     @if($movementsOnSite->count() === 0)
     <div class="bg-white rounded-lg shadow">
@@ -352,7 +343,6 @@
       </div>
     </div>
     @endif
-
     <!-- Legend -->
     <div class="mt-6 bg-gray-50 p-4 rounded-lg">
       <h4 class="text-sm font-medium text-gray-800 mb-2">Status Legend:</h4>

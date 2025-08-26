@@ -1,8 +1,5 @@
 <x-app-layout>
-  @include('layouts.admin-nav')
-  
   <meta name="csrf-token" content="{{ csrf_token() }}">
-
   <x-slot name="header">
     <div class="flex items-center justify-between">
       <div>
@@ -11,7 +8,7 @@
       </div>
       <div class="flex gap-2">
         @php
-          $routePrefix = request()->route()->getPrefix() === 'depot-admin' ? 'depot.' : 'admin.';
+          $routePrefix = 'app.';
         @endphp
         <a href="{{ route($routePrefix . 'queue-management') }}"
            class="px-3 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm">
@@ -24,14 +21,12 @@
       </div>
     </div>
   </x-slot>
-
   <div class="py-6 max-w-full mx-auto px-4">
     @if(session('success'))
       <div class="mb-4 p-3 bg-green-100 text-green-800 rounded">
         {{ session('success') }}
       </div>
     @endif
-
     {{-- Comprehensive Live Filters --}}
     <div class="mb-6 bg-white rounded-lg shadow-sm border">
       {{-- Primary Filters Row --}}
@@ -45,7 +40,6 @@
                    class="w-full border border-gray-300 rounded px-3 py-2 text-sm"
                    value="{{ request('search') }}">
           </div>
-          
           {{-- Live Status Filters --}}
           <div class="flex gap-2 items-center">
             <span class="text-sm font-medium text-gray-700">Status:</span>
@@ -62,7 +56,6 @@
               📋 All
             </button>
           </div>
-
           {{-- Auto Refresh Toggle --}}
           <div class="flex items-center gap-2">
             <input type="checkbox" id="autoRefresh" checked class="rounded">
@@ -71,7 +64,6 @@
           </div>
         </div>
       </div>
-
       {{-- Secondary Filters Row --}}
       <div class="p-4">
         <div class="flex flex-wrap items-center gap-4">
@@ -95,7 +87,6 @@
               📈 Next Week
             </button>
           </div>
-
           {{-- Depot Filter --}}
           <div class="flex gap-2 items-center">
             <label class="text-sm font-medium text-gray-700">Depot:</label>
@@ -108,7 +99,6 @@
               @endforeach
             </select>
           </div>
-
           {{-- Customer Filter --}}
           <div class="flex gap-2 items-center">
             <label class="text-sm font-medium text-gray-700">Customer:</label>
@@ -121,7 +111,6 @@
               @endforeach
             </select>
           </div>
-
           {{-- Arrival Status Filter --}}
           <div class="flex gap-2 items-center">
             <label class="text-sm font-medium text-gray-700">Arrival:</label>
@@ -135,7 +124,6 @@
               <option value="onsite" {{ request('arrival') == 'onsite' ? 'selected' : '' }}>🚛 On Site</option>
             </select>
           </div>
-
           {{-- Week Number Filter --}}
           <div class="flex gap-2 items-center">
             <label class="text-sm font-medium text-gray-700">Week:</label>
@@ -153,7 +141,6 @@
               @endfor
             </select>
           </div>
-
           {{-- Custom Date Range --}}
           <div class="flex gap-2 items-center">
             <label class="text-sm font-medium text-gray-700">From:</label>
@@ -161,7 +148,6 @@
             <label class="text-sm font-medium text-gray-700">To:</label>
             <input type="date" id="toDate" onchange="setDateRange()" value="{{ request('to') }}" class="border border-gray-300 rounded px-2 py-1 text-sm">
           </div>
-
           {{-- Clear Filters --}}
           @if(request()->hasAny(['search', 'status', 'filter', 'depot_id', 'customer_id', 'arrival', 'week_number', 'from', 'to']))
             <button onclick="clearAllFilters()" class="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors">
@@ -171,7 +157,6 @@
         </div>
       </div>
     </div>
-
     {{-- Operational Quick Actions --}}
     <div class="mb-4 flex flex-wrap gap-2 justify-between items-center">
       <div class="flex gap-2">
@@ -184,7 +169,6 @@
           📍 Site Map
         </a>
       </div>
-      
       {{-- Live Stats --}}
       <div class="flex gap-4 text-sm">
         <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded">
@@ -198,7 +182,6 @@
         </span>
       </div>
     </div>
-
     {{-- Streamlined Bookings Table --}}
     <div id="bookingsContainer" class="bg-white rounded-lg shadow overflow-hidden">
       <table class="min-w-full divide-y divide-gray-200 text-sm">
@@ -216,16 +199,13 @@
         </tbody>
       </table>
     </div>
-
     {{-- Pagination --}}
     <div class="mt-4">{{ $bookings->links() }}</div>
   </div>
-
   {{-- Modals remain the same but simplified --}}
   @include('admin.bookings.partials.arrival-modal')
   @include('admin.bookings.partials.departure-modal')
   @include('admin.bookings.partials.collection-modal')
-
   <script>
     // Live filtering and updates
     let currentFilters = {
@@ -239,27 +219,22 @@
       from: '{{ request("from") }}',
       to: '{{ request("to") }}'
     };
-    
     let searchTimeout;
     let refreshTimer;
     let refreshCountdown = 60; // Increased to 60 seconds to be less aggressive
     let autoRefreshEnabled = true;
     let userIsFiltering = false; // Pause auto-refresh when user is actively filtering
-
     // Initialize
     document.addEventListener('DOMContentLoaded', function() {
       startAutoRefresh();
       updateRefreshCountdown();
       updateFilterButtons(); // Set correct button states on load
-      
       // Set up all live filter event handlers
       setupLiveFilters();
     });
-
     // Set up live filter event handlers
     function setupLiveFilters() {
       console.log('Setting up live filters...');
-      
       // Live search
       const searchInput = document.getElementById('liveSearch');
       if (searchInput) {
@@ -268,7 +243,6 @@
           pauseAutoRefreshTemporarily();
           const query = this.value.trim();
           currentFilters.search = query;
-          
           clearTimeout(searchTimeout);
           searchTimeout = setTimeout(() => {
             updateBookings();
@@ -276,7 +250,6 @@
         });
         console.log('Search input event handler attached');
       }
-
       // Depot filter
       const depotFilter = document.getElementById('depotFilter');
       if (depotFilter) {
@@ -286,7 +259,6 @@
         });
         console.log('Depot filter event handler attached');
       }
-
       // Customer filter
       const customerFilter = document.getElementById('customerFilter');
       if (customerFilter) {
@@ -296,7 +268,6 @@
         });
         console.log('Customer filter event handler attached');
       }
-
       // Arrival filter
       const arrivalFilter = document.getElementById('arrivalFilter');
       if (arrivalFilter) {
@@ -306,7 +277,6 @@
         });
         console.log('Arrival filter event handler attached');
       }
-
       // Week filter
       const weekFilter = document.getElementById('weekFilter');
       if (weekFilter) {
@@ -316,7 +286,6 @@
         });
         console.log('Week filter event handler attached');
       }
-
       // Date range filters
       const fromDate = document.getElementById('fromDate');
       if (fromDate) {
@@ -326,7 +295,6 @@
         });
         console.log('From date event handler attached');
       }
-
       const toDate = document.getElementById('toDate');
       if (toDate) {
         toDate.addEventListener('change', function() {
@@ -335,7 +303,6 @@
         });
         console.log('To date event handler attached');
       }
-
       // Auto refresh toggle
       const autoRefresh = document.getElementById('autoRefresh');
       if (autoRefresh) {
@@ -348,10 +315,8 @@
         });
         console.log('Auto refresh event handler attached');
       }
-      
       console.log('All live filter event handlers setup complete');
     }
-
     // Filter functions
     function setStatusFilter(status) {
       pauseAutoRefreshTemporarily();
@@ -359,7 +324,6 @@
       updateFilterButtons();
       updateBookings();
     }
-
     function setDateFilter(filter) {
       pauseAutoRefreshTemporarily();
       currentFilters.filter = filter;
@@ -373,28 +337,24 @@
       updateFilterButtons();
       updateBookings();
     }
-
     function setDepotFilter(depot_id) {
       console.log('Depot filter changed to:', depot_id);
       pauseAutoRefreshTemporarily();
       currentFilters.depot_id = depot_id;
       updateBookings();
     }
-
     function setCustomerFilter(customer_id) {
       console.log('Customer filter changed to:', customer_id);
       pauseAutoRefreshTemporarily();
       currentFilters.customer_id = customer_id;
       updateBookings();
     }
-
     function setArrivalFilter(arrival) {
       console.log('Arrival filter changed to:', arrival);
       pauseAutoRefreshTemporarily();
       currentFilters.arrival = arrival;
       updateBookings();
     }
-
     function setWeekFilter(week_number) {
       pauseAutoRefreshTemporarily();
       currentFilters.week_number = week_number;
@@ -407,15 +367,12 @@
       updateFilterButtons();
       updateBookings();
     }
-
     function setDateRange() {
       pauseAutoRefreshTemporarily();
       const fromDate = document.getElementById('fromDate').value;
       const toDate = document.getElementById('toDate').value;
-      
       currentFilters.from = fromDate;
       currentFilters.to = toDate;
-      
       if (fromDate || toDate) {
         // Clear conflicting filters
         currentFilters.filter = '';
@@ -423,22 +380,18 @@
         document.getElementById('weekFilter').value = '';
         updateFilterButtons();
       }
-      
       updateBookings();
     }
-
     // Pause auto-refresh temporarily when user is actively filtering
     function pauseAutoRefreshTemporarily() {
       userIsFiltering = true;
       refreshCountdown = 60; // Reset countdown when user filters
-      
       // Resume auto-refresh after 10 seconds of inactivity
       setTimeout(() => {
         userIsFiltering = false;
         console.log('Auto-refresh resumed after user inactivity');
       }, 10000);
     }
-
     function clearAllFilters() {
       currentFilters = {
         search: '',
@@ -451,7 +404,6 @@
         from: '',
         to: ''
       };
-      
       // Reset form elements
       document.getElementById('liveSearch').value = '';
       document.getElementById('depotFilter').value = '';
@@ -460,18 +412,15 @@
       document.getElementById('weekFilter').value = '';
       document.getElementById('fromDate').value = '';
       document.getElementById('toDate').value = '';
-      
       updateFilterButtons();
       updateBookings();
     }
-
     function updateFilterButtons() {
       // Update active states for all filter buttons
       document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.remove('bg-orange-600', 'bg-blue-600', 'bg-green-600', 'bg-gray-600', 'text-white');
         btn.classList.add('bg-gray-100', 'text-gray-700');
       });
-      
       // Set active button styles for status filters
       const statusButtons = document.querySelectorAll(`[onclick*="setStatusFilter('${currentFilters.status}')"]`);
       statusButtons.forEach(btn => {
@@ -484,7 +433,6 @@
           btn.classList.add('bg-gray-600', 'text-white');
         }
       });
-      
       // Set active button styles for date filters
       const dateButtons = document.querySelectorAll(`[onclick*="setDateFilter('${currentFilters.filter}')"]`);
       dateButtons.forEach(btn => {
@@ -492,15 +440,12 @@
         btn.classList.add('bg-blue-600', 'text-white');
       });
     }
-
     // Update bookings via AJAX
     function updateBookings() {
       console.log('updateBookings called with filters:', currentFilters);
-      
       // Show loading state
       const tableContainer = document.getElementById('bookingsContainer');
       tableContainer.classList.add('loading');
-      
       // Clean up filters - remove empty values
       const cleanFilters = {};
       for (const [key, value] of Object.entries(currentFilters)) {
@@ -510,12 +455,10 @@
           cleanFilters[key] = value;
         }
       }
-      
       console.log('Clean filters being sent:', cleanFilters);
       const params = new URLSearchParams(cleanFilters);
       const url = `{{ route($routePrefix . 'bookings.streamlined') }}?${params.toString()}`;
       console.log('Fetching URL:', url);
-      
       fetch(`{{ route($routePrefix . 'bookings.streamlined') }}?${params.toString()}`, {
         headers: {
           'X-Requested-With': 'XMLHttpRequest',
@@ -537,7 +480,6 @@
           setTimeout(() => {
             tableBody.innerHTML = html;
             tableBody.style.opacity = '1';
-            
             // Only add highlight animation for manual filter changes, not auto-refresh
             if (userIsFiltering) {
               tableBody.classList.add('booking-row-updated');
@@ -547,43 +489,34 @@
             }
           }, 100);
         }
-        
         // Update stats
         updateLiveStats();
-        
         // Remove loading state
         tableContainer.classList.remove('loading');
-        
         // Show subtle feedback
         showFilterFeedback();
       })
       .catch(error => {
         console.error('Failed to update bookings:', error);
         showNotification('❌ Failed to update bookings', 'error');
-        
         // Remove loading state
         tableContainer.classList.remove('loading');
       });
     }
-
     // Show subtle feedback when filters are applied
     function showFilterFeedback() {
       const searchInput = document.getElementById('liveSearch');
       const originalBorder = searchInput.style.borderColor;
-      
       searchInput.style.borderColor = '#10b981'; // green
       setTimeout(() => {
         searchInput.style.borderColor = originalBorder;
       }, 300);
     }
-
     // Auto refresh
     function startAutoRefresh() {
       if (refreshTimer) clearInterval(refreshTimer);
-      
       refreshTimer = setInterval(() => {
         updateRefreshCountdown();
-        
         if (autoRefreshEnabled && !userIsFiltering && refreshCountdown <= 0) {
           console.log('Auto-refresh triggered');
           // Show subtle auto-refresh indicator
@@ -593,12 +526,10 @@
         }
       }, 1000);
     }
-
     function updateRefreshCountdown() {
       if (autoRefreshEnabled) {
         refreshCountdown--;
         document.getElementById('refreshCountdown').textContent = `(${refreshCountdown}s)`;
-        
         if (refreshCountdown <= 0) {
           refreshCountdown = 30;
         }
@@ -606,51 +537,41 @@
         document.getElementById('refreshCountdown').textContent = '(paused)';
       }
     }
-
     // Auto refresh toggle handler is now in setupLiveFilters()
-
     // Update live stats
     function updateLiveStats() {
       // Count bookings in current view
       const rows = document.querySelectorAll('#bookingsTableBody tr');
       let onSite = 0, awaiting = 0, completed = 0;
-      
       rows.forEach(row => {
         if (row.classList.contains('on-site')) onSite++;
         else if (row.classList.contains('awaiting')) awaiting++;
         else if (row.classList.contains('completed')) completed++;
       });
-      
       document.getElementById('onSiteCount').textContent = onSite;
       document.getElementById('awaitingCount').textContent = awaiting;
       document.getElementById('completedCount').textContent = completed;
     }
-
     // Streamlined modal functions
     function openArrivalModal(bookingId, bookingRef, customer, depot, scheduledTime, vehicleReg, containerNum, carrierCompany, expectedCases, expectedPallets, specialInstructions) {
       // Similar to existing but streamlined for quick processing
       const modal = document.getElementById('arrivalModal');
-      
       // Pre-populate critical fields
       document.getElementById('vehicleRegistration').value = vehicleReg;
       document.getElementById('containerNumber').value = containerNum;
       document.getElementById('carrierCompany').value = carrierCompany;
-      
       // Auto-assign to available drop zone if only one available
       const dropZones = document.querySelectorAll('#tippingLocation option:not([value=""])');
       if (dropZones.length === 1) {
         document.getElementById('tippingLocation').value = dropZones[0].value;
       }
-      
       modal.classList.remove('hidden');
       document.getElementById('vehicleRegistration').focus();
     }
-
     function processArrival(bookingId) {
       // Quick arrival processing
       const form = document.getElementById('arrivalForm');
       const formData = new FormData(form);
-      
       fetch(form.action, {
         method: 'POST',
         body: formData,
@@ -673,7 +594,6 @@
         showNotification('❌ Failed to process arrival', 'error');
       });
     }
-
     // Quick notification system
     function showNotification(message, type = 'info') {
       const notification = document.createElement('div');
@@ -683,15 +603,12 @@
         'bg-blue-500 text-white'
       }`;
       notification.textContent = message;
-      
       document.body.appendChild(notification);
-      
       setTimeout(() => {
         notification.style.opacity = '0';
         setTimeout(() => notification.remove(), 300);
       }, 3000);
     }
-
     // Keyboard shortcuts for operators
     document.addEventListener('keydown', function(e) {
       // Ctrl+F - Focus search
@@ -699,14 +616,12 @@
         e.preventDefault();
         document.getElementById('liveSearch').focus();
       }
-      
       // Ctrl+R - Refresh
       if (e.ctrlKey && e.key === 'r') {
         e.preventDefault();
         updateBookings();
         showNotification('🔄 Refreshed', 'info');
       }
-      
       // Escape - Close modals
       if (e.key === 'Escape') {
         document.querySelectorAll('[id$="Modal"]').forEach(modal => {
@@ -716,34 +631,28 @@
         });
       }
     });
-
     // Trailer Collection Modal Functions
     function openTrailerCollectionModal() {
       // Open the empty unit collection page in a new window/tab
       window.open('{{ route("admin.empty-unit-collection") }}', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
     }
   </script>
-
   <style>
     /* Smooth transitions for live updates */
     .filter-btn {
       transition: all 0.2s ease;
     }
-    
     .filter-btn:hover {
       transform: translateY(-1px);
     }
-    
     /* Highlight new/updated rows */
     @keyframes highlight {
       0% { background-color: #fef3c7; }
       100% { background-color: transparent; }
     }
-    
     .booking-row-updated {
       animation: highlight 2s ease-out;
     }
-    
     /* Loading states */
     .loading {
       opacity: 0.6;

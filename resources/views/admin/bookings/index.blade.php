@@ -1,5 +1,4 @@
 <x-app-layout>
-  @include('layouts.admin-nav')
 
   <x-slot name="header">
     <div class="flex items-center justify-between">
@@ -22,20 +21,29 @@
       </div>
       <div class="flex gap-2">
         @php
-          $routePrefix = request()->route()->getPrefix() === 'depot-admin' ? 'depot.' : 'admin.';
+          $routePrefix = 'app.';
         @endphp
+        
+        @canFunction('bookings.fix-historical-departures')
         <a href="{{ route($routePrefix . 'bookings.fix-historical-departures') }}"
            class="px-3 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm">
           🔧 Fix Historical Data
         </a>
-        <a href="{{ route('admin.customer-behavior.index') }}"
+        @endcanFunction
+        
+        @canFunction('customer-behavior.view')
+        <a href="{{ route('app.customer-behavior.index') }}"
            class="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm">
           📊 Customer Analysis
         </a>
-        <a href="{{ route('admin.bookings.create') }}"
+        @endcanFunction
+        
+        @canFunction('bookings.create')
+        <a href="{{ route('app.bookings.create') }}"
            class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
           + New Booking
         </a>
+        @endcanFunction
       </div>
     </div>
   </x-slot>
@@ -54,7 +62,7 @@
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 items-center">
           {{-- Search Box --}}
           <div class="xl:col-span-1">
-            <form method="GET" action="{{ route('admin.bookings.index') }}" class="flex gap-2">
+            <form method="GET" action="{{ route('app.bookings.index') }}" class="flex gap-2">
               {{-- Preserve existing filters --}}
               @foreach(request()->except(['search', 'page']) as $key => $value)
                 <input type="hidden" name="{{ $key }}" value="{{ $value }}">
@@ -69,7 +77,7 @@
                 Search
               </button>
               @if(request('search'))
-                <a href="{{ route('admin.bookings.index', request()->except(['search', 'page'])) }}"
+                <a href="{{ route('app.bookings.index', request()->except(['search', 'page'])) }}"
                    class="px-3 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">
                   Clear
                 </a>
@@ -78,34 +86,48 @@
           </div>
           
           {{-- Quick Actions --}}
-          <div class="xl:col-span-1 flex justify-center gap-2">
+          <div class="xl:col-span-1 flex justify-center gap-2 flex-wrap">
+            <a href="{{ route('app.factory-bookings.index') }}" 
+               class="px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm font-medium">
+              🏭 Factory Inbound
+            </a>
             <button onclick="openTrailerCollectionModal()" 
                     class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium">
               🚛 Trailer Collection
             </button>
-            <a href="{{ route('admin.trailer-location-report') }}" 
+            <a href="{{ route('app.trailer-location-report') }}" 
                class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
               📍 Trailers on Site
             </a>
           </div>
           
           {{-- Export Actions --}}
+          @hasAnyFunction(['bookings.export.pdf', 'bookings.export.excel', 'bookings.export.csv'])
           <div class="xl:col-span-1 flex justify-end gap-1">
             <div class="flex gap-1">
-              <a href="{{ route('admin.bookings.export.pdf', request()->query()) }}" 
+              @canFunction('bookings.export.pdf')
+              <a href="{{ route('app.bookings.export.pdf', request()->query()) }}" 
                  class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs" target="_blank" title="Export PDF">
                 📄 PDF
               </a>
-              <a href="{{ route('admin.bookings.export.excel', request()->query()) }}" 
+              @endcanFunction
+              
+              @canFunction('bookings.export.excel')
+              <a href="{{ route('app.bookings.export.excel', request()->query()) }}" 
                  class="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs" title="Export Excel">
                 📊 Excel
               </a>
-              <a href="{{ route('admin.bookings.export.csv', request()->query()) }}" 
+              @endcanFunction
+              
+              @canFunction('bookings.export.csv')
+              <a href="{{ route('app.bookings.export.csv', request()->query()) }}" 
                  class="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs" title="Export CSV">
                 📝 CSV
               </a>
+              @endcanFunction
             </div>
           </div>
+          @endhasAnyFunction
         </div>
       </div>
       
@@ -115,15 +137,15 @@
           {{-- Status Filter --}}
           <div class="flex gap-2 items-center">
             <span class="text-sm font-medium text-gray-700">Status:</span>
-            <a href="{{ route('admin.bookings.index', array_merge(request()->except(['status', 'page']), ['status' => 'outstanding'])) }}" 
+            <a href="{{ route('app.bookings.index', array_merge(request()->except(['status', 'page']), ['status' => 'outstanding'])) }}" 
                class="px-3 py-1 rounded text-sm {{ request('status', 'outstanding') == 'outstanding' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
               ⏳ Outstanding
             </a>
-            <a href="{{ route('admin.bookings.index', array_merge(request()->except(['status', 'page']), ['status' => 'completed'])) }}" 
+            <a href="{{ route('app.bookings.index', array_merge(request()->except(['status', 'page']), ['status' => 'completed'])) }}" 
                class="px-3 py-1 rounded text-sm {{ request('status') == 'completed' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
               ✅ Completed
             </a>
-            <a href="{{ route('admin.bookings.index', array_merge(request()->except(['status', 'page']), ['status' => 'all'])) }}" 
+            <a href="{{ route('app.bookings.index', array_merge(request()->except(['status', 'page']), ['status' => 'all'])) }}" 
                class="px-3 py-1 rounded text-sm {{ request('status') == 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
               📋 All
             </a>
@@ -132,27 +154,27 @@
           {{-- Date Filter --}}
           <div class="flex flex-wrap gap-2 items-center">
             <span class="text-sm font-medium text-gray-700">Date:</span>
-            <a href="{{ route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'yesterday'])) }}" 
+            <a href="{{ route('app.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'yesterday'])) }}" 
                class="px-3 py-1 rounded text-sm {{ request('filter') == 'yesterday' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
               📅 Yesterday
             </a>
-            <a href="{{ route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'today'])) }}" 
+            <a href="{{ route('app.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'today'])) }}" 
                class="px-3 py-1 rounded text-sm {{ request('filter') == 'today' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
               📅 Today
             </a>
-            <a href="{{ route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'tomorrow'])) }}" 
+            <a href="{{ route('app.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'tomorrow'])) }}" 
                class="px-3 py-1 rounded text-sm {{ request('filter') == 'tomorrow' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
               🗓️ Tomorrow
             </a>
-            <a href="{{ route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'last_week'])) }}" 
+            <a href="{{ route('app.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'last_week'])) }}" 
                class="px-3 py-1 rounded text-sm {{ request('filter') == 'last_week' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
               📉 Last Week
             </a>
-            <a href="{{ route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'this_week'])) }}" 
+            <a href="{{ route('app.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'this_week'])) }}" 
                class="px-3 py-1 rounded text-sm {{ request('filter') == 'this_week' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
               📊 This Week
             </a>
-            <a href="{{ route('admin.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'next_week'])) }}" 
+            <a href="{{ route('app.bookings.index', array_merge(request()->except(['filter', 'page']), ['filter' => 'next_week'])) }}" 
                class="px-3 py-1 rounded text-sm {{ request('filter') == 'next_week' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
               📈 Next Week
             </a>
@@ -160,7 +182,7 @@
           
           {{-- Reset Button --}}
           @if(request()->hasAny(['filter', 'status', 'search']))
-            <a href="{{ route('admin.bookings.index') }}"
+            <a href="{{ route('app.bookings.index') }}"
                class="px-3 py-1 rounded text-sm bg-gray-500 text-white hover:bg-gray-600 ml-auto">
               🔄 Reset All
             </a>
@@ -270,7 +292,7 @@
             <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
               🔍 Apply Filters
             </button>
-            <a href="{{ route('admin.bookings.index') }}" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm font-medium">
+            <a href="{{ route('app.bookings.index') }}" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm font-medium">
               🔄 Reset All
             </a>
           </div>
@@ -723,7 +745,7 @@
               @if($booking->tipping_status && $booking->tipping_status !== 'departed')
                 @php $canTakeAction = $booking->slot->depot_id == $defaultDepotId; @endphp
                 @if($canTakeAction)
-                  <a href="{{ route('admin.tipping-workflow.show', $booking) }}" 
+                  <a href="{{ route('app.tipping-workflow.show', $booking) }}" 
                      class="text-xs text-blue-600 hover:text-blue-800 block">
                     Manage →
                   </a>
@@ -761,7 +783,7 @@
             @endphp
             
             @if($hasHistory)
-              <a href="{{ route('admin.bookings.history', $booking) }}"
+              <a href="{{ route('app.bookings.history', $booking) }}"
                  class="inline-block px-2 py-1 bg-purple-500 text-white rounded-full hover:bg-purple-600 text-xs text-center" 
                  title="This booking has history - view rebook/cancel history">
                 📋 History
@@ -769,7 +791,7 @@
             @endif
             
             {{-- Always show View button --}}
-            <a href="{{ route('admin.bookings.show', $booking) }}"
+            <a href="{{ route('app.bookings.show', $booking) }}"
                class="inline-block px-2 py-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 text-xs text-center">
               View
             </a>
@@ -782,7 +804,7 @@
             @if(!$isCancelled)
               @php $canTakeAction = $booking->slot->depot_id == $defaultDepotId; @endphp
               @if($canTakeAction)
-                <a href="{{ route('admin.bookings.edit', $booking) }}"
+                <a href="{{ route('app.bookings.edit', $booking) }}"
                    class="inline-block px-2 py-1 bg-yellow-500 text-white rounded-full hover:bg-yellow-600 text-xs text-center">
                   Edit
                 </a>
@@ -1253,7 +1275,7 @@
         <h3 class="text-lg font-bold text-gray-900 mb-4">🚛 Quick Trailer Collection</h3>
         <p class="text-sm text-gray-600 mb-4">Record a vehicle arriving to collect a trailer (no booking required)</p>
         
-        <form action="{{ route('admin.empty-unit-collection.process') }}" method="POST">
+        <form action="{{ route('app.empty-unit-collection.process') }}" method="POST">
           @csrf
           
           <div class="space-y-3">
@@ -1925,7 +1947,7 @@
     // Trailer Collection Modal Functions
     function openTrailerCollectionModal() {
       // Open the empty unit collection page in a new window/tab
-      window.open('{{ route("admin.empty-unit-collection") }}', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+      window.open('{{ route("app.empty-unit-collection") }}', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
     }
 
     // Advanced Filters Toggle

@@ -3,7 +3,7 @@
 @section('content')
 <div class="p-6 max-w-md mx-auto space-y-4">
   <h1 class="text-xl">New Slot Template</h1>
-  <form method="POST" action="{{ route('admin.slot-templates.store') }}" class="space-y-3">
+  <form method="POST" action="{{ route('app.slot-templates.store') }}" class="space-y-3">
     @csrf
 
     <div>

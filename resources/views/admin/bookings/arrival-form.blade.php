@@ -1,6 +1,4 @@
 <x-app-layout>
-    @include('layouts.admin-nav')
-    
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-4">
@@ -14,7 +12,6 @@
                         <span class="text-white font-bold text-xs">KL</span>
                     </div>
                 </div>
-                
                 <!-- Header Text -->
                 <div>
                     <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-800">
@@ -25,7 +22,6 @@
                     </p>
                 </div>
             </div>
-            
             <!-- Quick Info Badge -->
             <div class="flex items-center space-x-2">
                 <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
@@ -39,11 +35,9 @@
             </div>
         </div>
     </x-slot>
-
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white shadow rounded-lg">
-                
                 <!-- Booking Summary -->
                 <div class="px-6 py-4 border-b bg-gray-50">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -63,13 +57,11 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
                     <!-- Main Form Column -->
                     <div class="lg:col-span-2">
-                        <form method="POST" action="{{ route('admin.bookings.arrival', $booking) }}">
+                        <form method="POST" action="{{ route('app.bookings.arrival', $booking) }}">
                             @csrf
-                            
                             @if ($errors->any())
                                 <div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
                                     <h4 class="font-medium text-red-800 mb-2">❌ Please fix the following errors:</h4>
@@ -80,17 +72,13 @@
                                     </ul>
                                 </div>
                             @endif
-
                             @if (session('success'))
                                 <div class="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
                                     <p class="text-green-800">✅ {{ session('success') }}</p>
                                 </div>
                             @endif
-                            
                             <h3 class="text-lg font-medium text-gray-900 mb-6">🚛 Vehicle Arrival Details</h3>
-                            
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        
                         <!-- Required Vehicle Registration -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -105,7 +93,6 @@
                             @enderror
                             <p class="text-xs text-gray-500 mt-1">Required for arrival processing</p>
                         </div>
-
                         <!-- Container/Trailer Number -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -122,7 +109,6 @@
                             @enderror
                             <p class="text-xs text-gray-500 mt-1">Can be updated if different from booking</p>
                         </div>
-
                         <!-- Transport Details -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -137,19 +123,16 @@
                                        required
                                        autocomplete="off"
                                        class="w-full border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 pr-10">
-                                
                                 {{-- Hidden carrier_id field --}}
                                 <input type="hidden" 
                                        id="arrival-carrier-id" 
                                        name="carrier_id" 
                                        value="{{ old('carrier_id', $booking->carrier_id) }}">
-                                
                                 {{-- Search dropdown --}}
                                 <div id="arrival-carrier-dropdown" 
                                      class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                                   {{-- Results will be populated by JavaScript --}}
                                 </div>
-                                
                                 {{-- Status indicators --}}
                                 <div class="absolute inset-y-0 right-0 flex items-center pr-3">
                                   <span id="arrival-carrier-status" class="text-xs"></span>
@@ -159,7 +142,6 @@
                             @error('carrier_name')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
                             <p class="text-xs text-gray-500 mt-1">Search existing carriers or type to create new</p>
                         </div>
-
                         <!-- Trailer Type -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">🚛 Trailer Type <span class="text-red-500">*</span></label>
@@ -179,7 +161,6 @@
                             @enderror
                             <p class="text-xs text-gray-500 mt-1">Required: Type and size of trailer/container</p>
                         </div>
-
                         <!-- Tipping Type Selection -->
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-700 mb-3">🚛 Tipping Type <span class="text-red-500">*</span></label>
@@ -222,7 +203,6 @@
                             @enderror
                             <p class="text-xs text-gray-500 mt-1">Required: How will this booking be handled during tipping?</p>
                         </div>
-
                         <!-- Tipping Location Assignment -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">🚛 Tipping Drop Location</label>
@@ -242,8 +222,6 @@
                             @enderror
                             <p class="text-xs text-gray-500 mt-1">Optional: Assign vehicle to drop zone</p>
                         </div>
-
-
                         <!-- Tipping Bay Assignment -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">🏗️ Tipping Bay (Direct Assignment)</label>
@@ -269,16 +247,13 @@
                             @enderror
                             <p class="text-xs text-gray-500 mt-1">Optional: Assign vehicle directly to tipping bay</p>
                         </div>
-
                     </div>
-
                     @if($booking->special_instructions)
                         <div class="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                             <h4 class="font-medium text-yellow-800 mb-2">⚠️ Special Instructions:</h4>
                             <p class="text-yellow-700">{{ $booking->special_instructions }}</p>
                         </div>
                     @endif
-
                             <div class="mt-8 flex justify-end space-x-4">
                                 <a href="{{ url()->previous() }}" 
                                    class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
@@ -291,7 +266,6 @@
                             </div>
                         </form>
                     </div>
-                    
                     <!-- PO Breakdown Sidebar -->
                     <div class="lg:col-span-1">
                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 sticky top-6">
@@ -299,20 +273,17 @@
                                 👁️ Expected Load Info
                             </h4>
                             <p class="text-xs text-blue-600 mb-4">Reference only - actual quantities recorded during tipping</p>
-                            
                             @if($booking->poNumbers && $booking->poNumbers->count() > 0)
                                 <!-- PO Numbers Detail -->
                                 <div class="space-y-3 mb-4">
                                     <div class="text-sm font-medium text-blue-700 mb-2">
                                         {{ $booking->poNumbers->count() }} PO Number{{ $booking->poNumbers->count() > 1 ? 's' : '' }}:
                                     </div>
-                                    
                                     @foreach($booking->poNumbers as $po)
                                         <div class="bg-white rounded-lg p-3 border border-blue-200">
                                             <div class="font-mono text-sm font-semibold text-blue-600 mb-2">
                                                 📋 {{ $po->po_number }}
                                             </div>
-                                            
                                             @if($po->total_expected_cases > 0 || $po->total_expected_pallets > 0)
                                                 <!-- Expected Quantities -->
                                                 <div class="grid grid-cols-2 gap-2 text-xs">
@@ -320,13 +291,11 @@
                                                         <div class="text-gray-600">Expected Cases</div>
                                                         <div class="font-semibold text-lg">{{ number_format($po->total_expected_cases) }}</div>
                                                     </div>
-                                                    
                                                     <div class="bg-gray-50 p-2 rounded">
                                                         <div class="text-gray-600">Expected Pallets</div>
                                                         <div class="font-semibold text-lg">{{ number_format($po->total_expected_pallets) }}</div>
                                                     </div>
                                                 </div>
-                                                
                                                 @if($po->lines->count() > 0)
                                                     <div class="mt-2 text-xs text-gray-500">
                                                         {{ $po->lines->count() }} line{{ $po->lines->count() > 1 ? 's' : '' }}
@@ -352,7 +321,6 @@
                                         </div>
                                     @endforeach
                                 </div>
-                                
                                 <!-- Totals Summary -->
                                 <div class="border-t border-blue-300 pt-3">
                                     <div class="text-sm font-semibold text-blue-800 mb-2">📊 Total Expected:</div>
@@ -367,7 +335,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                
                             @else
                                 <!-- No PO Numbers -->
                                 <div class="text-center py-6 text-gray-500">
@@ -376,7 +343,6 @@
                                     <div class="text-xs mt-1">Expected: {{ number_format($booking->total_expected_cases) }} cases, {{ number_format($booking->total_expected_pallets) }} pallets</div>
                                 </div>
                             @endif
-                            
                             <!-- Info Note -->
                             <div class="mt-4 pt-4 border-t border-blue-300">
                                 <div class="bg-yellow-50 border border-yellow-200 rounded p-3">
@@ -388,7 +354,6 @@
                         </div>
                     </div>
                 </div>
-                
                 <!-- Footer with Logo -->
                 <div class="border-t border-gray-200 bg-gray-50 px-6 py-4">
                     <div class="flex items-center justify-between">
@@ -407,7 +372,6 @@
             </div>
         </div>
     </div>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Arrival carrier search functionality (adapted from admin form)
@@ -415,14 +379,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const carrierIdInput = document.getElementById('arrival-carrier-id');
     const dropdown = document.getElementById('arrival-carrier-dropdown');
     const statusSpan = document.getElementById('arrival-carrier-status');
-    
     if (!searchInput) return; // Exit if elements don't exist
-    
     let searchTimeout;
     let selectedCarrierId = carrierIdInput.value;
     let currentPage = 1;
     let isLoading = false;
-    
     // Update status based on current state
     function updateStatus() {
         if (selectedCarrierId) {
@@ -437,17 +398,14 @@ document.addEventListener('DOMContentLoaded', function() {
             statusSpan.className = 'text-xs';
         }
     }
-    
     // Search carriers
     function searchCarriers(query, page = 1) {
         if (query.length < 2) {
             dropdown.classList.add('hidden');
             return;
         }
-        
         if (isLoading) return;
         isLoading = true;
-        
         fetch(`{{ route('api.carriers.search') }}?q=${encodeURIComponent(query)}&page=${page}`)
             .then(response => response.json())
             .then(data => {
@@ -465,7 +423,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 isLoading = false;
             });
     }
-    
     // Append more results to dropdown
     function appendToDropdown(data, query) {
         // Remove the "Load more" button
@@ -473,7 +430,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (loadMoreButton) {
             loadMoreButton.remove();
         }
-        
         // Add new carriers
         data.carriers.forEach(carrier => {
             const item = document.createElement('div');
@@ -487,7 +443,6 @@ document.addEventListener('DOMContentLoaded', function() {
             item.onclick = () => selectCarrier(carrier.id, carrier.name);
             dropdown.appendChild(item);
         });
-        
         // Add "Load more" again if there are still more results
         if (data.has_more) {
             const loadMoreItem = document.createElement('div');
@@ -500,11 +455,9 @@ document.addEventListener('DOMContentLoaded', function() {
             dropdown.appendChild(loadMoreItem);
         }
     }
-    
     // Populate dropdown with results
     function populateDropdown(data, query) {
         dropdown.innerHTML = '';
-        
         // Show total results if more than displayed
         if (data.total > data.carriers.length) {
             const headerItem = document.createElement('div');
@@ -512,7 +465,6 @@ document.addEventListener('DOMContentLoaded', function() {
             headerItem.innerHTML = `Showing ${data.carriers.length} of ${data.total} carriers`;
             dropdown.appendChild(headerItem);
         }
-        
         // Show existing carriers
         data.carriers.forEach(carrier => {
             const item = document.createElement('div');
@@ -526,7 +478,6 @@ document.addEventListener('DOMContentLoaded', function() {
             item.onclick = () => selectCarrier(carrier.id, carrier.name);
             dropdown.appendChild(item);
         });
-        
         // Add "Load more" option if there are more results
         if (data.has_more) {
             const loadMoreItem = document.createElement('div');
@@ -538,7 +489,6 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             dropdown.appendChild(loadMoreItem);
         }
-        
         // Add "Create new" option if no exact match
         if (!data.exact_match && query.trim()) {
             const createItem = document.createElement('div');
@@ -550,10 +500,8 @@ document.addEventListener('DOMContentLoaded', function() {
             createItem.onclick = () => quickCreateCarrier(query);
             dropdown.appendChild(createItem);
         }
-        
         dropdown.classList.remove('hidden');
     }
-    
     // Select existing carrier
     function selectCarrier(id, name) {
         selectedCarrierId = id;
@@ -562,7 +510,6 @@ document.addEventListener('DOMContentLoaded', function() {
         dropdown.classList.add('hidden');
         updateStatus();
     }
-    
     // Quick create carrier (immediate API call)
     function quickCreateCarrier(name) {
         // Show loading state
@@ -573,7 +520,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="text-xs text-green-600">Please wait...</div>
             `;
         }
-        
         fetch('{{ route('api.carriers.quick-create') }}', {
             method: 'POST',
             headers: {
@@ -587,7 +533,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 // Select the newly created carrier
                 selectCarrier(data.carrier.id, data.carrier.name);
-                
                 // Show success message briefly
                 statusSpan.textContent = '✓';
                 statusSpan.className = 'text-xs text-green-600';
@@ -603,59 +548,48 @@ document.addEventListener('DOMContentLoaded', function() {
             dropdown.classList.add('hidden');
         });
     }
-    
     // Search input handler
     searchInput.addEventListener('input', function() {
         const query = this.value.trim();
-        
         // Reset selection when typing
         selectedCarrierId = null;
         carrierIdInput.value = '';
         currentPage = 1; // Reset pagination
-        
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
             searchCarriers(query, 1);
         }, 300);
-        
         updateStatus();
     });
-    
     // Hide dropdown when clicking outside
     document.addEventListener('click', function(e) {
         if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
             dropdown.classList.add('hidden');
         }
     });
-    
     // Show dropdown on focus if there's content
     searchInput.addEventListener('focus', function() {
         if (this.value.length >= 2) {
             searchCarriers(this.value);
         }
     });
-    
     // Initial status update
     updateStatus();
-    
     // Input normalization functions
     function capitalizeWords(str) {
         return str.replace(/\b\w+/g, function(word) {
             return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
         });
     }
-    
     function toUpperCase(str) {
         return str.toUpperCase();
     }
-    
     // Carrier name capitalization
     searchInput.addEventListener('blur', function() {
         if (this.value.trim()) {
             this.value = capitalizeWords(this.value.trim());
         }
     });
-    
     // Container/trailer number uppercase
     const containerInput = document.getElementById('admin-container-number-input');
     if (containerInput) {
@@ -665,17 +599,14 @@ document.addEventListener('DOMContentLoaded', function() {
             this.setSelectionRange(cursorPos, cursorPos);
         });
     }
-    
     // Tipping Type Visual Selection
     const tippingTypeOptions = document.querySelectorAll('.tipping-type-option');
     const tippingTypeInputs = document.querySelectorAll('input[name="tipping_type"]');
-    
     function updateTippingTypeSelection() {
         // Reset all options
         tippingTypeOptions.forEach(option => {
             const indicator = option.querySelector('.selection-indicator div');
             const border = option.querySelector('.selection-indicator');
-            
             // Reset styles
             option.classList.remove('border-blue-500', 'border-green-500', 'bg-blue-50', 'bg-green-50', 'ring-2', 'ring-blue-200', 'ring-green-200');
             option.classList.add('border-gray-200');
@@ -684,7 +615,6 @@ document.addEventListener('DOMContentLoaded', function() {
             indicator.classList.remove('opacity-100');
             indicator.classList.add('opacity-0');
         });
-        
         // Highlight selected option
         const selectedInput = document.querySelector('input[name="tipping_type"]:checked');
         if (selectedInput) {
@@ -692,7 +622,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const indicator = selectedOption.querySelector('.selection-indicator div');
             const border = selectedOption.querySelector('.selection-indicator');
             const value = selectedInput.value;
-            
             if (value === 'live_tip') {
                 selectedOption.classList.remove('border-gray-200');
                 selectedOption.classList.add('border-blue-500', 'bg-blue-50', 'ring-2', 'ring-blue-200');
@@ -710,7 +639,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
-    
     // Add click handlers to tipping type options
     tippingTypeOptions.forEach(option => {
         option.addEventListener('click', function() {
@@ -719,12 +647,10 @@ document.addEventListener('DOMContentLoaded', function() {
             updateTippingTypeSelection();
         });
     });
-    
     // Add change handlers to radio inputs (for keyboard navigation)
     tippingTypeInputs.forEach(input => {
         input.addEventListener('change', updateTippingTypeSelection);
     });
-    
     // Initial selection update (for pre-selected values)
     updateTippingTypeSelection();
 });

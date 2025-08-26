@@ -4,7 +4,7 @@
   </x-slot>
 
   <div class="max-w-xl mx-auto py-6">
-    <form method="POST" action="{{ route('admin.slots.store') }}">
+    <form method="POST" action="{{ route('app.slots.store') }}">
       @csrf
 
       <div class="mb-4">

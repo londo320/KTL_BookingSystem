@@ -12,7 +12,7 @@
                 <p class="mt-2 text-gray-600">Create a new carrier company</p>
             </div>
             <div>
-                <a href="{{ route('admin.carriers.index') }}" 
+                <a href="{{ route('app.carriers.index') }}" 
                    class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
                     ← Back to Carriers
                 </a>
@@ -38,7 +38,7 @@
 
     <!-- Form -->
     <div class="bg-white rounded-lg shadow-sm border">
-        <form action="{{ route('admin.carriers.store') }}" method="POST">
+        <form action="{{ route('app.carriers.store') }}" method="POST">
             @csrf
             
             <div class="px-6 py-4 border-b border-gray-200">
@@ -182,7 +182,7 @@
 
             <!-- Actions -->
             <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-                <a href="{{ route('admin.carriers.index') }}" 
+                <a href="{{ route('app.carriers.index') }}" 
                    class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg font-medium transition-colors">
                     Cancel
                 </a>

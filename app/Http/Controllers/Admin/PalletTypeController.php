@@ -90,13 +90,13 @@ class PalletTypeController extends Controller
         $inUse = $palletType->poLinesExpected()->exists() || $palletType->poLinesActual()->exists();
 
         if ($inUse) {
-            return redirect()->route('admin.pallet-types.index')
+            return redirect()->route('app.settings.pallet-types')
                 ->with('error', 'Cannot delete pallet type as it is currently in use.');
         }
 
         $palletType->delete();
 
-        return redirect()->route('admin.pallet-types.index')
+        return redirect()->route('app.settings.pallet-types')
             ->with('success', 'Pallet type deleted successfully.');
     }
 
@@ -108,7 +108,7 @@ class PalletTypeController extends Controller
 
         $status = $palletType->is_active ? 'activated' : 'deactivated';
 
-        return redirect()->route('admin.pallet-types.index')
+        return redirect()->route('app.settings.pallet-types')
             ->with('success', "Pallet type {$status} successfully.");
     }
 }

@@ -113,23 +113,40 @@
       bookingForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        const errors = validateForm();
-        
-        if (errors.length > 0) {
-          showValidationErrors(errors);
-          scrollToTop();
+        // Check if user is holding Shift key to bypass validation (debug mode)
+        if (e.shiftKey) {
+          console.log('BYPASSING VALIDATION - Shift key held');
+          showLoadingState();
+          this.submit();
           return;
         }
         
-        hideValidationErrors();
-        showLoadingState();
-        
-        // Submit the form
-        this.submit();
+        // Add a small delay to ensure Alpine.js components are fully loaded
+        setTimeout(() => {
+          const errors = validateForm();
+          
+          if (errors.length > 0) {
+            showValidationErrors(errors);
+            scrollToTop();
+            return;
+          }
+          
+          hideValidationErrors();
+          showLoadingState();
+          
+          // Submit the form
+          this.submit();
+        }, 100);
       });
 
       function validateForm() {
         const errors = [];
+        
+        // Debug: Log all form inputs for troubleshooting
+        console.log('=== FORM VALIDATION DEBUG ===');
+        console.log('Slot ID:', slotSelect?.value);
+        console.log('Booking Type:', document.querySelector('select[name="booking_type_id"]')?.value);
+        console.log('PO Manager Instance:', !!window.poNumbersManagerInstance);
         
         // Check slot selection
         const slotId = slotSelect.value;
@@ -143,23 +160,60 @@
           errors.push('Please select a booking type');
         }
         
-        // Check PO numbers - use the PO component validation
-        if (window.poNumbersManagerInstance && !window.poNumbersManagerInstance.validatePoNumbers()) {
+        // Check PO numbers - use DOM-based validation since Alpine.js instance isn't working correctly
+        console.log('Checking PO validation via DOM elements...');
+        
+        let hasValidPoCases = false;
+        
+        // Check for cases input fields in the DOM
+        const casesInputs = document.querySelectorAll('input[name*="[cases]"]');
+        console.log('Found cases inputs:', casesInputs.length);
+        
+        casesInputs.forEach((input, index) => {
+          const value = parseInt(input.value) || 0;
+          console.log(`Cases input ${index}: ${input.name} = ${value}`);
+          if (value > 0) {
+            hasValidPoCases = true;
+          }
+        });
+        
+        // If no cases inputs found, check for expected_cases inputs (fallback)
+        if (casesInputs.length === 0) {
+          const expectedCasesInputs = document.querySelectorAll('input[name*="expected_cases"]');
+          console.log('Fallback: Found expected_cases inputs:', expectedCasesInputs.length);
+          
+          expectedCasesInputs.forEach((input, index) => {
+            const value = parseInt(input.value) || 0;
+            console.log(`Expected cases input ${index}: ${input.name} = ${value}`);
+            if (value > 0) {
+              hasValidPoCases = true;
+            }
+          });
+        }
+        
+        console.log('Has valid PO cases:', hasValidPoCases);
+        
+        if (!hasValidPoCases) {
           errors.push('At least one Purchase Order with cases greater than 0 is required');
         }
         
-        // Check if PO numbers are actually filled
+        // Check if PO numbers are actually filled (fallback check)
         const poNumbers = document.querySelectorAll('input[name*="[po_number]"]');
+        console.log('Found PO Number inputs:', poNumbers.length);
         let hasValidPo = false;
-        poNumbers.forEach(input => {
+        poNumbers.forEach((input, index) => {
+          console.log(`PO Input ${index}:`, input.name, '=', input.value);
           if (input.value && input.value.trim() !== '') {
             hasValidPo = true;
           }
         });
         
-        if (!hasValidPo) {
+        if (!hasValidPo && poNumbers.length > 0) {
           errors.push('Please add at least one Purchase Order number');
         }
+        
+        console.log('Validation Errors:', errors);
+        console.log('=== END DEBUG ===');
         
         return errors;
       }

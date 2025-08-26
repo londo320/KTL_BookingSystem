@@ -1,6 +1,4 @@
 <x-app-layout>
-    @include('layouts.admin-nav')
-
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div>
@@ -20,7 +18,6 @@
             </div>
         </div>
     </x-slot>
-
     <div class="py-6 max-w-7xl mx-auto">
         {{-- Workflow Priority Legend --}}
         <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -44,12 +41,10 @@
                 </div>
             </div>
         </div>
-
         @foreach($tippingData as $data)
             <div class="mb-8 bg-white rounded-lg shadow overflow-hidden">
                 <div class="p-6 border-b border-gray-200 bg-gray-50">
                     <h3 class="text-xl font-semibold text-gray-800">🏭 {{ $data['depot']->name }}</h3>
-                    
                     {{-- Status Summary --}}
                     <div class="mt-4 grid grid-cols-2 md:grid-cols-7 gap-3">
                         <div class="text-center p-3 bg-gray-100 rounded">
@@ -81,13 +76,12 @@
                             <div class="text-xs text-purple-500">🏁 Departed</div>
                         </div>
                     </div>
-                    
                     {{-- Factory Bookings Summary --}}
                     @if($data['stats']['factory_bookings']['total'] > 0)
                         <div class="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
                             <div class="flex items-center justify-between mb-3">
                                 <h4 class="text-sm font-semibold text-orange-800">🏭 Factory Deliveries (Ad-hoc Arrivals)</h4>
-                                <a href="{{ route('admin.factory-bookings.index') }}?depot_id={{ $data['depot']->id }}" 
+                                <a href="{{ route('app.factory-bookings.index') }}?depot_id={{ $data['depot']->id }}" 
                                    class="text-xs text-orange-600 hover:text-orange-800">View All →</a>
                             </div>
                             <div class="grid grid-cols-4 gap-3">
@@ -111,18 +105,16 @@
                         </div>
                     @endif
                 </div>
-
                 <div class="p-6">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {{-- Drop Locations --}}
                         <div>
                             <h4 class="text-lg font-medium text-gray-800 mb-4">📍 Drop Locations</h4>
-                            
                             @if($data['locations']->isEmpty())
                                 <div class="text-center py-8 text-gray-500">
                                     <p>No drop locations configured for this depot.</p>
                                     @if(auth()->user()->hasRole('admin'))
-                                        <a href="{{ route('admin.tipping-locations.create') }}" class="text-blue-600 hover:text-blue-800 mt-2 inline-block">
+                                        <a href="{{ route('app.tipping-locations.create') }}" class="text-blue-600 hover:text-blue-800 mt-2 inline-block">
                                             + Add Drop Location
                                         </a>
                                     @endif
@@ -136,7 +128,6 @@
                                                 @if($location->code)
                                                     <p class="text-sm text-gray-600">Code: {{ $location->code }}</p>
                                                 @endif
-                                                
                                                 {{-- Current occupancy --}}
                                                 <div class="mt-2 flex items-center space-x-2">
                                                     <div class="flex-1 bg-gray-200 rounded-full h-2">
@@ -150,7 +141,6 @@
                                                     </span>
                                                 </div>
                                             </div>
-                                            
                                             <div class="ml-4">
                                                 @if($location->isAvailable())
                                                     <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">Available</span>
@@ -159,7 +149,6 @@
                                                 @endif
                                             </div>
                                         </div>
-
                                         {{-- Active bookings at this location --}}
                                         @if($location->activeBookings->isNotEmpty())
                                             <div class="ml-4 space-y-2">
@@ -178,12 +167,12 @@
                                                         <div class="flex items-center space-x-2">
                                                             {!! $booking->tipping_status_badge !!}
                                                             @if($booking instanceof \App\Models\FactoryBooking)
-                                                                <a href="{{ route('admin.factory-booking-workflow.show', $booking) }}" 
+                                                                <a href="{{ route('app.factory-booking-workflow.show', $booking) }}" 
                                                                    class="text-blue-600 hover:text-blue-800">
                                                                     Manage →
                                                                 </a>
                                                             @else
-                                                                <a href="{{ route('admin.tipping-workflow.show', $booking) }}" 
+                                                                <a href="{{ route('app.tipping-workflow.show', $booking) }}" 
                                                                    class="text-blue-600 hover:text-blue-800">
                                                                     Manage →
                                                                 </a>
@@ -197,16 +186,14 @@
                                 </div>
                             @endif
                         </div>
-
                         {{-- Tipping Bays --}}
                         <div>
                             <h4 class="text-lg font-medium text-gray-800 mb-4">🚛 Tipping Bays</h4>
-                            
                             @if($data['bays']->isEmpty())
                                 <div class="text-center py-8 text-gray-500">
                                     <p>No tipping bays configured for this depot.</p>
                                     @if(auth()->user()->hasRole('admin'))
-                                        <a href="{{ route('admin.tipping-bays.create') }}" class="text-blue-600 hover:text-blue-800 mt-2 inline-block">
+                                        <a href="{{ route('app.tipping-bays.create') }}" class="text-blue-600 hover:text-blue-800 mt-2 inline-block">
                                             + Add Tipping Bay
                                         </a>
                                     @endif
@@ -222,13 +209,11 @@
                                                         <span class="text-sm text-gray-600">({{ $bay->code }})</span>
                                                     @endif
                                                 </div>
-                                                
                                                 @if(!empty($bay->equipment))
                                                     <p class="text-sm text-gray-600 mt-1">
                                                         Equipment: {{ implode(', ', $bay->equipment) }}
                                                     </p>
                                                 @endif
-
                                                 {{-- Current booking --}}
                                                 @if($bay->currentBooking)
                                                     <div class="mt-2 p-2 bg-yellow-50 rounded text-sm">
@@ -264,7 +249,6 @@
                                                                 $priority = 'low';
                                                                 $priorityText = 'Standard';
                                                                 $priorityClass = 'bg-gray-100 text-gray-600';
-                                                                
                                                                 if ($currentMovement->current_status === 'unloading') {
                                                                     $priority = 'high';
                                                                     $priorityText = 'Tipping Active';
@@ -288,18 +272,16 @@
                                                     </div>
                                                 @endif
                                             </div>
-                                            
                                             <div class="ml-4 flex flex-col items-end space-y-2">
                                                 {!! $bay->status_badge !!}
-                                                
                                                 @if($bay->currentBooking)
                                                     @if($bay->currentBooking instanceof \App\Models\FactoryBooking)
-                                                        <a href="{{ route('admin.factory-booking-workflow.show', $bay->currentBooking) }}" 
+                                                        <a href="{{ route('app.factory-booking-workflow.show', $bay->currentBooking) }}" 
                                                            class="text-sm text-blue-600 hover:text-blue-800">
                                                             Manage →
                                                         </a>
                                                     @else
-                                                        <a href="{{ route('admin.tipping-workflow.show', $bay->currentBooking) }}" 
+                                                        <a href="{{ route('app.tipping-workflow.show', $bay->currentBooking) }}" 
                                                            class="text-sm text-blue-600 hover:text-blue-800">
                                                             Manage →
                                                         </a>
@@ -315,7 +297,6 @@
                 </div>
             </div>
         @endforeach
-
         @if(empty($tippingData))
             <div class="text-center py-12 bg-white rounded-lg shadow">
                 <p class="text-gray-500">No depots available or no tipping operations configured.</p>

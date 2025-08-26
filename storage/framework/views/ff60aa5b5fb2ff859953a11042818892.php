@@ -8,26 +8,20 @@
 <?php $attributes = $attributes->except(\App\View\Components\AppLayout::ignoredParameterNames()); ?>
 <?php endif; ?>
 <?php $component->withAttributes([]); ?>
-  <?php echo $__env->make('layouts.admin-nav', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
-  
    <?php $__env->slot('header', null, []); ?> 
     <h2 class="text-xl font-semibold">🛠 Admin Settings Panel</h2>
    <?php $__env->endSlot(); ?>
-
   <div class="max-w-4xl mx-auto py-6 space-y-6">
-    
     <?php if(session('success')): ?>
       <div class="p-4 bg-green-100 border border-green-400 text-green-700 rounded">
         <?php echo e(session('success')); ?>
 
       </div>
     <?php endif; ?>
-
     
     <div class="bg-white shadow rounded-lg p-6">
       <h3 class="text-lg font-semibold text-gray-800 mb-4">🚛 Tipping Workflow Settings</h3>
-      
-      <form method="POST" action="<?php echo e(route('admin.settings.tipping-workflow')); ?>">
+      <form method="POST" action="<?php echo e(route('app.settings.tipping-workflow')); ?>">
         <?php echo csrf_field(); ?>
         <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
           <div>
@@ -59,13 +53,80 @@
 
     
     <div class="bg-white shadow rounded-lg p-6">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4">🔧 Module Management</h3>
+      <p class="text-sm text-gray-600 mb-4">
+        Enable or disable system modules. Disabled modules will be completely hidden from navigation and inaccessible.
+      </p>
+      
+      <div class="space-y-4">
+        
+        <form method="POST" action="<?php echo e(route('app.settings.inbound-module')); ?>">
+          <?php echo csrf_field(); ?>
+          <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div>
+              <h4 class="font-medium text-gray-800">Inbound Operations</h4>
+              <p class="text-sm text-gray-600 mt-1">
+                Container bookings, factory bookings, tipping workflow, and all existing inbound processes.
+              </p>
+            </div>
+            <div class="flex items-center">
+              <input type="hidden" name="inbound_module_enabled" value="0">
+              <input 
+                type="checkbox" 
+                name="inbound_module_enabled" 
+                value="1"
+                <?php echo e($inboundModuleEnabled ? 'checked' : ''); ?>
+
+                onchange="this.form.submit()"
+                class="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
+              >
+              <span class="ml-2 text-sm font-medium text-gray-700">
+                <?php echo e($inboundModuleEnabled ? 'Enabled' : 'Disabled'); ?>
+
+              </span>
+            </div>
+          </div>
+        </form>
+
+        
+        <form method="POST" action="<?php echo e(route('app.settings.outbound-module')); ?>">
+          <?php echo csrf_field(); ?>
+          <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div>
+              <h4 class="font-medium text-gray-800">Outbound Operations</h4>
+              <p class="text-sm text-gray-600 mt-1">
+                Load management, WMS file imports, driver arrivals, customer address management, and delivery scheduling.
+              </p>
+            </div>
+            <div class="flex items-center">
+              <input type="hidden" name="outbound_module_enabled" value="0">
+              <input 
+                type="checkbox" 
+                name="outbound_module_enabled" 
+                value="1"
+                <?php echo e($outboundModuleEnabled ? 'checked' : ''); ?>
+
+                onchange="this.form.submit()"
+                class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              >
+              <span class="ml-2 text-sm font-medium text-gray-700">
+                <?php echo e($outboundModuleEnabled ? 'Enabled' : 'Disabled'); ?>
+
+              </span>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    
+    <div class="bg-white shadow rounded-lg p-6">
       <h3 class="text-lg font-semibold text-gray-800 mb-4">🗺️ Depot Map Management</h3>
       <p class="text-sm text-gray-600 mb-4">
         Configure and manage interactive depot maps showing real-time bay status and positions.
       </p>
-      
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <a href="<?php echo e(route('admin.depot-map.index')); ?>" 
+        <a href="<?php echo e(route('app.depot-map.index')); ?>" 
            class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
           <div class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
             🗺️
@@ -75,19 +136,25 @@
             <p class="text-sm text-gray-500">See live bay status and operations</p>
           </div>
         </a>
-        
-        <a href="<?php echo e(route('admin.depot-map.manage-positions')); ?>" 
+        <?php if($depots->count() > 0): ?>
+        <a href="<?php echo e(route('app.depot-map.manage-positions', $depots->first())); ?>" 
            class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+        <?php else: ?>
+        <div class="flex items-center p-4 border border-gray-200 rounded-lg bg-gray-100 opacity-50">
+        <?php endif; ?>
           <div class="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
             🎯
           </div>
           <div class="ml-4">
             <h4 class="font-medium text-gray-900">Position Bays</h4>
-            <p class="text-sm text-gray-500">Drag and drop bay positions on map</p>
+            <p class="text-sm text-gray-500"><?php echo e($depots->count() > 0 ? 'Drag and drop bay positions on map' : 'No depots configured'); ?></p>
           </div>
+        <?php if($depots->count() > 0): ?>
         </a>
-
-        <a href="<?php echo e(route('admin.depots.index')); ?>" 
+        <?php else: ?>
+        </div>
+        <?php endif; ?>
+        <a href="<?php echo e(route('app.depots.index')); ?>" 
            class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
           <div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
             🏭
@@ -97,8 +164,7 @@
             <p class="text-sm text-gray-500">Upload map files and depot settings</p>
           </div>
         </a>
-
-        <a href="<?php echo e(route('admin.tipping-bays.index')); ?>" 
+        <a href="<?php echo e(route('app.tipping-bays.index')); ?>" 
            class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
           <div class="flex-shrink-0 w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
             🚛
@@ -110,91 +176,77 @@
         </a>
       </div>
     </div>
-
     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-      <a href="<?php echo e(route('admin.depots.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+      <a href="<?php echo e(route('app.depots.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         📦 Manage Depots
       </a>
-
-      <a href="<?php echo e(route('admin.booking-types.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+      <a href="<?php echo e(route('app.booking-types.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         🧱 Manage Booking Types
       </a>
-
-      <a href="<?php echo e(route('admin.slot-templates.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+      <a href="<?php echo e(route('app.slot-templates.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         🕒 Slot Duration Rules (Handball etc.)
       </a>
-
-      <a href="<?php echo e(route('admin.slot-capacity.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+      <a href="<?php echo e(route('app.slot-capacity.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         ⚙️ Slot Generation Rules
       </a>
-
-      <a href="<?php echo e(route('admin.slots.generate.form')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+      <a href="<?php echo e(route('app.slots.generate.form')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         🧮 Generate Slots
       </a>
-
-      <a href="<?php echo e(route('admin.slot-usage.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+      <a href="<?php echo e(route('app.slot-usage.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         📊 Slot Usage Viewer
       </a>
-
-      <a href="<?php echo e(route('admin.products.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+      <a href="<?php echo e(route('app.products.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         📦 Products
       </a>
-      
-      <a href="<?php echo e(route('admin.users.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+      <a href="<?php echo e(route('app.users.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         👥 Users Settings
       </a>
-      
-      <a href="<?php echo e(route('admin.customers.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+      <a href="<?php echo e(route('app.customers.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         👥 Customer Settings
       </a>
-
-      <a href="<?php echo e(route('admin.slotReleaseRules.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+      <a href="<?php echo e(route('app.slotReleaseRules.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         ⚙️ Slot Rules Config
       </a>
-
-      <a href="<?php echo e(route('admin.settings.pallet-types')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+      <a href="<?php echo e(route('app.settings.pallet-types')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         📦 Pallet Types
       </a>
-
-      <a href="<?php echo e(route('admin.trailer-types.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+      <a href="<?php echo e(route('app.trailer-types.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         🚛 Trailer Types
       </a>
-
-      <a href="<?php echo e(route('admin.carriers.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+      <a href="<?php echo e(route('app.carriers.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         🚚 Carrier Management
       </a>
-
-      <a href="<?php echo e(route('admin.tipping-locations.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+      <a href="<?php echo e(route('app.tipping-locations.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         📍 Tipping Locations
       </a>
-
-      <a href="<?php echo e(route('admin.tipping-bays.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+      <a href="<?php echo e(route('app.tipping-bays.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         🏗️ Tipping Bays
       </a>
-
-      <a href="<?php echo e(route('admin.depot-map.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+      <a href="<?php echo e(route('app.depot-map.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         🗺️ Depot Map View
       </a>
-
-      <a href="<?php echo e(route('admin.depot-map.manage-positions')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+      <?php if($depots->count() > 0): ?>
+      <a href="<?php echo e(route('app.depot-map.manage-positions', $depots->first())); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         🎯 Position Bays on Map
       </a>
-
-      <a href="<?php echo e(route('admin.arrival-time-settings.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+      <?php else: ?>
+      <div class="block p-4 bg-gray-100 shadow rounded opacity-50">
+        🎯 Position Bays on Map (No depots)
+      </div>
+      <?php endif; ?>
+      <a href="<?php echo e(route('app.arrival-time-settings.index')); ?>" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         🕐 Arrival Time Rules
       </a>
-
 <?php if($depots->count()): ?>
   <div class="col-span-2 mt-6">
     <h3 class="text-lg font-semibold mb-2">🔁 Customer Depot Product Rules</h3>
     <p class="text-sm text-gray-600 mb-2">
-      <a href="<?php echo e(route('admin.customer-depot-products.index')); ?>" class="text-blue-600 hover:underline">
+      <a href="<?php echo e(route('app.customer-depot-products.index')); ?>" class="text-blue-600 hover:underline">
         Manage Customer-Depot-Product relationships
       </a>
     </p>
   </div>
 <?php endif; ?>
-
     </div>
   </div>
  <?php echo $__env->renderComponent(); ?>

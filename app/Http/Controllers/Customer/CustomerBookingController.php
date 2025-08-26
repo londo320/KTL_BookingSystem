@@ -8,6 +8,7 @@ use App\Models\Booking;
 use App\Models\BookingHistory;
 use App\Models\BookingType;
 use App\Models\Carrier;
+use App\Models\FactoryBooking;
 use App\Models\Slot;
 use App\Services\PDFService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -22,7 +23,17 @@ class CustomerBookingController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $bookings = $this->filteredBookings($request)->paginate(20);
+        
+        // Get regular bookings
+        $regularBookings = $this->filteredBookings($request);
+        
+        // Get factory bookings with similar filtering
+        $factoryBookings = $this->filteredFactoryBookings($request);
+        
+        // Combine and paginate both types
+        $combinedBookings = $this->combineAndSortBookings($regularBookings, $factoryBookings, $request);
+        
+        $bookings = $this->paginateCombinedBookings($combinedBookings, $request, 20);
 
         // Get filter data for the view
         $depots = $user->depots;
@@ -198,15 +209,9 @@ class CustomerBookingController extends Controller
     {
         $this->authorize('update', $booking);
 
-        if ($booking->arrived_at) {
-            return redirect()->route('customer.bookings.show', $booking)->with('info', 'Cannot edit booking after vehicle has arrived. Viewing details instead.');
-        }
-
-        // Check if slot is locked
-        if ($booking->slot->locked_at && $booking->slot->locked_at->isPast()) {
-            return redirect()->route('customer.bookings.show', $booking)->with('info', 'Cannot edit booking after cut-off time has passed. Viewing details instead.');
-        }
-
+        // Allow limited editing even after arrival/cutoff for transportation details
+        // Full PO editing will be restricted in the view based on status
+        
         $date = $request->input('date') ?? $booking->slot->start_at->format('Y-m-d');
         $depotId = $request->input('depot_id') ?? $booking->slot->depot_id;
 
@@ -217,7 +222,14 @@ class CustomerBookingController extends Controller
         }
 
         return view('customer.bookings.edit', [
-            'booking' => $booking,
+            'booking' => $booking->load([
+                'slot.depot', 
+                'bookingType', 
+                'customer', 
+                'carrier',
+                'poNumbers.lines.expectedPalletType',
+                'poNumbers.lines.actualPalletType'
+            ]),
             'slots' => $slots->sortBy('start_at'),
             'types' => BookingType::orderBy('name')->get(),
             'selectedDepotId' => $depotId,
@@ -229,31 +241,48 @@ class CustomerBookingController extends Controller
     {
         $this->authorize('update', $booking);
 
-        if ($booking->arrived_at) {
-            return redirect()->route('customer.bookings.index')->with('error', 'Booking already arrived.');
-        }
+        $hasArrived = $booking->arrived_at;
+        $cutoffPassed = $booking->slot && $booking->slot->locked_at && $booking->slot->locked_at->isPast();
+        $canEditPO = !$hasArrived && !$cutoffPassed;
 
-        $data = $request->validate([
+        // Build validation rules based on booking status
+        $rules = [
             'slot_id' => 'required|exists:slots,id',
-            'booking_type_id' => 'required|exists:booking_types,id',
-            'carrier_id' => 'nullable|exists:carriers,id',
-            'carrier_name' => 'required|string|max:100',
-            'notes' => 'nullable|string',
             'vehicle_registration' => 'nullable|string|max:50',
             'container_number' => 'nullable|string|max:50',
-            'bay_number' => 'nullable|string|max:10',
-            'estimated_arrival' => 'nullable|date',
+            'carrier_id' => 'nullable|exists:carriers,id',
+            'carrier_name' => 'nullable|string|max:100',
             'special_instructions' => 'nullable|string',
-            
-            // PO Numbers validation
-            'po_numbers' => 'required|array|min:1',
-            'po_numbers.*.po_number' => 'required|string|max:255',
-            'po_numbers.*.lines' => 'required|array|min:1',
-            'po_numbers.*.lines.*.line_number' => 'required|integer|min:1',
-            'po_numbers.*.lines.*.pallet_entries' => 'nullable|array',
-            'po_numbers.*.lines.*.pallet_entries.*.cases' => 'required|integer|min:0',
-            'po_numbers.*.lines.*.pallet_entries.*.pallets' => 'required|integer|min:0',
-            'po_numbers.*.lines.*.pallet_entries.*.type_id' => 'nullable|exists:pallet_types,id',
+        ];
+
+        // Only add arrival time validation if not arrived
+        if (!$hasArrived) {
+            $rules['estimated_arrival'] = 'nullable|date';
+        }
+
+        // Only validate PO numbers if editing is allowed
+        if ($canEditPO) {
+            $rules = array_merge($rules, [
+                'po_numbers' => 'required|array|min:1',
+                'po_numbers.*.po_number' => 'required|string|max:255',
+                'po_numbers.*.lines' => 'required|array|min:1',
+                'po_numbers.*.lines.*.line_number' => 'required|integer|min:1',
+                'po_numbers.*.lines.*.pallet_entries' => 'nullable|array',
+                'po_numbers.*.lines.*.pallet_entries.*.cases' => 'required|integer|min:0',
+                'po_numbers.*.lines.*.pallet_entries.*.pallets' => 'required|integer|min:0',
+                'po_numbers.*.lines.*.pallet_entries.*.type_id' => 'nullable|exists:pallet_types,id',
+            ]);
+        }
+
+        $data = $request->validate($rules);
+
+        // Debug: Log ETA data
+        \Log::info('Customer booking update - ETA data:', [
+            'booking_id' => $booking->id,
+            'has_arrived' => $hasArrived,
+            'request_eta' => $request->input('estimated_arrival'),
+            'validated_eta' => $data['estimated_arrival'] ?? 'not_set',
+            'current_eta' => $booking->estimated_arrival ? $booking->estimated_arrival->toDateTimeString() : 'null'
         ]);
 
         // Normalize input data
@@ -267,13 +296,17 @@ class CustomerBookingController extends Controller
             $data['carrier_name'] = $this->normalizeCarrierName($data['carrier_name']);
         }
 
-        $slot = Slot::findOrFail($data['slot_id']);
-        if ($slot->locked_at && $slot->locked_at->isPast()) {
-            return back()->withErrors(['slot_id' => 'That slot is locked and cannot be changed.']);
+        // Only validate slot changes if PO editing is allowed (before cutoff/arrival)
+        if ($canEditPO) {
+            $slot = Slot::findOrFail($data['slot_id']);
+            if ($slot->locked_at && $slot->locked_at->isPast()) {
+                return back()->withErrors(['slot_id' => 'That slot is locked and cannot be changed.']);
+            }
         }
 
         // Transform PO data from new pallet_entries structure to legacy database structure
-        if (isset($data['po_numbers'])) {
+        // Only process PO data if editing is allowed
+        if ($canEditPO && isset($data['po_numbers'])) {
             foreach ($data['po_numbers'] as $poIndex => $poData) {
                 if (isset($poData['lines'])) {
                     foreach ($poData['lines'] as $lineIndex => $lineData) {
@@ -316,11 +349,53 @@ class CustomerBookingController extends Controller
             $data['carrier_id'] = $carrier->id;
         }
 
-        DB::transaction(function () use ($booking, $data) {
-            $booking->update($data);
+        DB::transaction(function () use ($booking, $data, $canEditPO) {
+            // Always update basic booking fields that are always editable
+            $basicFields = [
+                'vehicle_registration' => $data['vehicle_registration'] ?? $booking->vehicle_registration,
+                'container_number' => $data['container_number'] ?? $booking->container_number, 
+                'carrier_name' => $data['carrier_name'] ?? $booking->carrier_name,
+                'carrier_id' => $data['carrier_id'] ?? $booking->carrier_id,
+            ];
             
-            // Update PO numbers and lines
-            if (isset($data['po_numbers'])) {
+            // Handle fields stored in vehicle_details JSON field
+            $vehicleDetails = $booking->vehicle_details ?? [];
+            
+            // Update special instructions
+            if (isset($data['special_instructions'])) {
+                if ($data['special_instructions']) {
+                    $vehicleDetails['special_instructions'] = $data['special_instructions'];
+                } else {
+                    unset($vehicleDetails['special_instructions']);
+                }
+            }
+            
+            // Update estimated arrival (only if not already arrived)
+            if (!$booking->arrived_at) {
+                if ($data['estimated_arrival'] ?? null) {
+                    $vehicleDetails['estimated_arrival'] = $data['estimated_arrival'];
+                } else {
+                    unset($vehicleDetails['estimated_arrival']);
+                }
+            }
+            
+            $basicFields['vehicle_details'] = $vehicleDetails;
+            
+            // Only update slot if PO editing is allowed (before cutoff/arrival)
+            if ($canEditPO && isset($data['slot_id'])) {
+                $basicFields['slot_id'] = $data['slot_id'];
+            }
+            
+            // Debug: Log what will be updated
+            \Log::info('Customer booking update - basic fields:', [
+                'booking_id' => $booking->id,
+                'basic_fields' => $basicFields
+            ]);
+            
+            $booking->update($basicFields);
+            
+            // Update PO numbers and lines only if editing is allowed
+            if ($canEditPO && isset($data['po_numbers'])) {
                 // Delete existing PO numbers and lines
                 $booking->poNumbers()->delete();
                 
@@ -1197,5 +1272,159 @@ class CustomerBookingController extends Controller
                 ->where('created_at', '>=', $thirtyDaysAgo)
                 ->count(),
         ];
+    }
+
+    /**
+     * Get filtered factory bookings for customer
+     */
+    private function filteredFactoryBookings(Request $request)
+    {
+        $user = auth()->user();
+        $accessibleCustomerIds = $user->getAccessibleCustomerIds();
+        $accessibleDepotIds = $user->depots->pluck('id')->toArray();
+
+        $query = FactoryBooking::with(['depot', 'customer', 'carrier'])
+            ->whereIn('customer_id', $accessibleCustomerIds)
+            ->whereNotNull('customer_id');
+
+        // Depot filter
+        if ($depotId = $request->input('depot_id')) {
+            $query->where('depot_id', $depotId);
+        } else {
+            // Restrict to user's accessible depots
+            $query->whereIn('depot_id', $accessibleDepotIds);
+        }
+
+        // Date range filters - factory bookings use arrived_at instead of slot dates
+        if ($from = $request->input('from')) {
+            $query->whereDate('arrived_at', '>=', $from);
+        }
+        if ($to = $request->input('to')) {
+            $query->whereDate('arrived_at', '<=', $to);
+        }
+
+        // Quick date filters
+        if ($quickFilter = $request->input('filter') ?: $request->input('quick_filter')) {
+            if ($quickFilter === 'today') {
+                $query->whereDate('arrived_at', Carbon::today());
+            } elseif ($quickFilter === 'tomorrow') {
+                $query->whereDate('arrived_at', Carbon::tomorrow());
+            } elseif ($quickFilter === 'last_week') {
+                $query->whereBetween('arrived_at', [
+                    Carbon::now()->subWeek()->startOfWeek(),
+                    Carbon::now()->subWeek()->endOfWeek(),
+                ]);
+            } elseif ($quickFilter === 'this_week') {
+                $query->whereBetween('arrived_at', [
+                    Carbon::now()->startOfWeek(),
+                    Carbon::now()->endOfWeek(),
+                ]);
+            } elseif ($quickFilter === 'next_week') {
+                $query->whereBetween('arrived_at', [
+                    Carbon::now()->addWeek()->startOfWeek(),
+                    Carbon::now()->addWeek()->endOfWeek(),
+                ]);
+            }
+        }
+
+        // Week number filter
+        if ($weekNumber = $request->input('week_number')) {
+            $year = Carbon::now()->year;
+            $weekStart = Carbon::now()->setISODate($year, $weekNumber)->startOfWeek();
+            $weekEnd = $weekStart->clone()->endOfWeek();
+            $query->whereBetween('arrived_at', [$weekStart, $weekEnd]);
+        }
+
+        // Arrival status filter - factory bookings don't have the same statuses, so adapt
+        if ($arrival = $request->input('arrival')) {
+            if ($arrival === 'arrived') {
+                $query->whereNotNull('arrived_at');
+            } elseif ($arrival === 'onsite') {
+                $query->whereNotNull('arrived_at')->whereNull('completed_at');
+            } elseif ($arrival === 'completed') {
+                $query->whereNotNull('completed_at');
+            }
+            // Skip other filters that don't apply to factory bookings
+        }
+
+        return $query;
+    }
+
+    /**
+     * Combine regular and factory bookings and sort them
+     */
+    private function combineAndSortBookings($regularBookingsQuery, $factoryBookingsQuery, Request $request)
+    {
+        // Get the actual collections
+        $regularBookings = $regularBookingsQuery->get();
+        $factoryBookings = $factoryBookingsQuery->get();
+
+        // Transform factory bookings to look like regular bookings for consistency
+        $transformedFactoryBookings = $factoryBookings->map(function ($factoryBooking) {
+            // Create a pseudo-slot object for factory bookings
+            $pseudoSlot = (object) [
+                'id' => null,
+                'start_at' => $factoryBooking->arrived_at,
+                'end_at' => $factoryBooking->completed_at ?? $factoryBooking->arrived_at->copy()->addHour(),
+                'depot' => $factoryBooking->depot,
+            ];
+
+            return (object) [
+                'id' => $factoryBooking->id,
+                'booking_reference' => $factoryBooking->reference,
+                'reference' => $factoryBooking->reference,
+                'slot' => $pseudoSlot,
+                'bookingType' => (object) ['name' => 'Factory Delivery'],
+                'customer' => $factoryBooking->customer,
+                'vehicle_registration' => $factoryBooking->vehicle_registration,
+                'trailer_registration' => $factoryBooking->trailer_registration,
+                'container_number' => null,
+                'arrived_at' => $factoryBooking->arrived_at,
+                'departed_at' => $factoryBooking->completed_at,
+                'cancelled_at' => null,
+                'cancellation_reason' => null,
+                'status' => $factoryBooking->status,
+                'estimated_arrival' => null,
+                'poNumbers' => collect(), // Factory bookings don't have PO structure like regular bookings
+                'type' => 'factory', // Mark as factory booking
+                'original_factory_booking' => $factoryBooking, // Keep reference to original
+            ];
+        });
+
+        // Combine both collections
+        $combined = $regularBookings->concat($transformedFactoryBookings);
+
+        // Sort by start_at (regular bookings) or arrived_at (factory bookings)
+        $combined = $combined->sortByDesc(function ($booking) {
+            if (isset($booking->type) && $booking->type === 'factory') {
+                return $booking->slot->start_at->timestamp;
+            }
+            return $booking->slot->start_at->timestamp;
+        });
+
+        return $combined->values();
+    }
+
+    /**
+     * Paginate combined bookings collection
+     */
+    private function paginateCombinedBookings($combinedBookings, Request $request, $perPage = 20)
+    {
+        $page = $request->input('page', 1);
+        $offset = ($page - 1) * $perPage;
+        
+        $items = $combinedBookings->slice($offset, $perPage)->values();
+        
+        return new \Illuminate\Pagination\LengthAwarePaginator(
+            $items,
+            $combinedBookings->count(),
+            $perPage,
+            $page,
+            [
+                'path' => $request->url(),
+                'pageName' => 'page',
+                'query' => $request->query(),
+            ]
+        );
     }
 }

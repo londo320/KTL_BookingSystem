@@ -1,6 +1,5 @@
 {{-- resources/views/admin/bookings/edit.blade.php --}}
 <x-app-layout>
-  @include('layouts.admin-nav')
   <x-slot name="header">
     <div class="flex items-center justify-between">
       <h2 class="font-semibold text-xl">Edit Booking #{{ $booking->id }}</h2>
@@ -8,40 +7,35 @@
         @php
           $hasArrived = $booking->arrived_at;
         @endphp
-        
         @if($booking->cancelled_at)
           <button disabled
                   class="px-4 py-2 bg-black text-white font-semibold rounded-lg border-2 border-black cursor-not-allowed opacity-50">
             🔄 Cannot Rebook - Cancelled
           </button>
-          
           <button disabled
                   class="px-4 py-2 bg-black text-white font-semibold rounded-lg border-2 border-black cursor-not-allowed opacity-50">
             ❌ Already Cancelled
           </button>
         @else
           {{-- Show rebook/cancel buttons for active bookings --}}
-          <a href="{{ route('admin.bookings.rebook.show', $booking) }}"
+          <a href="{{ route('app.bookings.rebook.show', $booking) }}"
              class="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg shadow-lg hover:bg-blue-600 border-2 border-blue-600">
             🔄 {{ $hasArrived ? 'Rebook/Reject Instead' : 'Rebook Instead' }}
           </a>
-          
           <button onclick="showCancelModal()" 
                   class="px-4 py-2 bg-red-500 text-white font-semibold rounded-lg shadow-lg hover:bg-red-600 border-2 border-red-600">
             ❌ {{ $hasArrived ? 'Cancel/Reject Booking' : 'Cancel Booking' }}
           </button>
         @endif
-        
-        <a href="{{ route('admin.bookings.show', $booking) }}"
+        <a href="{{ route('app.bookings.show', $booking) }}"
            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
           📄 View Details
         </a>
       </div>
     </div>
   </x-slot>
-
   <div class="py-6 max-w-3xl mx-auto bg-white p-6 rounded shadow">
-    <form action="{{ route('admin.bookings.update', $booking) }}" method="POST">
+    <form action="{{ route('app.bookings.update', $booking) }}" method="POST">
       @csrf
       @method('PATCH')
       @include('admin.bookings._form')
@@ -49,14 +43,13 @@
         <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">
           Update Booking
         </button>
-        <a href="{{ route('admin.bookings.index') }}"
+        <a href="{{ route('app.bookings.index') }}"
            class="px-4 py-2 bg-gray-300 text-gray-800 rounded">
            Cancel
         </a>
       </div>
     </form>
   </div>
-
   {{-- Unbook Vehicle Section (for arrived bookings only) --}}
   @if($booking->arrived_at && !$booking->departed_at)
     <div class="mt-6 max-w-3xl mx-auto">
@@ -71,7 +64,6 @@
               If this vehicle was assigned to the wrong booking reference, you can unbook it here. 
               This will clear all arrival details and reset the booking to scheduled status.
             </p>
-            
             <div class="bg-white rounded border border-yellow-300 p-4">
               <h4 class="font-medium text-gray-800 mb-2">Current Vehicle Details:</h4>
               <div class="text-sm text-gray-600 space-y-1">
@@ -90,7 +82,6 @@
                 <div><strong>Arrived:</strong> {{ $booking->arrived_at->format('d M Y, H:i') }}</div>
               </div>
             </div>
-
             <div class="mt-4 flex items-center justify-between">
               <div class="text-sm text-yellow-700">
                 <strong>Warning:</strong> This action cannot be undone and will free up any assigned drop zones or bays.
@@ -98,7 +89,7 @@
               <form method="POST" action="{{ 
                 request()->route()->getPrefix() === 'depot-admin' 
                   ? route('depot.bookings.unbook', $booking) 
-                  : route('admin.bookings.unbook', $booking) 
+                  : route('app.bookings.unbook', $booking) 
               }}" class="inline">
                 @csrf
                 <button type="submit" 
@@ -113,7 +104,6 @@
       </div>
     </div>
   @endif
-
   {{-- Cancel Booking Modal --}}
   <div id="cancelModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
@@ -138,25 +128,20 @@
       </form>
     </div>
   </div>
-
   <script>
     function showCancelModal() {
       document.getElementById('cancelModal').classList.remove('hidden');
       document.getElementById('cancelModal').classList.add('flex');
     }
-
     function closeCancelModal() {
       document.getElementById('cancelModal').classList.add('hidden');
       document.getElementById('cancelModal').classList.remove('flex');
     }
-
     document.getElementById('cancelForm').addEventListener('submit', function(e) {
       e.preventDefault();
-      
       const reason = document.getElementById('cancellationReason').value;
-      
       // Send request to cancel endpoint
-      fetch('{{ route("admin.bookings.cancel", $booking) }}', {
+      fetch('{{ route("app.bookings.cancel", $booking) }}', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -171,7 +156,7 @@
         if (data.success) {
           closeCancelModal();
           alert('Booking cancelled successfully!');
-          window.location.href = '{{ route("admin.bookings.show", $booking) }}';
+          window.location.href = '{{ route("app.bookings.show", $booking) }}';
         } else {
           alert('Error cancelling booking: ' + (data.message || 'Unknown error'));
         }
@@ -181,7 +166,6 @@
         alert('Error cancelling booking');
       });
     });
-
     // Close modal when clicking outside
     document.getElementById('cancelModal').addEventListener('click', function(e) {
       if (e.target === this) {

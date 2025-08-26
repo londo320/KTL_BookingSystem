@@ -1,6 +1,4 @@
 <x-app-layout>
-    @include('layouts.admin-nav')
-
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div>
@@ -11,18 +9,16 @@
                 <button onclick="toggleFullScreen()" class="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm" id="fullscreen-btn">
                     🖥️ Full Screen
                 </button>
-                <a href="{{ route('admin.depot-map.index') }}" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                <a href="{{ route('app.depot-map.index') }}" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
                     🗺️ View Map
                 </a>
-                <a href="{{ route('admin.bookings.index') }}" class="px-3 py-1 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-sm">
+                <a href="{{ route('app.bookings.index') }}" class="px-3 py-1 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-sm">
                     ← Back to Bookings
                 </a>
             </div>
         </div>
     </x-slot>
-
     <div class="py-6 max-w-full mx-auto px-4">
-        
         <!-- Instructions -->
         <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div class="flex items-start">
@@ -42,20 +38,16 @@
                 </div>
             </div>
         </div>
-
         <div class="grid grid-cols-1 xl:grid-cols-5 gap-6">
-            
             <!-- Map Area (3/5 width) -->
             <div class="xl:col-span-3">
                 <div class="bg-white rounded-lg shadow overflow-hidden">
                     <div class="p-4 border-b border-gray-200">
                         <h3 class="text-lg font-semibold">🏭 {{ $depot->name }} Map Editor</h3>
                     </div>
-                    
                     <div class="p-6">
                         <!-- Map Container -->
                         <div class="relative bg-gray-100 rounded-lg border-2 border-gray-300 overflow-hidden" style="min-height: 700px;" id="map-container">
-                            
                             <!-- Depot Map Image -->
                             <div class="absolute inset-0 flex items-center justify-center p-4">
                                 @if($depot->map_file && file_exists(public_path('images/depot-maps/' . $depot->map_file)))
@@ -65,7 +57,6 @@
                                              class="max-w-full max-h-full object-contain rounded-lg"
                                              id="depot-map-image"
                                              style="transform-origin: center;">
-                                        
                                         <!-- Draggable Bay Markers -->
                                         @foreach($bays as $bay)
                                             <div class="absolute bay-marker cursor-move" 
@@ -100,7 +91,6 @@
                                                 </div>
                                             </div>
                                         @endforeach
-                                        
                                         <!-- Draggable Location Markers -->
                                         @foreach($locations as $location)
                                             @php
@@ -110,7 +100,6 @@
                                                     'general' => '📍'
                                                 ];
                                                 $icon = $typeIcons[$location->location_type] ?? '📍';
-                                                
                                                 $locationWidth = $location->map_width ?? 100;
                                                 $locationHeight = $location->map_height ?? 60;
                                                 $locationRotation = $location->map_rotation ?? 0;
@@ -157,16 +146,12 @@
                                     </div>
                                 @endif
                             </div>
-                            
-                            
                         </div>
                     </div>
                 </div>
             </div>
-            
             <!-- Control Panels (2/5 width) -->
             <div class="xl:col-span-2 space-y-6">
-                
                 <!-- Bay Styling Panel - Compact Version - TOP PRIORITY -->
                 <div id="bay-styling-panel" class="bg-white rounded-lg shadow border-2 border-yellow-400 hidden">
                     <div class="p-3 border-b border-gray-200 bg-yellow-50">
@@ -176,7 +161,6 @@
                         </div>
                         <p class="text-xs text-gray-600 mt-1" id="selected-bay-name">Select a bay to customize</p>
                     </div>
-                    
                     <div class="p-3 space-y-3">
                         <!-- Size Controls -->
                         <div class="grid grid-cols-2 gap-2">
@@ -191,14 +175,12 @@
                                        class="w-full px-2 py-1 border border-gray-300 rounded text-xs">
                             </div>
                         </div>
-                        
                         <!-- Rotation Control -->
                         <div>
                             <label class="text-xs font-medium text-gray-700">Rotation: <span id="rotation-value" class="font-bold text-blue-600">0°</span></label>
                             <input type="range" id="bay-rotation" min="0" max="360" value="0" step="5"
                                    class="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer">
                         </div>
-                        
                         <!-- Text Controls -->
                         <div class="grid grid-cols-2 gap-2">
                             <div>
@@ -220,7 +202,6 @@
                                 </div>
                             </div>
                         </div>
-                        
                         <!-- Action Buttons -->
                         <div class="flex space-x-2 pt-2 border-t border-gray-200">
                             <button onclick="applyBayChanges()" 
@@ -234,7 +215,6 @@
                         </div>
                     </div>
                 </div>
-                
                 <!-- Location Styling Panel -->
                 <div id="location-styling-panel" class="bg-white rounded-lg shadow border-2 border-green-400 hidden">
                     <div class="p-3 border-b border-gray-200 bg-green-50">
@@ -244,7 +224,6 @@
                         </div>
                         <p class="text-xs text-gray-600 mt-1" id="selected-location-name">Select a location to customize</p>
                     </div>
-                    
                     <div class="p-3 space-y-3">
                         <!-- Size Controls -->
                         <div class="grid grid-cols-2 gap-2">
@@ -259,14 +238,12 @@
                                        class="w-full px-2 py-1 border border-gray-300 rounded text-xs">
                             </div>
                         </div>
-                        
                         <!-- Rotation Control -->
                         <div>
                             <label class="text-xs font-medium text-gray-700">Rotation: <span id="location-rotation-value" class="font-bold text-green-600">0°</span></label>
                             <input type="range" id="location-rotation" min="0" max="360" value="0" step="5"
                                    class="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer">
                         </div>
-                        
                         <!-- Text Controls -->
                         <div class="grid grid-cols-2 gap-2">
                             <div>
@@ -288,7 +265,6 @@
                                 </div>
                             </div>
                         </div>
-                        
                         <!-- Action Buttons -->
                         <div class="flex space-x-2 pt-2 border-t border-gray-200">
                             <button onclick="applyLocationChanges()" 
@@ -302,7 +278,6 @@
                         </div>
                     </div>
                 </div>
-                
                 <!-- Bay List -->
                 <div class="bg-white rounded-lg shadow">
                     <div class="p-4 border-b border-gray-200">
@@ -334,7 +309,6 @@
                                     </div>
                                 </div>
                             @endforeach
-                            
                             <!-- Locations Section -->
                             @if($locations->count() > 0)
                                 <hr class="my-4 border-gray-200">
@@ -377,8 +351,6 @@
                         </div>
                     </div>
                 </div>
-
-
                 <!-- Save Status -->
                 <div class="bg-white rounded-lg shadow p-4">
                     <div class="text-center">
@@ -391,11 +363,9 @@
                         </div>
                     </div>
                 </div>
-                
             </div>
         </div>
     </div>
-
     <script>
         let draggedItem = null;
         let dragType = null; // 'bay' or 'location'
@@ -403,27 +373,22 @@
         let mapContainer = document.getElementById('map-container');
         let saveTimeout = null;
         let selectedBay = null;
-
         // Make bay markers draggable and clickable for styling
         document.querySelectorAll('.bay-marker').forEach(marker => {
             let isDragging = false;
             let startX, startY;
-            
             marker.addEventListener('mousedown', function(e) {
                 startX = e.clientX;
                 startY = e.clientY;
                 isDragging = false;
-                
                 dragType = 'bay';
                 startDrag(e);
             });
-            
             marker.addEventListener('mousemove', function(e) {
                 if (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5) {
                     isDragging = true;
                 }
             });
-            
             marker.addEventListener('mouseup', function(e) {
                 if (!isDragging) {
                     // This was a click, not a drag - show styling panel
@@ -432,12 +397,10 @@
                 isDragging = false;
             });
         });
-        
         // Make location markers draggable and clickable for styling
         document.querySelectorAll('.location-marker').forEach(marker => {
             let isDragging = false;
             let startX, startY;
-            
             marker.addEventListener('mousedown', function(e) {
                 startX = e.clientX;
                 startY = e.clientY;
@@ -445,13 +408,11 @@
                 dragType = 'location';
                 startDrag(e);
             });
-            
             marker.addEventListener('mousemove', function(e) {
                 if (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5) {
                     isDragging = true;
                 }
             });
-            
             marker.addEventListener('mouseup', function(e) {
                 if (!isDragging) {
                     // This was a click, not a drag - show styling panel
@@ -460,78 +421,60 @@
                 isDragging = false;
             });
         });
-
         // Handle bay visibility toggles
         document.querySelectorAll('.bay-visibility-toggle').forEach(toggle => {
             toggle.addEventListener('change', function() {
                 const bayId = this.dataset.bayId;
                 const isVisible = this.checked;
                 const marker = document.querySelector(`[data-bay-id="${bayId}"]`);
-                
                 if (marker) {
                     marker.style.display = isVisible ? 'block' : 'none';
                 }
-                
                 // Save visibility change
                 updateBayPosition(bayId, null, null, isVisible);
             });
         });
-        
         // Handle location visibility toggles
         document.querySelectorAll('.location-visibility-toggle').forEach(toggle => {
             toggle.addEventListener('change', function() {
                 const locationId = this.dataset.locationId;
                 const isVisible = this.checked;
                 const marker = document.querySelector(`[data-location-id="${locationId}"]`);
-                
                 if (marker) {
                     marker.style.display = isVisible ? 'block' : 'none';
                 }
-                
                 // Save visibility change
                 updateLocationPosition(locationId, null, null, isVisible);
             });
         });
-
         function startDrag(e) {
             e.preventDefault();
             draggedItem = e.currentTarget;
-            
             document.addEventListener('mousemove', drag);
             document.addEventListener('mouseup', stopDrag);
-            
             draggedItem.style.zIndex = '1000';
         }
-
         function drag(e) {
             if (!draggedItem || !mapImageContainer) return;
-            
             const rect = mapImageContainer.getBoundingClientRect();
             const x = ((e.clientX - rect.left) / rect.width) * 100;
             const y = ((e.clientY - rect.top) / rect.height) * 100;
-            
             // Keep within bounds
             const clampedX = Math.max(0, Math.min(95, x));
             const clampedY = Math.max(0, Math.min(95, y));
-            
             draggedItem.style.left = clampedX + '%';
             draggedItem.style.top = clampedY + '%';
         }
-
         function stopDrag(e) {
             if (!draggedItem || !mapImageContainer) return;
-            
             document.removeEventListener('mousemove', drag);
             document.removeEventListener('mouseup', stopDrag);
-            
             // Get final position relative to image container
             const rect = mapImageContainer.getBoundingClientRect();
             const x = ((e.clientX - rect.left) / rect.width) * 100;
             const y = ((e.clientY - rect.top) / rect.height) * 100;
-            
             const clampedX = Math.max(0, Math.min(95, x));
             const clampedY = Math.max(0, Math.min(95, y));
-            
             // Save position based on type
             if (dragType === 'bay') {
                 const bayId = draggedItem.dataset.bayId;
@@ -540,12 +483,10 @@
                 const locationId = draggedItem.dataset.locationId;
                 updateLocationPosition(locationId, clampedX, clampedY, true);
             }
-            
             draggedItem.style.zIndex = '';
             draggedItem = null;
             dragType = null;
         }
-
         async function updateBayPosition(bayId, x, y, showOnMap) {
             try {
                 const data = { bay_id: bayId, show_on_map: showOnMap };
@@ -553,8 +494,7 @@
                     data.map_x = x;
                     data.map_y = y;
                 }
-                
-                const response = await fetch('{{ route("admin.depot-map.update-position") }}', {
+                const response = await fetch('{{ route("app.depot-map.update-position") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -562,9 +502,7 @@
                     },
                     body: JSON.stringify(data)
                 });
-                
                 const result = await response.json();
-                
                 if (result.success) {
                     showSaveIndicator();
                     updatePositionDisplay(bayId, x, y);
@@ -575,7 +513,6 @@
                 console.error('Error saving position:', error);
             }
         }
-        
         async function updateLocationPosition(locationId, x, y, showOnMap) {
             try {
                 const data = { location_id: locationId, show_on_map: showOnMap };
@@ -583,8 +520,7 @@
                     data.map_x = x;
                     data.map_y = y;
                 }
-                
-                const response = await fetch('{{ route("admin.depot-map.update-location-position") }}', {
+                const response = await fetch('{{ route("app.depot-map.update-location-position") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -592,9 +528,7 @@
                     },
                     body: JSON.stringify(data)
                 });
-                
                 const result = await response.json();
-                
                 if (result.success) {
                     showSaveIndicator();
                     updateLocationPositionDisplay(locationId, x, y);
@@ -605,17 +539,14 @@
                 console.error('Error saving location position:', error);
             }
         }
-
         function showSaveIndicator() {
             const indicator = document.getElementById('save-indicator');
             indicator.classList.remove('hidden');
-            
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(() => {
                 indicator.classList.add('hidden');
             }, 2000);
         }
-
         function updatePositionDisplay(bayId, x, y) {
             if (x !== null && y !== null) {
                 // Update the position display in the bay list
@@ -625,7 +556,6 @@
                 }
             }
         }
-        
         function updateLocationPositionDisplay(locationId, x, y) {
             if (x !== null && y !== null) {
                 // Update the position display in the location list
@@ -635,63 +565,51 @@
                 }
             }
         }
-        
         // Bay styling functions
         function selectBayForStyling(bayMarker) {
             selectedBay = bayMarker;
             const bayId = bayMarker.dataset.bayId;
             const bayName = bayMarker.dataset.bayName;
-            
             // Show styling panel with attention animation
             const panel = document.getElementById('bay-styling-panel');
             panel.classList.remove('hidden');
             document.getElementById('selected-bay-name').textContent = `Customizing: ${bayName}`;
-            
             // Scroll to top of right column to ensure panel is visible
             const rightColumn = document.querySelector('.xl\\:col-span-2');
             if (rightColumn) {
                 rightColumn.scrollTop = 0;
             }
-            
             // Load current bay settings
             loadBaySettings(bayMarker);
-            
             // Highlight selected bay
             document.querySelectorAll('.bay-marker').forEach(m => m.classList.remove('selected'));
             bayMarker.classList.add('selected');
         }
-        
         function loadBaySettings(bayMarker) {
             const box = bayMarker.querySelector('.bay-box');
             const text = bayMarker.querySelector('.bay-box div');
-            
             // Get current styles from rendered elements
             const currentWidth = parseInt(box.style.width) || 60;
             const currentHeight = parseInt(box.style.height) || 40;
             const currentRotation = getRotationFromTransform(box.style.transform) || 0;
             const currentColor = text.style.color || '#ffffff';
-            
             // Set form values
             document.getElementById('bay-width').value = currentWidth;
             document.getElementById('bay-height').value = currentHeight;
             document.getElementById('bay-rotation').value = currentRotation;
             document.getElementById('rotation-value').textContent = currentRotation + '°';
-            
             // Convert RGB to hex if needed
             const hexColor = rgbToHex(currentColor) || currentColor;
             document.getElementById('bay-text-color').value = hexColor;
             document.getElementById('bay-text-color-hex').value = hexColor;
-            
             // Set text size based on current class
             const textSizeClass = getTextSizeClass(text);
             document.getElementById('bay-text-size').value = textSizeClass;
         }
-        
         // Helper function to convert RGB to hex
         function rgbToHex(rgb) {
             if (!rgb || rgb === 'white' || rgb === '#ffffff') return '#ffffff';
             if (rgb.startsWith('#')) return rgb;
-            
             const result = rgb.match(/\d+/g);
             if (result && result.length >= 3) {
                 const r = parseInt(result[0]);
@@ -701,61 +619,49 @@
             }
             return '#ffffff';
         }
-        
         function getRotationFromTransform(transform) {
             if (!transform || transform === 'none') return 0;
             const match = transform.match(/rotate\\(([^)]+)deg\\)/);
             return match ? parseInt(match[1]) : 0;
         }
-        
         function getTextSizeClass(element) {
             if (element.classList.contains('text-lg')) return 'lg';
             if (element.classList.contains('text-md')) return 'md';
             if (element.classList.contains('text-sm')) return 'sm';
             return 'xs';
         }
-        
         function applyBayChanges() {
             if (!selectedBay) return;
-            
             const bayId = selectedBay.dataset.bayId;
             const width = document.getElementById('bay-width').value;
             const height = document.getElementById('bay-height').value;
             const rotation = document.getElementById('bay-rotation').value;
             const textSize = document.getElementById('bay-text-size').value;
             const textColor = document.getElementById('bay-text-color-hex').value;
-            
             // Apply changes visually
             updateBayVisuals(selectedBay, width, height, rotation, textSize, textColor);
-            
             // Save to database
             saveBaySettings(bayId, width, height, rotation, textSize, textColor);
         }
-        
         function updateBayVisuals(bayMarker, width, height, rotation, textSize, textColor) {
             const box = bayMarker.querySelector('.bay-box');
             const text = bayMarker.querySelector('.bay-box div');
-            
             // Update size
             box.style.width = width + 'px';
             box.style.height = height + 'px';
-            
             // Update rotation
             box.style.transform = `rotate(${rotation}deg)`;
-            
             // Update text color
             text.style.color = textColor;
-            
             // Update text size
             text.className = text.className.replace(/text-(xs|sm|md|lg)/, `text-${textSize}`);
             if (!text.className.includes('text-')) {
                 text.className += ` text-${textSize}`;
             }
         }
-        
         async function saveBaySettings(bayId, width, height, rotation, textSize, textColor) {
             try {
-                const response = await fetch('{{ route("admin.depot-map.update-position") }}', {
+                const response = await fetch('{{ route("app.depot-map.update-position") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -771,9 +677,7 @@
                         show_on_map: true
                     })
                 });
-                
                 const result = await response.json();
-                
                 if (result.success) {
                     showSaveIndicator();
                 } else {
@@ -785,10 +689,8 @@
                 alert('Error saving settings: ' + error.message);
             }
         }
-        
         function resetBayToDefault() {
             if (!selectedBay) return;
-            
             // Reset to default values
             document.getElementById('bay-width').value = 60;
             document.getElementById('bay-height').value = 40;
@@ -797,117 +699,92 @@
             document.getElementById('bay-text-size').value = 'xs';
             document.getElementById('bay-text-color').value = '#ffffff';
             document.getElementById('bay-text-color-hex').value = '#ffffff';
-            
             // Apply defaults
             updateBayVisuals(selectedBay, 60, 40, 0, 'xs', '#ffffff');
-            
             // Save defaults
             const bayId = selectedBay.dataset.bayId;
             saveBaySettings(bayId, 60, 40, 0, 'xs', '#ffffff');
         }
-        
         function closeBayStyling() {
             document.getElementById('bay-styling-panel').classList.add('hidden');
             document.querySelectorAll('.bay-marker').forEach(m => m.classList.remove('selected'));
             selectedBay = null;
         }
-        
         // Update rotation value display
         document.getElementById('bay-rotation').addEventListener('input', function() {
             document.getElementById('rotation-value').textContent = this.value + '°';
         });
-        
         // Sync color picker with hex input
         document.getElementById('bay-text-color').addEventListener('input', function() {
             document.getElementById('bay-text-color-hex').value = this.value;
         });
-        
         document.getElementById('bay-text-color-hex').addEventListener('input', function() {
             document.getElementById('bay-text-color').value = this.value;
         });
-        
         // Location styling functions
         let selectedLocation = null;
-        
         function selectLocationForStyling(locationMarker) {
             selectedLocation = locationMarker;
             const locationId = locationMarker.dataset.locationId;
             const locationName = locationMarker.dataset.locationName;
-            
             // Hide bay styling panel and show location styling panel
             document.getElementById('bay-styling-panel').classList.add('hidden');
             const panel = document.getElementById('location-styling-panel');
             panel.classList.remove('hidden');
             document.getElementById('selected-location-name').textContent = `Customizing: ${locationName}`;
-            
             // Scroll to top of right column to ensure panel is visible
             const rightColumn = document.querySelector('.xl\\:col-span-2');
             if (rightColumn) {
                 rightColumn.scrollTop = 0;
             }
-            
             // Load current location settings
             loadLocationSettings(locationMarker);
-            
             // Highlight selected location
             document.querySelectorAll('.location-marker').forEach(m => m.classList.remove('selected'));
             locationMarker.classList.add('selected');
         }
-        
         function loadLocationSettings(locationMarker) {
             const box = locationMarker.querySelector('.location-box');
             const text = locationMarker.querySelector('.location-box div:last-child');
-            
             // Get current styles from rendered elements
             const currentWidth = parseInt(box.style.width) || 100;
             const currentHeight = parseInt(box.style.height) || 60;
             const currentRotation = getRotationFromTransform(box.style.transform) || 0;
             const currentColor = text.style.color || '#ffffff';
-            
             // Set form values
             document.getElementById('location-width').value = currentWidth;
             document.getElementById('location-height').value = currentHeight;
             document.getElementById('location-rotation').value = currentRotation;
             document.getElementById('location-rotation-value').textContent = currentRotation + '°';
-            
             // Convert RGB to hex if needed
             const hexColor = rgbToHex(currentColor) || currentColor;
             document.getElementById('location-text-color').value = hexColor;
             document.getElementById('location-text-color-hex').value = hexColor;
-            
             // Set text size based on current class
             const textSizeClass = getTextSizeClass(text);
             document.getElementById('location-text-size').value = textSizeClass;
         }
-        
         function applyLocationChanges() {
             if (!selectedLocation) return;
-            
             const locationId = selectedLocation.dataset.locationId;
             const width = document.getElementById('location-width').value;
             const height = document.getElementById('location-height').value;
             const rotation = document.getElementById('location-rotation').value;
             const textSize = document.getElementById('location-text-size').value;
             const textColor = document.getElementById('location-text-color-hex').value;
-            
             // Apply changes visually
             updateLocationVisuals(selectedLocation, width, height, rotation, textSize, textColor);
-            
             // Save to database
             saveLocationSettings(locationId, width, height, rotation, textSize, textColor);
         }
-        
         function updateLocationVisuals(locationMarker, width, height, rotation, textSize, textColor) {
             const box = locationMarker.querySelector('.location-box');
             const texts = locationMarker.querySelectorAll('.location-box div');
-            
             // Update size
             box.style.width = width + 'px';
             box.style.height = height + 'px';
-            
             // Update rotation
             box.style.transform = `rotate(${rotation}deg)`;
-            
             // Update text color and size
             texts.forEach(text => {
                 text.style.color = textColor;
@@ -915,10 +792,9 @@
                 text.className = text.className.replace(/text-(xs|sm|md|lg)/, `text-${textSize}`);
             });
         }
-        
         async function saveLocationSettings(locationId, width, height, rotation, textSize, textColor) {
             try {
-                const response = await fetch('{{ route("admin.depot-map.update-location-position") }}', {
+                const response = await fetch('{{ route("app.depot-map.update-location-position") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -933,7 +809,6 @@
                         text_color: textColor
                     })
                 });
-
                 const result = await response.json();
                 if (result.success) {
                     console.log('Location settings saved:', result.message);
@@ -944,10 +819,8 @@
                 console.error('Error saving location settings:', error);
             }
         }
-        
         function resetLocationToDefault() {
             if (!selectedLocation) return;
-            
             // Reset to default values
             document.getElementById('location-width').value = 100;
             document.getElementById('location-height').value = 60;
@@ -956,41 +829,33 @@
             document.getElementById('location-text-size').value = 'xs';
             document.getElementById('location-text-color').value = '#ffffff';
             document.getElementById('location-text-color-hex').value = '#ffffff';
-            
             // Apply defaults
             updateLocationVisuals(selectedLocation, 100, 60, 0, 'xs', '#ffffff');
-            
             // Save defaults
             const locationId = selectedLocation.dataset.locationId;
             saveLocationSettings(locationId, 100, 60, 0, 'xs', '#ffffff');
         }
-        
         function closeLocationStyling() {
             document.getElementById('location-styling-panel').classList.add('hidden');
             document.querySelectorAll('.location-marker').forEach(m => m.classList.remove('selected'));
             selectedLocation = null;
         }
-        
         // Update location rotation value display
         document.getElementById('location-rotation').addEventListener('input', function() {
             document.getElementById('location-rotation-value').textContent = this.value + '°';
         });
-        
         // Sync location color picker with hex input
         document.getElementById('location-text-color').addEventListener('input', function() {
             document.getElementById('location-text-color-hex').value = this.value;
         });
-        
         document.getElementById('location-text-color-hex').addEventListener('input', function() {
             document.getElementById('location-text-color').value = this.value;
         });
-        
         // Full screen functionality
         function toggleFullScreen() {
             const body = document.body;
             const container = document.querySelector('.py-6.max-w-full.mx-auto.px-4');
             const fullscreenBtn = document.getElementById('fullscreen-btn');
-            
             if (body.classList.contains('fullscreen-mode')) {
                 // Exit full screen
                 body.classList.remove('fullscreen-mode');
@@ -1003,7 +868,6 @@
                 fullscreenBtn.innerHTML = '🗙 Exit Full Screen';
             }
         }
-        
         // ESC key to exit full screen
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && document.body.classList.contains('fullscreen-mode')) {
@@ -1011,39 +875,32 @@
             }
         });
     </script>
-
     <style>
         .bay-marker:hover .bay-box {
             transform: scale(1.05);
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
-        
         .bay-marker {
             transition: transform 0.2s ease;
             user-select: none;
         }
-        
         .bay-marker.selected .bay-box {
             border: 3px solid #fbbf24 !important;
             box-shadow: 0 0 0 2px #fef3c7;
         }
-        
         .location-marker.selected .location-box {
             border: 4px solid #fbbf24 !important;
             box-shadow: 0 0 0 2px #fef3c7;
         }
-        
         /* Full screen mode styles */
         .fullscreen-mode {
             overflow: hidden;
         }
-        
         .fullscreen-mode header,
         .fullscreen-mode nav,
         .fullscreen-mode .sidebar {
             display: none !important;
         }
-        
         .fullscreen-container {
             position: fixed !important;
             top: 0 !important;
@@ -1056,42 +913,34 @@
             padding: 1rem !important;
             margin: 0 !important;
         }
-        
         .fullscreen-container .grid {
             height: calc(100vh - 2rem) !important;
         }
-        
         .fullscreen-container .bg-white.rounded-lg.shadow {
             height: 100% !important;
         }
-        
         .fullscreen-container .relative.bg-gray-100.rounded-lg {
             height: calc(100% - 4rem) !important;
         }
-        
         /* Adjust sidebar in fullscreen for positioning interface */
         .fullscreen-container .xl\\:col-span-2 {
             max-height: calc(100vh - 2rem) !important;
             overflow-y: auto !important;
         }
-        
         .fullscreen-container #bay-styling-panel {
             position: sticky !important;
             top: 0 !important;
             z-index: 10 !important;
         }
-        
         .fullscreen-container #location-styling-panel {
             position: sticky !important;
             top: 0 !important;
             z-index: 10 !important;
         }
-        
         /* Make styling panels more prominent */
         #bay-styling-panel, #location-styling-panel {
             animation: slideIn 0.3s ease-out;
         }
-        
         @keyframes slideIn {
             from {
                 opacity: 0;

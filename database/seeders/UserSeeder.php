@@ -11,6 +11,12 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
+        // Check if admin user already exists
+        if (User::where('email', 'admin@example.com')->exists()) {
+            $this->command->info('Admin user already exists, skipping user creation.');
+            return;
+        }
+
         // Ensure at least one depot exists
         $depot = Depot::first() ?? Depot::create([
             'name' => 'Main Depot',

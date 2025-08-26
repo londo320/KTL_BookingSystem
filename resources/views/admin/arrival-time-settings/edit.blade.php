@@ -14,11 +14,11 @@
                 <p class="mt-2 text-gray-600">Modify early/late arrival tolerances</p>
             </div>
             <div class="flex gap-3">
-                <a href="{{ route('admin.arrival-time-settings.show', $arrivalTimeSetting) }}" 
+                <a href="{{ route('app.arrival-time-settings.show', $arrivalTimeSetting) }}" 
                    class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
                     👁️ View Details
                 </a>
-                <a href="{{ route('admin.arrival-time-settings.index') }}" 
+                <a href="{{ route('app.arrival-time-settings.index') }}" 
                    class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
                     ← Back to Settings
                 </a>
@@ -55,7 +55,7 @@
             </div>
         </div>
         
-        <form method="POST" action="{{ route('admin.arrival-time-settings.update', $arrivalTimeSetting) }}" class="p-6">
+        <form method="POST" action="{{ route('app.arrival-time-settings.update', $arrivalTimeSetting) }}" class="p-6">
             @csrf
             @method('PUT')
             
@@ -159,7 +159,7 @@
 
             <!-- Actions -->
             <div class="flex items-center justify-end gap-4">
-                <a href="{{ route('admin.arrival-time-settings.show', $arrivalTimeSetting) }}" 
+                <a href="{{ route('app.arrival-time-settings.show', $arrivalTimeSetting) }}" 
                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
                     Cancel
                 </a>

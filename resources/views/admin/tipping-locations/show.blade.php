@@ -1,6 +1,4 @@
 <x-app-layout>
-    @include('layouts.admin-nav')
-
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div>
@@ -18,12 +16,12 @@
                 </div>
             </div>
             <div class="flex space-x-2">
-                <a href="{{ route('admin.tipping-locations.index') }}" 
+                <a href="{{ route('app.tipping-locations.index') }}" 
                    class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                     ← Back to Locations
                 </a>
                 @if($canTakeAction)
-                    <a href="{{ route('admin.tipping-locations.edit', $tippingLocation) }}" 
+                    <a href="{{ route('app.tipping-locations.edit', $tippingLocation) }}" 
                        class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
                         Edit Location
                     </a>
@@ -36,42 +34,35 @@
             </div>
         </div>
     </x-slot>
-
     <div class="py-6 max-w-6xl mx-auto">
         @if (session('success'))
             <div class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
                 {{ session('success') }}
             </div>
         @endif
-
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {{-- Location Information --}}
             <div class="bg-white p-6 rounded-lg shadow">
                 <h3 class="text-xl font-semibold mb-4 text-gray-800">📍 Location Information</h3>
-                
                 <div class="space-y-3">
                     <div>
                         <label class="text-sm font-medium text-gray-600">Name</label>
                         <p class="text-lg font-medium">{{ $tippingLocation->name }}</p>
                     </div>
-                    
                     @if($tippingLocation->code)
                         <div>
                             <label class="text-sm font-medium text-gray-600">Code</label>
                             <p class="text-lg font-mono">{{ $tippingLocation->code }}</p>
                         </div>
                     @endif
-                    
                     <div>
                         <label class="text-sm font-medium text-gray-600">Depot</label>
                         <p class="text-lg">{{ $tippingLocation->depot->name }}</p>
                     </div>
-                    
                     <div>
                         <label class="text-sm font-medium text-gray-600">Capacity</label>
                         <p class="text-lg">{{ $tippingLocation->capacity }} vehicles</p>
                     </div>
-                    
                     <div>
                         <label class="text-sm font-medium text-gray-600">Status</label>
                         <p class="text-lg">
@@ -82,7 +73,6 @@
                             @endif
                         </p>
                     </div>
-                    
                     @if($tippingLocation->description)
                         <div>
                             <label class="text-sm font-medium text-gray-600">Description</label>
@@ -91,11 +81,9 @@
                     @endif
                 </div>
             </div>
-
             {{-- Current Status --}}
             <div class="bg-white p-6 rounded-lg shadow">
                 <h3 class="text-xl font-semibold mb-4 text-gray-800">📊 Current Status</h3>
-                
                 <div class="space-y-4">
                     <div>
                         <label class="text-sm font-medium text-gray-600">Occupancy</label>
@@ -111,14 +99,12 @@
                             </span>
                         </div>
                     </div>
-                    
                     <div>
                         <label class="text-sm font-medium text-gray-600">Available Capacity</label>
                         <p class="text-2xl font-bold {{ $availableCapacity > 0 ? 'text-green-600' : 'text-red-600' }}">
                             {{ $availableCapacity }}
                         </p>
                     </div>
-                    
                     <div>
                         <label class="text-sm font-medium text-gray-600">Availability</label>
                         <p class="text-lg">
@@ -132,14 +118,12 @@
                 </div>
             </div>
         </div>
-
         {{-- Active Bookings --}}
         <div class="mt-6 bg-white rounded-lg shadow">
             <div class="p-6 border-b border-gray-200">
                 <h3 class="text-xl font-semibold text-gray-800">🚛 Active Bookings</h3>
                 <p class="text-sm text-gray-600 mt-1">Vehicles currently using this drop location</p>
             </div>
-            
             <div class="p-6">
                 @if($tippingLocation->activeBookings && $tippingLocation->activeBookings->count() > 0)
                     <div class="space-y-4">
@@ -151,15 +135,12 @@
                                         <span class="text-gray-600">-</span>
                                         <span class="text-gray-600">{{ $booking->booking_reference ?: '#' . $booking->id }}</span>
                                     </div>
-                                    
                                     @if($booking->reference)
                                         <p class="text-sm text-gray-500 mt-1">Customer Ref: {{ $booking->reference }}</p>
                                     @endif
-                                    
                                     @if($booking->container_number)
                                         <p class="text-sm text-gray-500 mt-1">Container: {{ $booking->container_number }}</p>
                                     @endif
-                                    
                                     <div class="mt-2 text-sm text-gray-600">
                                         <span>Slot: {{ $booking->slot->start_at->format('D, d M Y - H:i') }}</span>
                                         @if($booking->arrived_at)
@@ -167,12 +148,11 @@
                                         @endif
                                     </div>
                                 </div>
-                                
                                 <div class="flex items-center space-x-2">
                                     {!! $booking->tipping_status_badge !!}
                                     @php $canManageBooking = $booking->slot->depot_id == $defaultDepotId; @endphp
                                     @if($canManageBooking)
-                                        <a href="{{ route('admin.tipping-workflow.show', $booking) }}" 
+                                        <a href="{{ route('app.tipping-workflow.show', $booking) }}" 
                                            class="text-blue-600 hover:text-blue-800 text-sm">
                                             Manage →
                                         </a>

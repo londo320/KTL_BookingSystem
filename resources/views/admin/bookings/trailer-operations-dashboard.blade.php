@@ -1,6 +1,4 @@
 <x-app-layout>
-  @include('layouts.admin-nav')
-
   <x-slot name="header">
     <div class="flex items-center justify-between">
       <div>
@@ -8,24 +6,22 @@
         <p class="text-sm text-gray-600 mt-1">Complete operational view with workflow priorities and timing</p>
       </div>
       <div class="flex space-x-3">
-        <a href="{{ route('admin.trailer-location-report') }}"
+        <a href="{{ route('app.trailer-location-report') }}"
            class="px-3 py-1 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-sm">
           📊 Location Report
         </a>
-        <a href="{{ route('admin.tipping-workflow.dashboard') }}"
+        <a href="{{ route('app.tipping-workflow.dashboard') }}"
            class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
           🔄 Tipping Dashboard
         </a>
-        <a href="{{ route('admin.bookings.index') }}"
+        <a href="{{ route('app.bookings.index') }}"
            class="px-3 py-1 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-sm">
           ← Back to Bookings
         </a>
       </div>
     </div>
   </x-slot>
-
   <div class="py-6 max-w-full mx-auto px-4">
-    
     <!-- Priority Guide -->
     <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
       <h3 class="text-sm font-semibold text-blue-800 mb-2">🎯 Workflow Priority Order</h3>
@@ -56,7 +52,6 @@
         </div>
       </div>
     </div>
-
     <!-- Summary Stats -->
     @php
       $stats = [
@@ -68,7 +63,6 @@
         'empty_trailers' => $movementsOnSite->where('calculated_data.is_loaded', false)->count(),
       ];
     @endphp
-    
     <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
       <div class="bg-white p-4 rounded-lg shadow">
         <div class="text-2xl font-bold text-gray-600">{{ $stats['total_on_site'] }}</div>
@@ -95,7 +89,6 @@
         <div class="text-sm text-gray-600">Empty Trailers</div>
       </div>
     </div>
-
     <!-- Main Operations Table -->
     @if($movementsOnSite->count() > 0)
     <div class="bg-white rounded-lg shadow overflow-hidden">
@@ -126,7 +119,6 @@
             @php 
               $booking = $movement->booking;
               $data = $movement->calculated_data;
-              
               // Priority styling
               $priorityColors = [
                 1 => 'bg-red-500 text-white',
@@ -137,7 +129,6 @@
                 6 => 'bg-gray-500 text-white',
                 7 => 'bg-gray-400 text-white'
               ];
-              
               // Status display
               $statusDisplay = match($movement->current_status) {
                 'unloading' => '⚡ Tipping Active',
@@ -150,7 +141,6 @@
                 'in_waiting' => '⏳ In Waiting Area',
                 default => ucwords(str_replace('_', ' ', $movement->current_status))
               };
-              
               // Status colors
               $statusColors = [
                 'unloading' => 'bg-red-100 text-red-800',
@@ -162,7 +152,6 @@
                 'arrived' => 'bg-gray-100 text-gray-800',
                 'in_waiting' => 'bg-yellow-100 text-yellow-800',
               ];
-              
               // Helper function to format minutes
               $formatMinutes = function($minutes) {
                 if (!$minutes || $minutes < 0) return '-';
@@ -181,17 +170,15 @@
                   {{ $data['workflow_priority'] }}
                 </span>
               </td>
-              
               <!-- Booking -->
               <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                <a href="{{ route('admin.bookings.show', $booking) }}" class="hover:underline">
+                <a href="{{ route('app.bookings.show', $booking) }}" class="hover:underline">
                   {{ $booking->booking_reference }}
                 </a>
                 @if($booking->booked_at)
                   <br><span class="text-xs text-gray-500">{{ $booking->booked_at->format('M j H:i') }}</span>
                 @endif
               </td>
-              
               <!-- Customer -->
               <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                 {{ $booking->customer->name ?? 'Unknown' }}
@@ -199,7 +186,6 @@
                   <br><span class="text-xs text-blue-600">📦 {{ $booking->poNumbers->pluck('po_number')->join(', ') }}</span>
                 @endif
               </td>
-              
               <!-- Vehicle/Container -->
               <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
                 {{ $booking->vehicle_registration ?? 'Not specified' }}
@@ -207,14 +193,12 @@
                   <br><span class="text-xs font-mono">{{ $booking->container_number }}</span>
                 @endif
               </td>
-              
               <!-- Status -->
               <td class="px-4 py-4 whitespace-nowrap">
                 <span class="px-2 py-1 text-xs rounded-full {{ $statusColors[$movement->current_status] ?? 'bg-gray-100 text-gray-800' }}">
                   {{ $statusDisplay }}
                 </span>
               </td>
-              
               <!-- Load State -->
               <td class="px-4 py-4 whitespace-nowrap text-sm">
                 <div class="flex flex-col space-y-1">
@@ -226,7 +210,6 @@
                   </span>
                 </div>
               </td>
-              
               <!-- Location -->
               <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
                 @if($movement->tippingBay)
@@ -241,19 +224,16 @@
                   <span class="text-gray-400">No location</span>
                 @endif
               </td>
-              
               <!-- Arrived -->
               <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
                 @if($data['arrival_time'])
                   <div class="font-medium">{{ $data['arrival_time']->format('M j H:i') }}</div>
                   <div class="text-xs text-gray-400">{{ $data['arrival_time']->diffForHumans() }}</div>
-                  
                   @if($movement->unit_departed_at)
                     <div class="text-xs text-orange-600 mt-1">
                       🚛 Unit left: {{ $movement->unit_departed_at->format('H:i') }}
                     </div>
                   @endif
-                  
                   @if($movement->collection_unit_arrived_at)
                     <div class="text-xs text-green-600 mt-1">
                       🚚 Collection: {{ $movement->collection_unit_arrived_at->format('H:i') }}
@@ -263,7 +243,6 @@
                   <span class="text-gray-400">Unknown</span>
                 @endif
               </td>
-              
               <!-- Time on Site -->
               <td class="px-4 py-4 whitespace-nowrap text-sm">
                 <span class="font-mono {{ $data['time_on_site_minutes'] > 240 ? 'text-red-600 font-bold' : 'text-gray-900' }}">
@@ -273,7 +252,6 @@
                   <br><span class="text-xs text-red-500">⚠️ Long wait</span>
                 @endif
               </td>
-              
               <!-- In Current Status -->
               <td class="px-4 py-4 whitespace-nowrap text-sm">
                 <span class="font-mono text-gray-900">
@@ -283,7 +261,6 @@
                   <br><span class="text-xs text-gray-400">Since {{ $data['status_start_time']->format('H:i') }}</span>
                 @endif
               </td>
-              
               <!-- Tipping Duration -->
               <td class="px-4 py-4 whitespace-nowrap text-sm">
                 @if($data['tipping_duration_minutes'])
@@ -299,15 +276,14 @@
                   <span class="text-gray-400">-</span>
                 @endif
               </td>
-              
               <!-- Actions -->
               <td class="px-4 py-4 whitespace-nowrap text-sm">
                 <div class="flex flex-col space-y-1">
-                  <a href="{{ route('admin.tipping-workflow.show', $booking) }}" 
+                  <a href="{{ route('app.tipping-workflow.show', $booking) }}" 
                      class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 text-center">
                     🔧 Manage
                   </a>
-                  <a href="{{ route('admin.bookings.show', $booking) }}" 
+                  <a href="{{ route('app.bookings.show', $booking) }}" 
                      class="px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 text-center">
                     👁️ View
                   </a>

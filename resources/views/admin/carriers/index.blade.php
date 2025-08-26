@@ -12,11 +12,11 @@
                 <p class="mt-2 text-gray-600">Manage carriers, depot configurations, and merge duplicates</p>
             </div>
             <div class="flex gap-3">
-                <a href="{{ route('admin.carriers.merge.index') }}" 
+                <a href="{{ route('app.carriers.merge.index') }}" 
                    class="inline-flex items-center px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors">
                     🔄 Merge Carriers
                 </a>
-                <a href="{{ route('admin.carriers.create') }}" 
+                <a href="{{ route('app.carriers.create') }}" 
                    class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
                     ➕ Add Carrier
                 </a>
@@ -115,7 +115,7 @@
                     <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium">
                         🔍 Search
                     </button>
-                    <a href="{{ route('admin.carriers.index') }}" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg transition-colors">
+                    <a href="{{ route('app.carriers.index') }}" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg transition-colors">
                         Clear
                     </a>
                 </div>
@@ -126,7 +126,7 @@
     <!-- Bulk Actions -->
     <div class="bg-white rounded-lg shadow-sm border mb-8">
         <div class="p-4">
-            <form id="bulk-form" method="POST" action="{{ route('admin.carriers.bulk-action') }}">
+            <form id="bulk-form" method="POST" action="{{ route('app.carriers.bulk-action') }}">
                 @csrf
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-4">
@@ -149,7 +149,7 @@
                     </div>
                     
                     <div class="flex gap-2">
-                        <button type="button" onclick="window.location.href='{{ route('admin.carriers.cleanup') }}'"
+                        <button type="button" onclick="window.location.href='{{ route('app.carriers.cleanup') }}'"
                                 class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors text-sm">
                             🧹 Auto Cleanup
                         </button>
@@ -254,13 +254,13 @@
                             
                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                 <div class="flex items-center justify-center gap-2">
-                                    <a href="{{ route('admin.carriers.show', $carrier) }}" 
+                                    <a href="{{ route('app.carriers.show', $carrier) }}" 
                                        class="inline-flex items-center px-2 py-1 border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded text-xs font-medium transition-colors">
                                         👁️ View
                                     </a>
                                     
                                     @if(!$carrier->trashed())
-                                        <a href="{{ route('admin.carriers.edit', $carrier) }}" 
+                                        <a href="{{ route('app.carriers.edit', $carrier) }}" 
                                            class="inline-flex items-center px-2 py-1 border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 rounded text-xs font-medium transition-colors">
                                             ✏️ Edit
                                         </a>
@@ -299,7 +299,7 @@
                 <div class="text-6xl mb-4">🚛</div>
                 <h3 class="text-lg font-medium text-gray-900 mb-2">No Carriers Found</h3>
                 <p class="text-gray-600">No carriers match your current filters.</p>
-                <a href="{{ route('admin.carriers.create') }}" 
+                <a href="{{ route('app.carriers.create') }}" 
                    class="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
                     ➕ Add First Carrier
                 </a>

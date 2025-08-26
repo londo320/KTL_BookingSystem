@@ -1,6 +1,4 @@
 <x-app-layout>
-  @include('layouts.admin-nav')
-
   <x-slot name="header">
     <div class="flex items-center justify-between">
       <div>
@@ -20,14 +18,12 @@
             @endforeach
           </select>
         </form>
-        
         {{-- Efficiency Score --}}
         <div class="text-sm">
           <span class="font-mono bg-green-100 text-green-800 px-2 py-1 rounded">
             {{ now()->format('H:i:s') }} | Efficiency: {{ $stats['efficiency_score'] }}%
           </span>
         </div>
-        
         {{-- Priority Settings Button --}}
         <div class="flex items-center space-x-2">
           <button onclick="openPrioritySettings()" 
@@ -39,9 +35,7 @@
       </div>
     </div>
   </x-slot>
-
   <div class="py-6 max-w-full mx-auto px-4">
-    
     <!-- Operational Overview -->
     <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
       <div class="bg-white p-4 rounded-lg shadow text-center">
@@ -71,9 +65,7 @@
         <div class="text-xs text-gray-600">Bay Efficiency</div>
       </div>
     </div>
-
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      
       <!-- LEFT: TIPPING PRIORITY QUEUE -->
       <div class="lg:col-span-2">
         <div class="bg-white rounded-lg shadow">
@@ -103,7 +95,6 @@
               </div>
             </div>
           </div>
-          
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
@@ -180,7 +171,6 @@
                       ];
                       $config = $typeConfig[$tippingType] ?? $typeConfig[null];
                     @endphp
-                    
                     @if($tippingType)
                       <div class="flex flex-col items-center">
                         <div class="flex items-center space-x-1 mb-1">
@@ -233,7 +223,6 @@
                         $isLiveTip = $tippingType === 'live_tip';
                         $isDrop = $tippingType === 'drop';
                       @endphp
-                      
                       @if($isLiveTip)
                         {{-- Live Tip Workflow: Move to Tipping Bay --}}
                         <button onclick="shuntToBay({{ $booking->id }})" 
@@ -250,7 +239,6 @@
                         {{-- No Tipping Type Set: Show Both Options --}}
                         <div class="text-xs text-yellow-600 mb-1">Set Tip Type First</div>
                       @endif
-                      
                       {{-- Quick Priority Boost --}}
                       <select onchange="quickPriorityBoost({{ $booking->id }}, this.value)" 
                               class="px-1 py-1 text-xs border border-gray-300 rounded">
@@ -264,7 +252,6 @@
                   </td>
                 </tr>
                 @endforeach
-                
                 @if($tippingQueue->count() == 0)
                 <tr>
                   <td colspan="{{ !$currentDepotId ? '11' : '10' }}" class="px-4 py-8 text-center text-gray-500">
@@ -278,10 +265,8 @@
           </div>
         </div>
       </div>
-
       <!-- RIGHT PANEL: BAY STATUS & URGENCIES -->
       <div class="space-y-6" id="right-panel">
-        
         <!-- BAY EFFICIENCY STATUS -->
         <div class="bg-white rounded-lg shadow bay-status-section">
           <div class="px-6 py-4 border-b border-gray-200 bg-blue-50">
@@ -313,15 +298,14 @@
                   @endif
                 </div>
               </div>
-              
               @if($bay['current_booking'])
                 <div class="mt-2">
                   <div class="flex items-center justify-between mb-1">
-                    <a href="{{ route('admin.bookings.show', $bay['current_booking']) }}" 
+                    <a href="{{ route('app.bookings.show', $bay['current_booking']) }}" 
                        class="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline">
                       {{ $bay['current_booking']->booking_reference }}
                     </a>
-                    <a href="{{ route('admin.tipping-workflow.show', $bay['current_booking']) }}" 
+                    <a href="{{ route('app.tipping-workflow.show', $bay['current_booking']) }}" 
                        class="px-2 py-1 bg-orange-500 text-white text-xs rounded hover:bg-orange-600 flex items-center">
                       ⚡ Workflow
                     </a>
@@ -341,7 +325,6 @@
             @endforeach
           </div>
         </div>
-
         <!-- COLLECTION URGENCY -->
         <div class="bg-white rounded-lg shadow collection-urgency-section">
           <div class="px-6 py-4 border-b border-gray-200 bg-red-50">
@@ -368,7 +351,6 @@
               <div class="text-xs text-gray-500">{{ $movement->booking->customer->name ?? 'Unknown' }}</div>
             </div>
             @endforeach
-            
             @if($collectionUrgency->count() == 0)
             <div class="text-center text-gray-500 py-4">
               <div class="text-2xl mb-1">✅</div>
@@ -377,7 +359,6 @@
             @endif
           </div>
         </div>
-
         <!-- NEW ARRIVALS -->
         @if($newArrivals->count() > 0)
         <div class="bg-white rounded-lg shadow">
@@ -399,7 +380,6 @@
           </div>
         </div>
         @endif
-
         <!-- PRIORITY SCORING EXPLANATION -->
         <div class="bg-white rounded-lg shadow">
           <div class="px-6 py-4 border-b border-gray-200 bg-purple-50">
@@ -440,11 +420,9 @@
             </div>
           </div>
         </div>
-
       </div>
     </div>
   </div>
-
   <!-- Bay Selection Modal -->
   <div id="bay-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
     <div class="flex items-center justify-center min-h-screen px-4">
@@ -464,7 +442,6 @@
       </div>
     </div>
   </div>
-
   <!-- Drop Zone Modal -->
   <div id="zone-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
     <div class="flex items-center justify-center min-h-screen px-4">
@@ -484,28 +461,23 @@
       </div>
     </div>
   </div>
-
   <script>
     let selectedBookingId = null;
     let selectedBayId = null;
     let selectedZoneId = null;
-
     function shuntToBay(bookingId) {
       selectedBookingId = bookingId;
       selectedBayId = null;
-      
       // Load available bays
       fetch('/admin/operations/available-bays')
         .then(response => response.json())
         .then(bays => {
           const bayList = document.getElementById('bay-list');
           bayList.innerHTML = '';
-          
           if (bays.length === 0) {
             bayList.innerHTML = '<div class="text-gray-500 text-center py-4">No available bays</div>';
             return;
           }
-          
           bays.forEach(bay => {
             const bayOption = document.createElement('div');
             bayOption.className = 'p-3 border border-gray-200 rounded cursor-pointer hover:bg-blue-50';
@@ -516,7 +488,6 @@
             bayOption.onclick = () => selectBay(bay.id, bayOption);
             bayList.appendChild(bayOption);
           });
-          
           document.getElementById('bay-modal').classList.remove('hidden');
         })
         .catch(error => {
@@ -524,23 +495,19 @@
           alert('Error loading available bays');
         });
     }
-
     function assignDropZone(bookingId) {
       selectedBookingId = bookingId;
       selectedZoneId = null;
-      
       // Load available drop zones
       fetch('/admin/operations/available-locations?type=drop')
         .then(response => response.json())
         .then(zones => {
           const zoneList = document.getElementById('zone-list');
           zoneList.innerHTML = '';
-          
           if (zones.length === 0) {
             zoneList.innerHTML = '<div class="text-gray-500 text-center py-4">No available zones</div>';
             return;
           }
-          
           zones.forEach(zone => {
             const zoneOption = document.createElement('div');
             zoneOption.className = 'p-3 border border-gray-200 rounded cursor-pointer hover:bg-green-50';
@@ -551,7 +518,6 @@
             zoneOption.onclick = () => selectZone(zone.id, zoneOption);
             zoneList.appendChild(zoneOption);
           });
-          
           document.getElementById('zone-modal').classList.remove('hidden');
         })
         .catch(error => {
@@ -559,7 +525,6 @@
           alert('Error loading available zones');
         });
     }
-
     function selectBay(bayId, element) {
       selectedBayId = bayId;
       // Remove previous selections
@@ -571,7 +536,6 @@
       element.classList.add('bg-blue-100', 'border-blue-500');
       element.classList.remove('border-gray-200');
     }
-
     function selectZone(zoneId, element) {
       selectedZoneId = zoneId;
       // Remove previous selections
@@ -583,13 +547,11 @@
       element.classList.add('bg-green-100', 'border-green-500');
       element.classList.remove('border-gray-200');
     }
-
     function confirmBaySelection() {
       if (!selectedBayId) {
         alert('Please select a bay');
         return;
       }
-      
       fetch(`/admin/operations/${selectedBookingId}/shunt-to-bay`, {
         method: 'POST',
         headers: {
@@ -613,16 +575,13 @@
         console.error('Error:', error);
         alert('Error assigning bay');
       });
-      
       closeBayModal();
     }
-
     function confirmZoneSelection() {
       if (!selectedZoneId) {
         alert('Please select a zone');
         return;
       }
-      
       fetch(`/admin/operations/${selectedBookingId}/assign-drop-zone`, {
         method: 'POST',
         headers: {
@@ -646,35 +605,28 @@
         console.error('Error:', error);
         alert('Error assigning zone');
       });
-      
       closeZoneModal();
     }
-
     function closeBayModal() {
       document.getElementById('bay-modal').classList.add('hidden');
       selectedBookingId = null;
       selectedBayId = null;
     }
-
     function closeZoneModal() {
       document.getElementById('zone-modal').classList.add('hidden');
       selectedBookingId = null;
       selectedZoneId = null;
     }
-
     // Open priority settings in new window/tab
     function openPrioritySettings() {
       const currentUrl = new URL(window.location);
       const depotId = currentUrl.searchParams.get('depot_id');
       let settingsUrl = '{{ route("admin.operations.priority-settings") }}';
-      
       if (depotId) {
         settingsUrl += '?depot_id=' + depotId;
       }
-      
       window.open(settingsUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
     }
-
     // Quick priority boost function
     async function quickPriorityBoost(bookingId, boost) {
       try {
@@ -689,7 +641,6 @@
             priority_notes: boost == 0 ? null : `Quick boost: ${boost > 0 ? '+' : ''}${boost} points`
           })
         });
-        
         const data = await response.json();
         if (data.success) {
           // Show success message briefly
@@ -703,11 +654,9 @@
         showToast('Network error occurred', 'error');
       }
     }
-
     // Set tipping type for a booking
     async function setTippingType(bookingId, type) {
       if (!type) return;
-      
       try {
         const response = await fetch(`/admin/operations/bookings/${bookingId}/tipping-type`, {
           method: 'PUT',
@@ -719,7 +668,6 @@
             tipping_type: type
           })
         });
-        
         const data = await response.json();
         if (data.success) {
           showToast(`Tipping type set to ${type.replace('_', ' ')}!`, 'success');
@@ -731,7 +679,6 @@
         showToast('Network error occurred', 'error');
       }
     }
-
     // Start tipping process for Drop workflow
     async function startTipping(bookingId) {
       try {
@@ -742,7 +689,6 @@
             'Content-Type': 'application/json',
           }
         });
-        
         const data = await response.json();
         if (data.success) {
           showToast('Tipping started!', 'success');
@@ -754,7 +700,6 @@
         showToast('Network error occurred', 'error');
       }
     }
-
     // Show toast notification
     function showToast(message, type) {
       const toast = document.createElement('div');
@@ -762,19 +707,15 @@
         type === 'success' ? 'bg-green-600' : 'bg-red-600'
       }`;
       toast.textContent = message;
-      
       document.body.appendChild(toast);
-      
       setTimeout(() => {
         toast.remove();
       }, 2000);
     }
-
     // Auto-refresh every 30 seconds
     setTimeout(() => {
       window.location.reload();
     }, 30000);
-
     // Column toggle functionality with localStorage persistence
     document.addEventListener('DOMContentLoaded', function() {
       // Storage keys for filter preferences
@@ -784,7 +725,6 @@
         collectionUrgency: 'queue_show_collection_urgency',
         inUseOnly: 'queue_bay_in_use_only'
       };
-
       // Load saved preferences or use defaults
       function loadFilterPreferences() {
         const preferences = {
@@ -795,12 +735,10 @@
         };
         return preferences;
       }
-
       // Save preference to localStorage
       function savePreference(key, value) {
         localStorage.setItem(STORAGE_KEYS[key], value.toString());
       }
-
       // Apply preferences to UI elements
       function applyPreferences(preferences) {
         // Bay Status
@@ -810,7 +748,6 @@
           bayToggle.checked = preferences.bayStatus;
           baySection.style.display = preferences.bayStatus ? 'block' : 'none';
         }
-
         // Priority Details
         const priorityToggle = document.getElementById('toggle-priority-details');
         const priorityColumns = document.querySelectorAll('.priority-details');
@@ -820,7 +757,6 @@
             col.style.display = preferences.priorityDetails ? 'table-cell' : 'none';
           });
         }
-
         // Collection Urgency
         const urgencyToggle = document.getElementById('toggle-collection-urgency');
         const urgencySection = document.querySelector('.collection-urgency-section');
@@ -828,14 +764,12 @@
           urgencyToggle.checked = preferences.collectionUrgency;
           urgencySection.style.display = preferences.collectionUrgency ? 'block' : 'none';
         }
-        
         // In Use Only Filter
         const inUseOnlyFilter = document.getElementById('filter-in-use-only');
         if (inUseOnlyFilter) {
           inUseOnlyFilter.checked = preferences.inUseOnly;
           const allBayCards = document.querySelectorAll('.bay-card');
           const availableBayCards = document.querySelectorAll('.bay-available');
-          
           if (preferences.inUseOnly) {
             // Hide available bays, show only in-use bays
             availableBayCards.forEach(card => {
@@ -849,11 +783,9 @@
           }
         }
       }
-
       // Initialize with saved preferences
       const preferences = loadFilterPreferences();
       applyPreferences(preferences);
-
       // Bay Status Toggle
       const bayToggle = document.getElementById('toggle-bay-status');
       bayToggle?.addEventListener('change', function() {
@@ -863,13 +795,11 @@
           savePreference('bayStatus', this.checked);
         }
       });
-
       // In Use Only Filter for Bays
       const inUseOnlyFilter = document.getElementById('filter-in-use-only');
       inUseOnlyFilter?.addEventListener('change', function() {
         const allBayCards = document.querySelectorAll('.bay-card');
         const availableBayCards = document.querySelectorAll('.bay-available');
-        
         if (this.checked) {
           // Hide available bays, show only in-use bays
           availableBayCards.forEach(card => {
@@ -883,7 +813,6 @@
         }
         savePreference('inUseOnly', this.checked);
       });
-
       // Priority Details Toggle
       const priorityToggle = document.getElementById('toggle-priority-details');
       priorityToggle?.addEventListener('change', function() {
@@ -893,7 +822,6 @@
         });
         savePreference('priorityDetails', this.checked);
       });
-
       // Collection Urgency Toggle
       const urgencyToggle = document.getElementById('toggle-collection-urgency');
       urgencyToggle?.addEventListener('change', function() {
@@ -903,24 +831,20 @@
           savePreference('collectionUrgency', this.checked);
         }
       });
-
       // Make table more responsive with better scroll
       const tableContainer = document.querySelector('.overflow-x-auto');
       if (tableContainer) {
         tableContainer.style.maxHeight = '70vh';
         tableContainer.style.overflowY = 'auto';
       }
-
       // Show feedback when preferences are loaded
       if (Object.values(preferences).some(val => !val)) {
         console.log('Queue filters restored from previous session');
       }
-
       // Auto-refresh every 30 seconds to keep data current
       setInterval(() => {
         window.location.reload();
       }, 30000);
     });
   </script>
-
 </x-app-layout>

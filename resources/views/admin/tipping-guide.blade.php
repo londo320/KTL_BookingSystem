@@ -1,6 +1,4 @@
 <x-app-layout>
-    @include('layouts.admin-nav')
-
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div>
@@ -9,9 +7,7 @@
             </div>
         </div>
     </x-slot>
-
     <div class="py-6 max-w-4xl mx-auto space-y-6">
-        
         {{-- Quick Overview --}}
         <div class="bg-blue-50 p-6 rounded-lg border border-blue-200">
             <h3 class="text-lg font-semibold text-blue-800 mb-3">🚛 System Overview</h3>
@@ -20,14 +16,12 @@
                 (where the delivery vehicle leaves and a different vehicle collects) and standard operations.
             </p>
         </div>
-
         {{-- Step-by-Step Process --}}
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="p-6 border-b border-gray-200">
                 <h3 class="text-xl font-semibold text-gray-800">📝 Step-by-Step Process</h3>
             </div>
             <div class="divide-y divide-gray-200">
-                
                 {{-- Step 1 --}}
                 <div class="p-6">
                     <div class="flex items-start">
@@ -56,7 +50,6 @@
                         </div>
                     </div>
                 </div>
-
                 {{-- Step 2 --}}
                 <div class="p-6">
                     <div class="flex items-start">
@@ -72,7 +65,6 @@
                         </div>
                     </div>
                 </div>
-
                 {{-- Step 3 --}}
                 <div class="p-6">
                     <div class="flex items-start">
@@ -88,7 +80,6 @@
                         </div>
                     </div>
                 </div>
-
                 {{-- Step 4 --}}
                 <div class="p-6">
                     <div class="flex items-start">
@@ -105,7 +96,6 @@
                         </div>
                     </div>
                 </div>
-
                 {{-- Step 5 --}}
                 <div class="p-6">
                     <div class="flex items-start">
@@ -128,7 +118,6 @@
                 </div>
             </div>
         </div>
-
         {{-- Key Features --}}
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="p-6 border-b border-gray-200">
@@ -167,7 +156,6 @@
                 </div>
             </div>
         </div>
-
         {{-- Quick Reference --}}
         <div class="bg-gray-50 p-6 rounded-lg">
             <h3 class="text-lg font-semibold text-gray-800 mb-3">🔍 Quick Reference</h3>
@@ -192,7 +180,6 @@
                 </div>
             </div>
         </div>
-
         {{-- Common Scenarios --}}
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="p-6 border-b border-gray-200">

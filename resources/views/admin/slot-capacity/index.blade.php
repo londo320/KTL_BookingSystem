@@ -1,23 +1,17 @@
 <x-app-layout>
-  @include('layouts.admin-nav')
-  
   <x-slot name="header">
     <h2 class="text-xl font-semibold">Edit Slot Capacities</h2>
   </x-slot>
-
   <div class="max-w-6xl mx-auto py-6">
     @if(session('success'))
       <div class="bg-green-100 text-green-800 p-3 rounded mb-4">
         {{ session('success') }}
       </div>
     @endif
-
-    <form method="POST" action="{{ route('admin.slot-capacity.update') }}">
+    <form method="POST" action="{{ route('app.slot-capacity.update') }}">
       @csrf
-
       @foreach($depots as $depot)
         <h3 class="text-lg font-semibold mt-6">{{ $depot->name }}</h3>
-
         <table class="w-full text-sm mb-4 border">
           <thead>
             <tr class="bg-gray-100">
@@ -43,7 +37,6 @@
           </tbody>
         </table>
       @endforeach
-
       <div class="mt-4">
         <button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
           Save Changes

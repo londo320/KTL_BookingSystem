@@ -63,4 +63,50 @@ class Depot extends Model
     {
         return $this->belongsToMany(User::class, 'depot_user');
     }
+
+    /**
+     * Get factory vehicle tipping time target in minutes for this depot and optional customer
+     */
+    public function getFactoryTippingTimeTarget(int $customerId = null): int
+    {
+        return \App\Models\Setting::getFactoryTippingTimeTarget($this->id, $customerId);
+    }
+
+    /**
+     * Set factory vehicle tipping time target in minutes for this depot
+     */
+    public function setFactoryTippingTimeTarget(int $minutes, int $customerId = null): void
+    {
+        \App\Models\Setting::setFactoryTippingTimeTarget($this->id, $minutes, $customerId);
+    }
+
+    /**
+     * Check if this depot has custom factory tipping time targets
+     */
+    public function hasCustomFactoryTippingTargets(): bool
+    {
+        $depotSetting = \App\Models\Setting::get("factory_tipping_target_depot_{$this->id}");
+        return $depotSetting !== null;
+    }
+
+    /**
+     * Get all customer-specific factory tipping time targets for this depot
+     */
+    public function getCustomerFactoryTippingTargets(): array
+    {
+        $targets = [];
+        $customers = \App\Models\Customer::all();
+        
+        foreach ($customers as $customer) {
+            $target = \App\Models\Setting::get("factory_tipping_target_depot_{$this->id}_customer_{$customer->id}");
+            if ($target !== null) {
+                $targets[$customer->id] = [
+                    'customer' => $customer,
+                    'target_minutes' => $target,
+                ];
+            }
+        }
+        
+        return $targets;
+    }
 }

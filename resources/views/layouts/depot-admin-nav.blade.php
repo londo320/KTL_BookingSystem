@@ -22,8 +22,8 @@
             </a>
 
             @if(auth()->user()->hasRole('admin'))
-            <a href="{{ route('admin.settings.dashboard') }}"
-               class="text-gray-800 hover:bg-gray-100 px-3 py-2 rounded {{ request()->routeIs('admin.settings.*') ? 'bg-indigo-100 text-indigo-800' : '' }}">
+            <a href="{{ route('app.settings.dashboard') }}"
+               class="text-gray-800 hover:bg-gray-100 px-3 py-2 rounded {{ request()->routeIs('app.settings.*') ? 'bg-indigo-100 text-indigo-800' : '' }}">
                 🛠 Admin Settings
             </a>
             @endif

@@ -6,8 +6,8 @@
                 🚪 Gate Dashboard
             </a>
 
-            <a href="{{ route('admin.bookings.index') }}"
-               class="hover:bg-green-700 px-3 py-2 rounded {{ request()->routeIs('admin.bookings.*') ? 'bg-green-700' : '' }}">
+            <a href="{{ route('app.bookings.index') }}"
+               class="hover:bg-green-700 px-3 py-2 rounded {{ request()->routeIs('app.bookings.*') ? 'bg-green-700' : '' }}">
                 📋 Bookings
             </a>
 

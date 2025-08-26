@@ -1,6 +1,4 @@
 <x-app-layout>
-    @include('layouts.admin-nav')
-
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div>
@@ -20,31 +18,29 @@
             </div>
             <div class="flex space-x-2">
                 @if($booking instanceof \App\Models\FactoryBooking)
-                    <a href="{{ route('admin.factory-bookings.show', $booking) }}" 
+                    <a href="{{ route('app.factory-bookings.show', $booking) }}" 
                        class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                         ← Back to Factory Booking
                     </a>
                 @else
-                    <a href="{{ route('admin.bookings.show', $booking) }}" 
+                    <a href="{{ route('app.bookings.show', $booking) }}" 
                        class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                         ← Back to Booking
                     </a>
                 @endif
-                <a href="{{ route('admin.tipping-workflow.dashboard') }}" 
+                <a href="{{ route('app.tipping-workflow.dashboard') }}" 
                    class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
                     📊 Tipping Dashboard
                 </a>
             </div>
         </div>
     </x-slot>
-
     <div class="py-6 max-w-6xl mx-auto">
         @if (session('success'))
             <div class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
                 {{ session('success') }}
             </div>
         @endif
-
         @if ($errors->any())
             <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
                 <h4 class="font-medium">Please fix the following errors:</h4>
@@ -55,7 +51,6 @@
                 </ul>
             </div>
         @endif
-
         {{-- Booking Information --}}
         <div class="mb-6 p-6 bg-blue-50 border border-blue-200 rounded-lg">
             <h3 class="text-lg font-semibold text-blue-800 mb-3">📋 Booking Information</h3>
@@ -82,12 +77,10 @@
                 </div>
             </div>
         </div>
-
         {{-- PO Numbers & Load Details --}}
         @if($booking->poNumbers && $booking->poNumbers->count() > 0)
             <div class="mb-6 p-6 bg-gray-50 border border-gray-200 rounded-lg">
                 <h3 class="text-lg font-semibold text-gray-800 mb-3">📦 PO Numbers & Load Details</h3>
-                
                 <div class="space-y-4">
                     @foreach($booking->poNumbers as $poNumber)
                         <div class="border border-gray-300 rounded-lg p-4 bg-white">
@@ -106,7 +99,6 @@
                                     @endif
                                 </div>
                             </div>
-
                             {{-- PO Summary --}}
                             <div class="mb-3 p-3 bg-gray-50 rounded border">
                                 <div class="grid grid-cols-2 gap-4 text-sm">
@@ -134,7 +126,6 @@
                                     </div>
                                 </div>
                             </div>
-
                             {{-- PO Lines Summary --}}
                             @if($poNumber->lines->count() > 0)
                                 <div class="text-sm text-gray-600">
@@ -150,7 +141,6 @@
                         </div>
                     @endforeach
                 </div>
-
                 {{-- Summary Totals --}}
                 @if($booking->poNumbers->count() > 1)
                     <div class="border-t pt-4 mt-4 bg-white p-3 rounded">
@@ -208,7 +198,6 @@
                 </div>
             </div>
         @endif
-
         {{-- Workflow Status Notice --}}
         @if(!$workflowEnabled)
             <div class="mb-6 p-4 bg-yellow-100 border border-yellow-400 text-yellow-800 rounded-lg">
@@ -223,7 +212,6 @@
                 </div>
             </div>
         @endif
-
         {{-- Tipping Status Progress --}}
         <div class="mb-6 bg-white rounded-lg shadow overflow-hidden">
             <div class="p-6 border-b border-gray-200">
@@ -235,14 +223,12 @@
                     @endif
                 </p>
             </div>
-
             {{-- Progress Timeline --}}
             <div class="p-6">
                 <div class="flex items-center justify-between mb-8">
                     @php
                         $movement = $booking->movements()->first();
                         $isEmptyTrailer = $movement && in_array($movement->current_status, ['empty', 'departed']) && $movement->unloading_completed_at;
-                        
                         // Dynamic stages based on whether trailer is empty or not
                         if ($isEmptyTrailer) {
                             $stages = [
@@ -263,7 +249,6 @@
                                 'departed' => ['label' => '🏁 Collected', 'icon' => 'text-blue-600']
                             ];
                         }
-                        
                         $currentIndex = array_search($booking->tipping_status, array_keys($stages));
                         // If status not found in current stage set, find the closest match
                         if ($currentIndex === false) {
@@ -271,13 +256,11 @@
                             else $currentIndex = -1;
                         }
                     @endphp
-
                     @foreach($stages as $status => $config)
                         @php 
                             $stepIndex = array_search($status, array_keys($stages));
                             $isCompleted = $stepIndex <= $currentIndex;
                             $isCurrent = $stepIndex === $currentIndex;
-                            
                             // Dynamic step colors based on stage and completion
                             if ($isCurrent) {
                                 $stepClass = 'bg-blue-500 text-white ring-2 ring-blue-200';
@@ -291,7 +274,6 @@
                                 $stepClass = 'bg-gray-200 text-gray-500';
                             }
                         @endphp
-                        
                         <div class="flex flex-col items-center relative {{ !$loop->last ? 'flex-1' : '' }}">
                             <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold {{ $stepClass }}">
                                 @if($isCompleted && !$isCurrent)
@@ -303,7 +285,6 @@
                             <p class="text-xs mt-2 text-center max-w-20 {{ $isCurrent ? 'font-bold text-blue-600' : ($isCompleted ? 'font-medium text-gray-700' : 'text-gray-500') }}">
                                 {{ $config['label'] }}
                             </p>
-                            
                             @if(!$loop->last)
                                 @php
                                     $nextStepIndex = $stepIndex + 1;
@@ -314,7 +295,6 @@
                         </div>
                     @endforeach
                 </div>
-
                 {{-- Workflow Actions --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {{-- Move to Location Action --}}
@@ -322,7 +302,7 @@
                         <div class="p-4 border border-blue-200 rounded-lg bg-blue-50 {{ !$workflowEnabled && !in_array($booking->tipping_status, ['scheduled', 'arrived']) ? 'opacity-75' : '' }}">
                             <h4 class="font-medium text-blue-800 mb-3">🚛 Move to Location (Attached)</h4>
                             <p class="text-xs text-blue-700 mb-3">Vehicle with trailer attached moves to a location on-site</p>
-                            <form action="{{ route('admin.tipping-workflow.drop-trailer', $booking) }}" method="POST">
+                            <form action="{{ route('app.tipping-workflow.drop-trailer', $booking) }}" method="POST">
                                 @csrf
                                 <div class="mb-3">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
@@ -345,13 +325,12 @@
                             </form>
                         </div>
                     @endif
-
                     {{-- Drop Trailer Detached Action --}}
                     @if($workflowEnabled ? in_array($booking->tipping_status, ['scheduled', 'arrived', 'in_location']) : true)
                         <div class="p-4 border border-red-200 rounded-lg bg-red-50 {{ !$workflowEnabled && !in_array($booking->tipping_status, ['scheduled', 'arrived', 'in_location']) ? 'opacity-75' : '' }}">
                             <h4 class="font-medium text-red-800 mb-3">📍 Drop Trailer (Detached)</h4>
                             <p class="text-xs text-red-700 mb-3">Detach trailer from unit and leave at location</p>
-                            <form action="{{ route('admin.tipping-workflow.drop-trailer-detached', $booking) }}" method="POST">
+                            <form action="{{ route('app.tipping-workflow.drop-trailer-detached', $booking) }}" method="POST">
                                 @csrf
                                 <div class="mb-3">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Drop Location</label>
@@ -374,13 +353,12 @@
                             </form>
                         </div>
                     @endif
-
                     {{-- Move Between Locations Action --}}
                     @if($workflowEnabled ? $booking->tipping_status === 'in_location' : true)
                         <div class="p-4 border border-cyan-200 rounded-lg bg-cyan-50 {{ !$workflowEnabled && $booking->tipping_status !== 'in_location' ? 'opacity-75' : '' }}">
                             <h4 class="font-medium text-cyan-800 mb-3">🔄 Move Between Locations</h4>
                             <p class="text-xs text-cyan-700 mb-3">Move vehicle to a different location on-site</p>
-                            <form action="{{ route('admin.tipping-workflow.move-to-location', $booking) }}" method="POST">
+                            <form action="{{ route('app.tipping-workflow.move-to-location', $booking) }}" method="POST">
                                 @csrf
                                 <div class="mb-3">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">New Location</label>
@@ -409,7 +387,6 @@
                             </form>
                         </div>
                     @endif
-
                     {{-- Move to Bay Action --}}
                     @php
                         $currentMovement = $booking->movements->first();
@@ -418,7 +395,7 @@
                     @if($workflowEnabled ? in_array($booking->tipping_status, ['in_location', 'trailer_dropped']) && $booking->tipping_status !== 'empty' && !$tippingAlreadyCompleted : !in_array($booking->tipping_status, ['empty', 'departed']) && !$tippingAlreadyCompleted)
                         <div class="p-4 border border-yellow-200 rounded-lg bg-yellow-50 {{ !$workflowEnabled && !in_array($booking->tipping_status, ['in_location', 'trailer_dropped']) ? 'opacity-75' : '' }}">
                             <h4 class="font-medium text-yellow-800 mb-3">🚛 Move to Tipping Bay</h4>
-                            <form action="{{ route('admin.tipping-workflow.move-to-bay', $booking) }}" method="POST">
+                            <form action="{{ route('app.tipping-workflow.move-to-bay', $booking) }}" method="POST">
                                 @csrf
                                 <div class="mb-3">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Tipping Bay</label>
@@ -444,7 +421,6 @@
                             </form>
                         </div>
                     @endif
-
                     {{-- Start Tipping Action --}}
                     @php
                         $currentMovement = $booking->movements->first();
@@ -453,7 +429,7 @@
                     @if($workflowEnabled ? ($booking->tipping_status === 'at_bay' && !$tippingAlreadyCompleted) : (!$tippingAlreadyCompleted))
                         <div class="p-4 border border-orange-200 rounded-lg bg-orange-50 {{ !$workflowEnabled && $booking->tipping_status !== 'at_bay' ? 'opacity-75' : '' }}">
                             <h4 class="font-medium text-orange-800 mb-3">⚡ Start Tipping</h4>
-                            <form action="{{ route('admin.tipping-workflow.start-tipping', $booking) }}" method="POST">
+                            <form action="{{ route('app.tipping-workflow.start-tipping', $booking) }}" method="POST">
                                 @csrf
                                 <div class="mb-3">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
@@ -465,25 +441,20 @@
                             </form>
                         </div>
                     @endif
-
                     {{-- Complete Tipping Action --}}
                     @if($workflowEnabled ? ($booking->tipping_status === 'unloading' && !$tippingAlreadyCompleted) : (!$tippingAlreadyCompleted))
                         <div class="col-span-2 p-4 border border-green-200 rounded-lg bg-green-50 {{ !$workflowEnabled && $booking->tipping_status !== 'unloading' ? 'opacity-75' : '' }}">
                             <h4 class="font-medium text-green-800 mb-3">✅ Complete Tipping</h4>
                             <p class="text-sm text-green-700 mb-3">Complete this form only after tipping has finished to record the actual quantities received.</p>
-                            
                             @if($booking->poNumbers && $booking->poNumbers->count() > 0)
-                                <form action="{{ route('admin.tipping-workflow.complete-tipping', $booking) }}" method="POST" id="complete-tipping-form">
+                                <form action="{{ route('app.tipping-workflow.complete-tipping', $booking) }}" method="POST" id="complete-tipping-form">
                                     @csrf
-                                    
                                     {{-- PO Lines Entry Section --}}
                                     <div class="mb-6 bg-white p-4 rounded border">
                                         <h5 class="font-medium text-gray-800 mb-4">📦 Record Actual Quantities Received <span class="text-red-500">*</span></h5>
-                                        
                                         @foreach($booking->poNumbers as $poNumber)
                                             <div class="mb-6 border border-gray-300 rounded p-4">
                                                 <h6 class="font-medium text-gray-800 mb-3">PO: {{ $poNumber->po_number }}</h6>
-                                                
                                                 @foreach($poNumber->lines as $line)
                                                     <div class="mb-4 p-3 bg-gray-50 rounded border" data-line-id="{{ $line->id }}">
                                                         <div class="flex justify-between items-start mb-3">
@@ -495,7 +466,6 @@
                                                                 </p>
                                                             </div>
                                                         </div>
-                                                        
                                                         {{-- Actual Units Entry --}}
                                                         <div class="mb-3">
                                                             <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -508,13 +478,11 @@
                                                                    value="{{ $line->actual_cases ?? '' }}"
                                                                    required>
                                                         </div>
-                                                        
                                                         {{-- Actual Pallets Entry --}}
                                                         <div class="mb-3">
                                                             <label class="block text-sm font-medium text-gray-700 mb-2">
                                                                 Actual Pallets <span class="text-red-500">*</span>
                                                             </label>
-                                                            
                                                             <div class="pallet-entries" data-line-id="{{ $line->id }}">
                                                                 {{-- Show existing actual pallets if any --}}
                                                                 @if($line->actualPallets->count() > 0)
@@ -568,7 +536,6 @@
                                                                     </div>
                                                                 @endif
                                                             </div>
-                                                            
                                                             <button type="button" onclick="addPalletEntry({{ $line->id }})" class="text-sm text-blue-600 hover:text-blue-800 mt-2">
                                                                 + Add another pallet type
                                                             </button>
@@ -578,7 +545,6 @@
                                             </div>
                                         @endforeach
                                     </div>
-                                    
                                     {{-- Issues and Notes Section --}}
                                     <div class="mb-3">
                                         <label class="block text-sm font-medium text-gray-700 mb-1">Issues (if any)</label>
@@ -597,7 +563,7 @@
                                 </form>
                             @else
                                 {{-- No PO Numbers - Simple Completion Form --}}
-                                <form action="{{ route('admin.tipping-workflow.complete-tipping', $booking) }}" method="POST">
+                                <form action="{{ route('app.tipping-workflow.complete-tipping', $booking) }}" method="POST">
                                     @csrf
                                     <div class="mb-3">
                                         <label class="block text-sm font-medium text-gray-700 mb-1">Issues (if any)</label>
@@ -617,7 +583,6 @@
                             @endif
                         </div>
                     @endif
-
                     {{-- Unit Depart Action (during tipping) --}}
                     @php
                         $currentMovement = $booking->movements->first();
@@ -627,7 +592,7 @@
                         <div class="p-4 border border-purple-200 rounded-lg bg-purple-50">
                             <h4 class="font-medium text-purple-800 mb-3">🚛 Unit Depart (Leave Trailer)</h4>
                             <p class="text-xs text-purple-700 mb-3">Record when the vehicle leaves site while trailer continues tipping process</p>
-                            <form action="{{ route('admin.tipping-workflow.unit-depart', $booking) }}" method="POST">
+                            <form action="{{ route('app.tipping-workflow.unit-depart', $booking) }}" method="POST">
                                 @csrf
                                 <div class="mb-3">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Departure Notes</label>
@@ -639,19 +604,18 @@
                             </form>
                         </div>
                     @endif
-
                     {{-- Quick Bay Management Actions (for empty trailers) --}}
                     @if($booking->tipping_status === 'empty' && $booking->tippingBay)
                         <div class="p-4 border border-indigo-200 rounded-lg bg-indigo-50">
                             <h4 class="font-medium text-indigo-800 mb-3">⚡ Quick Actions</h4>
                             <div class="space-y-2">
-                                <form action="{{ route('admin.bookings.clear-bay', $booking) }}" method="POST" class="inline-block w-full">
+                                <form action="{{ route('app.bookings.clear-bay', $booking) }}" method="POST" class="inline-block w-full">
                                     @csrf
                                     <button type="submit" class="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
                                         🔄 Clear Bay (Make Available)
                                     </button>
                                 </form>
-                                <form action="{{ route('admin.bookings.move-to-waiting', $booking) }}" method="POST" class="inline-block w-full">
+                                <form action="{{ route('app.bookings.move-to-waiting', $booking) }}" method="POST" class="inline-block w-full">
                                     @csrf
                                     <button type="submit" class="w-full px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600">
                                         📍 Move to Waiting Area
@@ -661,7 +625,6 @@
                             <p class="text-xs text-indigo-700 mt-2">💡 Use these actions to quickly make room for the next vehicle</p>
                         </div>
                     @endif
-
                     {{-- Post-Tipping Actions - Simplified --}}
                     @php
                         $currentMovement = $booking->movements->first();
@@ -669,14 +632,12 @@
                         $isTrailerWaitingCollection = $currentMovement && $currentMovement->current_status === 'trailer_dropped';
                         $isCollectionInProgress = $currentMovement && $currentMovement->current_status === 'trailer_collected';
                     @endphp
-
                     {{-- Move Empty Trailer to Collection Zone --}}
                     @if($booking->tipping_status === 'empty')
                         <div class="col-span-2 p-6 border border-purple-200 rounded-lg bg-purple-50">
                             <h4 class="font-medium text-purple-800 mb-4 text-center">🏁 Tipping Complete - Move to Collection Zone</h4>
                             <p class="text-sm text-purple-600 mb-4 text-center">Select which specific collection zone to move the empty trailer to for organized pickup.</p>
-                            
-                            <form action="{{ route('admin.operations.move-to-collection-zone', $booking) }}" method="POST" class="max-w-md mx-auto">
+                            <form action="{{ route('app.operations.move-to-collection-zone', $booking) }}" method="POST" class="max-w-md mx-auto">
                                 @csrf
                                 <div class="mb-3">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -706,18 +667,16 @@
                                     Move to Collection Zone
                                 </button>
                             </form>
-                            
                             <div class="mt-4 text-center">
                                 <p class="text-xs text-gray-600">💡 Empty trailer will be positioned for collection by transport company</p>
                             </div>
                         </div>
                     @endif
-
                     {{-- Collection Unit Arrival --}}
                     @if($isTrailerWaitingCollection)
                         <div class="p-4 border border-green-200 rounded-lg bg-green-50">
                             <h4 class="font-medium text-green-800 mb-3">🚚 Collection Unit Arrival</h4>
-                            <form action="{{ route('admin.tipping-workflow.collection-arrival', $booking) }}" method="POST">
+                            <form action="{{ route('app.tipping-workflow.collection-arrival', $booking) }}" method="POST">
                                 @csrf
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                                     <div>
@@ -734,19 +693,16 @@
                                                    required
                                                    autocomplete="off"
                                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500 pr-10">
-                                            
                                             {{-- Hidden carrier_id field --}}
                                             <input type="hidden" 
                                                    id="collection-carrier-id" 
                                                    name="carrier_id" 
                                                    value="">
-                                            
                                             {{-- Search dropdown --}}
                                             <div id="collection-carrier-dropdown" 
                                                  class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                                               {{-- Results will be populated by JavaScript --}}
                                             </div>
-                                            
                                             {{-- Status indicators --}}
                                             <div class="absolute inset-y-0 right-0 flex items-center pr-3">
                                               <span id="collection-carrier-status" class="text-xs"></span>
@@ -784,12 +740,11 @@
                             </form>
                         </div>
                     @endif
-
                     {{-- Collection Unit Departure --}}
                     @if($isCollectionInProgress)
                         <div class="p-4 border border-purple-200 rounded-lg bg-purple-50">
                             <h4 class="font-medium text-purple-800 mb-3">🏁 Collection Departure</h4>
-                            <form action="{{ route('admin.tipping-workflow.collection-depart', $booking) }}" method="POST">
+                            <form action="{{ route('app.tipping-workflow.collection-depart', $booking) }}" method="POST">
                                 @csrf
                                 <div class="mb-3">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
@@ -804,7 +759,6 @@
                 </div>
             </div>
         </div>
-
         {{-- Current Status Details --}}
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="p-6 border-b border-gray-200">
@@ -822,7 +776,6 @@
                             @endif
                         </div>
                     @endif
-
                     {{-- Bay Info --}}
                     @if($booking->tippingBay)
                         <div>
@@ -833,7 +786,6 @@
                             @endif
                         </div>
                     @endif
-
                     {{-- Timing Info --}}
                     <div>
                         <h4 class="font-medium text-gray-800 mb-2">Timing</h4>
@@ -848,7 +800,6 @@
                         @endif
                     </div>
                 </div>
-
                 {{-- Notes --}}
                 @if($booking->tipping_notes)
                     <div class="mt-6 p-4 bg-gray-50 rounded-lg">
@@ -856,7 +807,6 @@
                         <p class="text-sm text-gray-600 whitespace-pre-line">{{ $booking->tipping_notes }}</p>
                     </div>
                 @endif
-
                 {{-- Issues --}}
                 @if($booking->tipping_issues)
                     <div class="mt-6 p-4 bg-red-50 rounded-lg">
@@ -871,11 +821,9 @@
             </div>
         </div>
     </div>
-
     <script>
         // Pallet types data for JavaScript
         const palletTypes = @json($palletTypes->map(fn($pt) => ['id' => $pt->id, 'name' => $pt->display_name]));
-        
         function addIssueField() {
             const container = document.getElementById('issues-container');
             const input = document.createElement('input');
@@ -885,20 +833,16 @@
             input.placeholder = 'Describe any issues...';
             container.appendChild(input);
         }
-        
         function addPalletEntry(lineId) {
             const container = document.querySelector(`.pallet-entries[data-line-id="${lineId}"]`);
             const existingEntries = container.querySelectorAll('.pallet-entry').length;
-            
             const palletEntry = document.createElement('div');
             palletEntry.className = 'flex items-center space-x-2 mb-2 pallet-entry';
-            
             // Create select options
             let optionsHtml = '<option value="">Select pallet type...</option>';
             palletTypes.forEach(palletType => {
                 optionsHtml += `<option value="${palletType.id}">${palletType.name}</option>`;
             });
-            
             palletEntry.innerHTML = `
                 <select name="po_lines[${lineId}][actual_pallets][${existingEntries}][pallet_type_id]" 
                         class="flex-1 px-3 py-2 border border-gray-300 rounded-md" required>
@@ -914,14 +858,11 @@
                     ✕
                 </button>
             `;
-            
             container.appendChild(palletEntry);
         }
-        
         function removePalletEntry(button) {
             const entry = button.closest('.pallet-entry');
             const container = entry.parentElement;
-            
             // Don't allow removing the last entry
             if (container.querySelectorAll('.pallet-entry').length > 1) {
                 entry.remove();
@@ -929,33 +870,26 @@
                 reindexPalletEntries(container);
             }
         }
-        
         function reindexPalletEntries(container) {
             const lineId = container.getAttribute('data-line-id');
             const entries = container.querySelectorAll('.pallet-entry');
-            
             entries.forEach((entry, index) => {
                 const select = entry.querySelector('select');
                 const input = entry.querySelector('input[type="number"]');
-                
                 select.name = `po_lines[${lineId}][actual_pallets][${index}][pallet_type_id]`;
                 input.name = `po_lines[${lineId}][actual_pallets][${index}][quantity]`;
             });
         }
-
         // Collection Carrier Search Logic
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('collection-carrier-search');
             const carrierIdInput = document.getElementById('collection-carrier-id');
             const dropdown = document.getElementById('collection-carrier-dropdown');
             const statusSpan = document.getElementById('collection-carrier-status');
-            
             if (!searchInput) return; // Exit if elements don't exist
-            
             let searchTimeout;
             let selectedCarrierId = carrierIdInput.value;
             let isLoading = false;
-            
             // Update status based on current state
             function updateStatus() {
                 if (selectedCarrierId) {
@@ -970,17 +904,14 @@
                     statusSpan.className = 'text-xs';
                 }
             }
-            
             // Search carriers
             function searchCarriers(query) {
                 if (query.length < 2) {
                     dropdown.classList.add('hidden');
                     return;
                 }
-                
                 if (isLoading) return;
                 isLoading = true;
-                
                 fetch(`{{ route('api.carriers.search') }}?q=${encodeURIComponent(query)}`)
                     .then(response => response.json())
                     .then(data => {
@@ -993,11 +924,9 @@
                         isLoading = false;
                     });
             }
-            
             function populateDropdown(data, query) {
                 dropdown.innerHTML = '';
                 dropdown.classList.remove('hidden');
-                
                 if (data.carriers && data.carriers.length > 0) {
                     data.carriers.forEach(carrier => {
                         const item = document.createElement('div');
@@ -1010,7 +939,6 @@
                         dropdown.appendChild(item);
                     });
                 }
-                
                 // Add option to create new carrier
                 if (query.trim()) {
                     const createItem = document.createElement('div');
@@ -1023,7 +951,6 @@
                     dropdown.appendChild(createItem);
                 }
             }
-            
             function selectCarrier(carrier) {
                 searchInput.value = carrier.name;
                 carrierIdInput.value = carrier.id;
@@ -1031,7 +958,6 @@
                 dropdown.classList.add('hidden');
                 updateStatus();
             }
-            
             function createNewCarrier(name) {
                 searchInput.value = name;
                 carrierIdInput.value = '';
@@ -1039,31 +965,26 @@
                 dropdown.classList.add('hidden');
                 updateStatus();
             }
-            
             // Event listeners
             searchInput.addEventListener('input', function(e) {
                 const query = e.target.value.trim();
                 selectedCarrierId = '';
                 carrierIdInput.value = '';
-                
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(() => searchCarriers(query), 300);
                 updateStatus();
             });
-            
             searchInput.addEventListener('focus', function() {
                 if (this.value.length >= 2) {
                     searchCarriers(this.value);
                 }
             });
-            
             // Close dropdown when clicking outside
             document.addEventListener('click', function(e) {
                 if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
                     dropdown.classList.add('hidden');
                 }
             });
-            
             updateStatus();
         });
     </script>

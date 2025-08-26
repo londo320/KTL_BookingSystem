@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middlewares\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
+            'function' => \App\Http\Middleware\CheckFunction::class,
+            'function-access' => \App\Http\Middleware\FunctionAccess::class,
+            'outbound-access' => \App\Http\Middleware\OutboundModuleAccess::class,
+            'inbound-access' => \App\Http\Middleware\InboundModuleAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

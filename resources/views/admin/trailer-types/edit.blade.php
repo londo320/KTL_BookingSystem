@@ -12,11 +12,11 @@
                 <p class="mt-2 text-gray-600">Modify {{ $trailerType->name }}</p>
             </div>
             <div class="flex gap-3">
-                <a href="{{ route('admin.trailer-types.show', $trailerType) }}" 
+                <a href="{{ route('app.trailer-types.show', $trailerType) }}" 
                    class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
                     👁️ View Details
                 </a>
-                <a href="{{ route('admin.trailer-types.index') }}" 
+                <a href="{{ route('app.trailer-types.index') }}" 
                    class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
                     ← Back to List
                 </a>
@@ -65,7 +65,7 @@
             <h3 class="text-lg font-medium text-gray-900">Trailer Type Details</h3>
         </div>
         
-        <form action="{{ route('admin.trailer-types.update', $trailerType) }}" method="POST" class="p-6">
+        <form action="{{ route('app.trailer-types.update', $trailerType) }}" method="POST" class="p-6">
             @csrf
             @method('PUT')
             
@@ -144,13 +144,13 @@
             <!-- Actions -->
             <div class="mt-8 flex items-center justify-between">
                 <div class="flex gap-2">
-                    <a href="{{ route('admin.trailer-types.index') }}" 
+                    <a href="{{ route('app.trailer-types.index') }}" 
                        class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         Cancel
                     </a>
                     
                     @if($trailerType->trashed())
-                        <form action="{{ route('admin.trailer-types.restore', $trailerType->id) }}" method="POST" class="inline">
+                        <form action="{{ route('app.trailer-types.restore', $trailerType->id) }}" method="POST" class="inline">
                             @csrf
                             <button type="submit" 
                                     class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">

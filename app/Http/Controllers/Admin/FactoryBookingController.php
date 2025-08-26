@@ -17,6 +17,11 @@ class FactoryBookingController extends Controller
 {
     public function index(Request $request)
     {
+        // Allow admin or users with factory-bookings.view function
+        if (!auth()->user()->hasRole('admin') && !auth()->user()->hasFunction('factory-bookings.view')) {
+            abort(403, 'You do not have permission to view factory bookings.');
+        }
+        
         $query = FactoryBooking::with(['customer', 'carrier', 'depot', 'registeredBy'])
             ->orderBy('priority', 'desc')
             ->orderBy('arrived_at', 'asc');
@@ -48,18 +53,23 @@ class FactoryBookingController extends Controller
         $factoryBookings = $query->paginate(20);
         $depots = Depot::orderBy('name')->get();
 
-        return view('admin.factory-bookings.index', compact('factoryBookings', 'depots'));
+        return view('warehouse.factory-bookings.index', compact('factoryBookings', 'depots'));
     }
 
     public function show(FactoryBooking $factoryBooking)
     {
         $factoryBooking->load(['customer', 'carrier', 'depot', 'registeredBy', 'movements', 'poNumbers']);
         
-        return view('admin.factory-bookings.show', compact('factoryBooking'));
+        return view('warehouse.factory-bookings.show', compact('factoryBooking'));
     }
 
     public function create()
     {
+        // Allow admin or users with factory-bookings.create function
+        if (!auth()->user()->hasRole('admin') && !auth()->user()->hasFunction('factory-bookings.create')) {
+            abort(403, 'You do not have permission to create factory bookings.');
+        }
+        
         $customers = Customer::orderBy('name')->get();
         $carriers = Carrier::orderBy('name')->get();
         $trailerTypes = TrailerType::orderBy('name')->get();
@@ -73,7 +83,7 @@ class FactoryBookingController extends Controller
             $depots = Depot::orderBy('name')->get();
         }
 
-        return view('admin.factory-bookings.create', compact('customers', 'carriers', 'trailerTypes', 'depots'));
+        return view('warehouse.factory-bookings.create', compact('customers', 'carriers', 'trailerTypes', 'depots'));
     }
 
     public function store(Request $request)
@@ -84,11 +94,11 @@ class FactoryBookingController extends Controller
             'depot_id' => 'required|exists:depots,id',
             'customer_id' => 'required|exists:customers,id',
             'carrier_id' => 'nullable|exists:carriers,id',
-            'trailer_type_id' => 'nullable|exists:trailer_types,id',
+            'carrier_name' => 'required|string|max:255',
+            'trailer_type_id' => 'required|exists:trailer_types,id',
+            'tipping_type' => 'required|in:live_tip,drop',
             'vehicle_registration' => 'required|string|max:50',
             'trailer_registration' => 'nullable|string|max:50',
-            'driver_name' => 'nullable|string|max:100',
-            'driver_phone' => 'nullable|string|max:20',
             'delivery_notes' => 'nullable|string|max:1000',
             'priority' => 'nullable|integer|min:0|max:100',
             'gate_notes' => 'nullable|string|max:1000',
@@ -100,8 +110,20 @@ class FactoryBookingController extends Controller
         }
 
         $factoryBooking = DB::transaction(function () use ($validated, $user) {
+            // Handle carrier creation/selection
+            $carrierId = $validated['carrier_id'];
+            if (!$carrierId && !empty($validated['carrier_name'])) {
+                // Create new carrier if name provided but no ID
+                $carrier = Carrier::firstOrCreate(
+                    ['name' => trim($validated['carrier_name'])],
+                    ['is_active' => true]
+                );
+                $carrierId = $carrier->id;
+            }
+
             $factoryBooking = FactoryBooking::create([
                 ...$validated,
+                'carrier_id' => $carrierId,
                 'registered_by' => $user->id,
                 'priority' => $validated['priority'] ?? 50,
                 'arrived_at' => now(),
@@ -110,6 +132,11 @@ class FactoryBookingController extends Controller
 
             // Create initial movement record
             $factoryBooking->getOrCreateMovement();
+            
+            // Create initial PO number using the factory booking reference
+            $factoryBooking->poNumbers()->create([
+                'po_number' => $factoryBooking->reference,
+            ]);
             
             return $factoryBooking;
         });
@@ -131,7 +158,7 @@ class FactoryBookingController extends Controller
             $depots = Depot::orderBy('name')->get();
         }
 
-        return view('admin.factory-bookings.edit', compact('factoryBooking', 'customers', 'carriers', 'trailerTypes', 'depots'));
+        return view('warehouse.factory-bookings.edit', compact('factoryBooking', 'customers', 'carriers', 'trailerTypes', 'depots'));
     }
 
     public function update(Request $request, FactoryBooking $factoryBooking)

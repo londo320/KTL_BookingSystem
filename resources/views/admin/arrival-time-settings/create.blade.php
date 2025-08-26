@@ -14,7 +14,7 @@
                 <p class="mt-2 text-gray-600">Define early/late arrival tolerances for a specific level</p>
             </div>
             <div>
-                <a href="{{ route('admin.arrival-time-settings.index') }}" 
+                <a href="{{ route('app.arrival-time-settings.index') }}" 
                    class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
                     ← Back to Settings
                 </a>
@@ -28,7 +28,7 @@
             <p class="text-sm text-gray-600 mt-1">Configure when arrivals are considered early, on-time, or late</p>
         </div>
         
-        <form method="POST" action="{{ route('admin.arrival-time-settings.store') }}" class="p-6">
+        <form method="POST" action="{{ route('app.arrival-time-settings.store') }}" class="p-6">
             @csrf
             
             <!-- Level Selection -->
@@ -146,7 +146,7 @@
 
             <!-- Actions -->
             <div class="flex items-center justify-end gap-4">
-                <a href="{{ route('admin.arrival-time-settings.index') }}" 
+                <a href="{{ route('app.arrival-time-settings.index') }}" 
                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
                     Cancel
                 </a>

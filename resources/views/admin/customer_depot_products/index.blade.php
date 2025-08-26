@@ -4,7 +4,7 @@
 <div class="p-6 bg-white rounded-lg shadow">
     <h1 class="text-2xl font-semibold mb-4">Customer-Depot-Product Rules</h1>
 
-    <a href="{{ route('admin.customer-depot-products.create') }}"
+    <a href="{{ route('app.customer-depot-products.create') }}"
        class="inline-block mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
         + New Rule
     </a>
@@ -37,9 +37,9 @@
                 <td class="px-4 py-2 text-center">{{ $rule->max_cases ?? '–' }}</td>
                 <td class="px-4 py-2 text-center">{{ $rule->override_duration_minutes ?? '–' }}</td>
                 <td class="px-4 py-2 text-right">
-                    <a href="{{ route('admin.customer-depot-products.edit', $rule) }}"
+                    <a href="{{ route('app.customer-depot-products.edit', $rule) }}"
                        class="mr-2 text-blue-600 hover:underline">Edit</a>
-                    <form action="{{ route('admin.customer-depot-products.destroy', $rule) }}"
+                    <form action="{{ route('app.customer-depot-products.destroy', $rule) }}"
                           method="POST" class="inline">
                         @csrf
                         @method('DELETE')

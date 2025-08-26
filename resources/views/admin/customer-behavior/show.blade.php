@@ -20,7 +20,7 @@
                 </p>
             </div>
             <div>
-                <a href="{{ route('admin.customer-behavior.index') }}" 
+                <a href="{{ route('app.customer-behavior.index') }}" 
                    class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
                     ← Back to Analysis
                 </a>
@@ -270,7 +270,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                 @if($history->booking)
-                                    <a href="{{ route('admin.bookings.show', $history->booking) }}" 
+                                    <a href="{{ route('app.bookings.show', $history->booking) }}" 
                                        class="text-blue-600 hover:text-blue-900 font-medium text-sm">
                                         📋 {{ $history->booking->booking_reference }}
                                     </a>

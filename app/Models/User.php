@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -20,6 +22,7 @@ class User extends Authenticatable
         'password',
         'email_verified_at',
         'depot_id',
+        'is_active',
     ];
 
     /**
@@ -28,6 +31,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'is_active' => 'boolean',
     ];
 
     // Relationship with depots (many-to-many for access)
@@ -48,6 +52,12 @@ class User extends Authenticatable
         return $this->belongsToMany(Customer::class, 'customer_user');
     }
 
+    // Relationship with user functions
+    public function functions(): HasMany
+    {
+        return $this->hasMany(UserFunction::class);
+    }
+
     public function depotIds()
     {
         return $this->depots->pluck('id')->toArray();
@@ -65,6 +75,83 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is active and can access the system
+     */
+    public function isActive(): bool
+    {
+        return $this->is_active ?? true; // Default to active if field doesn't exist
+    }
+
+    /**
+     * Check if this is the protected system owner
+     */
+    public function isProtectedSystemOwner(): bool
+    {
+        return $this->email === 'paul.carr@knowleslogistics.com';
+    }
+
+    /**
+     * Check if current authenticated user can edit this user
+     */
+    public function canBeEditedBy(?User $editor = null): bool
+    {
+        $editor = $editor ?? auth()->user();
+        
+        // If no editor (not authenticated), deny
+        if (!$editor) {
+            return false;
+        }
+        
+        // Protected system owner can always edit themselves
+        if ($this->isProtectedSystemOwner() && $editor->id === $this->id) {
+            return true;
+        }
+        
+        // Protected system owner cannot be edited by anyone else (even other admins)
+        if ($this->isProtectedSystemOwner() && $editor->id !== $this->id) {
+            return false;
+        }
+        
+        // Protected system owner can edit anyone
+        if ($editor->isProtectedSystemOwner()) {
+            return true;
+        }
+        
+        // Regular users can be edited by admins or themselves
+        return $editor->hasRole('admin') || $editor->id === $this->id;
+    }
+
+    /**
+     * Check if user has access to user management functions
+     */
+    public function canAccessUserManagement(): bool
+    {
+        // Protected system owner always has access
+        if ($this->isProtectedSystemOwner()) {
+            return true;
+        }
+        
+        // Regular admin access
+        return $this->hasRole('admin') || $this->hasFunction('users.view');
+    }
+
+    /**
+     * Get all depot IDs this user has access to
+     */
+    public function getAccessibleDepotIds(): array
+    {
+        // Get assigned depots from many-to-many relationship
+        $assignedDepotIds = $this->depots()->pluck('depots.id')->toArray();
+        
+        // If no depots assigned, admin/site-admin can see all depots
+        if (empty($assignedDepotIds) && ($this->hasRole('admin') || $this->hasRole('site-admin'))) {
+            return \App\Models\Depot::pluck('id')->toArray();
+        }
+        
+        return $assignedDepotIds;
+    }
+
+    /**
      * Get all customer IDs this user has access to
      * - All roles: Uses many-to-many customers relationship
      * - If no customers assigned, admins can see all customers
@@ -79,8 +166,8 @@ class User extends Authenticatable
             return $assignedCustomerIds;
         }
 
-        // For admin/site roles, if no specific customers assigned, they can see all customers
-        if (empty($assignedCustomerIds)) {
+        // For admin/site/warehouse/depot-admin roles, if no specific customers assigned, they can see all customers
+        if (empty($assignedCustomerIds) && ($this->hasRole('admin') || $this->hasRole('site-admin') || $this->hasRole('warehouse') || $this->hasRole('depot-admin'))) {
             return Customer::pluck('id')->toArray();
         }
 
@@ -105,7 +192,93 @@ class User extends Authenticatable
             return false;
         }
 
-        // Admin/site roles can see all if no specific customers assigned
-        return $this->customers()->count() === 0;
+        // Admin/site/warehouse/depot-admin roles can see all if no specific customers assigned
+        return $this->customers()->count() === 0 && ($this->hasRole('admin') || $this->hasRole('site-admin') || $this->hasRole('warehouse') || $this->hasRole('depot-admin'));
+    }
+
+    /**
+     * Custom roles relationship
+     */
+    public function customRoles(): BelongsToMany
+    {
+        return $this->belongsToMany(CustomRole::class, 'user_custom_roles');
+    }
+
+    /**
+     * Check if user has a specific function
+     */
+    public function hasFunction(string $functionKey): bool
+    {
+        // Admin role has all functions
+        if ($this->hasRole('admin')) {
+            return true;
+        }
+
+        // Check if user has this specific function assigned directly
+        if ($this->functions()->where('function_key', $functionKey)->exists()) {
+            return true;
+        }
+
+        // Check if any of the user's custom roles has this function
+        foreach ($this->customRoles()->active()->get() as $role) {
+            if ($role->hasFunction($functionKey)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get all function keys for this user
+     */
+    public function getFunctionKeys(): array
+    {
+        // Admin role has all functions
+        if ($this->hasRole('admin')) {
+            return UserFunction::getAllFunctionKeys();
+        }
+
+        $functionKeys = [];
+        
+        // Get directly assigned functions
+        $functionKeys = array_merge($functionKeys, $this->functions()->pluck('function_key')->toArray());
+
+        // Get functions from custom roles
+        foreach ($this->customRoles()->active()->get() as $role) {
+            $functionKeys = array_merge($functionKeys, $role->getFunctionKeys());
+        }
+
+        return array_unique($functionKeys);
+    }
+
+    /**
+     * Assign custom roles to user
+     */
+    public function assignCustomRoles(array $customRoleIds): void
+    {
+        $this->customRoles()->sync($customRoleIds);
+    }
+
+    /**
+     * Assign functions to user
+     */
+    public function assignFunctions(array $functionKeys): void
+    {
+        // Remove existing functions
+        $this->functions()->delete();
+
+        // Add new functions
+        foreach ($functionKeys as $functionKey) {
+            $this->functions()->create(['function_key' => $functionKey]);
+        }
+    }
+
+    /**
+     * Check if user has warehouse access (warehouse role or admin)
+     */
+    public function hasWarehouseAccess(): bool
+    {
+        return $this->hasRole(['warehouse', 'admin', 'depot-admin', 'site-admin']);
     }
 }

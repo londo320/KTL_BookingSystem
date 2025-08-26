@@ -5,7 +5,7 @@
 @section('content')
 <div class="p-6 bg-white rounded-lg shadow">
   <h1 class="text-2xl font-semibold mb-4">Products</h1>
-  <a href="{{ route('admin.products.create') }}"
+  <a href="{{ route('app.products.create') }}"
      class="inline-block mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
     + New Product
   </a>
@@ -30,9 +30,9 @@
         <td class="px-4 py-2">{{ $product->sku }}</td>
         <td class="px-4 py-2">{{ $product->name }}</td>
         <td class="px-4 py-2 text-right">
-          <a href="{{ route('admin.products.edit', $product) }}"
+          <a href="{{ route('app.products.edit', $product) }}"
              class="mr-2 text-blue-600 hover:underline">Edit</a>
-          <form action="{{ route('admin.products.destroy', $product) }}"
+          <form action="{{ route('app.products.destroy', $product) }}"
                 method="POST" class="inline">
             @csrf @method('DELETE')
             <button type="submit"

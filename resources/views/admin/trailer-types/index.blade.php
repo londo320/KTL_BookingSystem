@@ -12,7 +12,7 @@
                 <p class="mt-2 text-gray-600">Manage trailer types and container classifications</p>
             </div>
             <div class="flex gap-3">
-                <a href="{{ route('admin.trailer-types.create') }}" 
+                <a href="{{ route('app.trailer-types.create') }}" 
                    class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
                     ➕ Add Trailer Type
                 </a>
@@ -80,7 +80,7 @@
                     <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
                         Apply Filters
                     </button>
-                    <a href="{{ route('admin.trailer-types.index') }}" 
+                    <a href="{{ route('app.trailer-types.index') }}" 
                        class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors">
                         Clear
                     </a>
@@ -137,7 +137,7 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <a href="{{ route('admin.trailer-types.show', $trailerType) }}" 
+                            <a href="{{ route('app.trailer-types.show', $trailerType) }}" 
                                class="text-blue-600 hover:text-blue-900">
                                 {{ $trailerType->bookings_count }} bookings
                             </a>
@@ -148,19 +148,19 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex items-center gap-2">
                                 @if($trailerType->trashed())
-                                    <form action="{{ route('admin.trailer-types.restore', $trailerType->id) }}" method="POST" class="inline">
+                                    <form action="{{ route('app.trailer-types.restore', $trailerType->id) }}" method="POST" class="inline">
                                         @csrf
                                         <button type="submit" class="text-green-600 hover:text-green-900">
                                             ♻️ Restore
                                         </button>
                                     </form>
                                 @else
-                                    <a href="{{ route('admin.trailer-types.edit', $trailerType) }}" 
+                                    <a href="{{ route('app.trailer-types.edit', $trailerType) }}" 
                                        class="text-blue-600 hover:text-blue-900">
                                         ✏️ Edit
                                     </a>
                                     
-                                    <form action="{{ route('admin.trailer-types.toggle', $trailerType->id) }}" method="POST" class="inline">
+                                    <form action="{{ route('app.trailer-types.toggle', $trailerType->id) }}" method="POST" class="inline">
                                         @csrf
                                         <button type="submit" class="text-amber-600 hover:text-amber-900">
                                             @if($trailerType->is_active)
@@ -172,7 +172,7 @@
                                     </form>
                                     
                                     @if($trailerType->canBeDeleted())
-                                        <form action="{{ route('admin.trailer-types.destroy', $trailerType) }}" method="POST" class="inline"
+                                        <form action="{{ route('app.trailer-types.destroy', $trailerType) }}" method="POST" class="inline"
                                               onsubmit="return confirm('Are you sure you want to delete this trailer type?')">
                                             @csrf
                                             @method('DELETE')
@@ -198,7 +198,7 @@
                                 </svg>
                                 <p class="text-lg font-medium text-gray-900 mb-2">No trailer types found</p>
                                 <p class="text-gray-500 mb-4">Get started by creating your first trailer type.</p>
-                                <a href="{{ route('admin.trailer-types.create') }}" 
+                                <a href="{{ route('app.trailer-types.create') }}" 
                                    class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
                                     ➕ Add Trailer Type
                                 </a>
