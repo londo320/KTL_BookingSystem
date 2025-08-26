@@ -161,8 +161,8 @@
                                             </div>
                                         @endif
                                         <div class="aspect-video bg-gray-100 rounded mb-2 flex items-center justify-center overflow-hidden">
-                                            @if(file_exists(public_path('storage/depot-maps/' . $file)))
-                                                <img src="{{ asset('storage/depot-maps/' . $file) }}" 
+                                            @if(file_exists(public_path('images/depot-maps/' . $file)))
+                                                <img src="{{ asset('images/depot-maps/' . $file) }}" 
                                                      alt="{{ $file }}" 
                                                      class="max-w-full max-h-full object-contain">
                                             @else
@@ -172,7 +172,7 @@
                                         <div class="text-sm font-medium text-center">{{ $file }}</div>
                                         <div class="text-xs text-gray-500 text-center mb-2">
                                             {{ strtoupper(pathinfo($file, PATHINFO_EXTENSION)) }} • 
-                                            {{ number_format(filesize(public_path('storage/depot-maps/' . $file)) / 1024, 1) }} KB
+                                            {{ number_format(filesize(public_path('images/depot-maps/' . $file)) / 1024, 1) }} KB
                                         </div>
                                         <!-- Delete button -->
                                         <div class="text-center">
