@@ -46,7 +46,8 @@
       "Bash(for:*)",
       "Bash(do sed -i '' \"s/@method(''PATCH'')/@method(''PUT'')/g\" \"$file\")",
       "Bash(do if [ -f \"$file\" ])",
-      "Bash(fi)"
+      "Bash(fi)",
+      "Bash(git rebase:*)"
     ],
     "deny": []
   }

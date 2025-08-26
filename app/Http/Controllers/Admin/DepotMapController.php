@@ -349,7 +349,7 @@ class DepotMapController extends Controller
         }
         
         // Get available map files
-        $mapPath = public_path('images/depot-maps');
+        $mapPath = storage_path('app/public/depot-maps');
         $availableFiles = [];
         
         if (is_dir($mapPath)) {
@@ -379,7 +379,7 @@ class DepotMapController extends Controller
         
         // If map_file is provided, verify it exists
         if ($request->map_file) {
-            $mapPath = public_path('images/depot-maps/' . $request->map_file);
+            $mapPath = storage_path('app/public/depot-maps/' . $request->map_file);
             if (!file_exists($mapPath)) {
                 return back()->with('error', 'Selected map file does not exist.');
             }
@@ -418,7 +418,7 @@ class DepotMapController extends Controller
             $filename = $cleanName . '_' . time() . '.' . $extension;
             
             // Create directory if it doesn't exist
-            $uploadPath = public_path('images/depot-maps');
+            $uploadPath = storage_path('app/public/depot-maps');
             if (!is_dir($uploadPath)) {
                 mkdir($uploadPath, 0755, true);
             }
@@ -448,7 +448,7 @@ class DepotMapController extends Controller
         
         try {
             $filename = $request->filename;
-            $filePath = public_path('images/depot-maps/' . $filename);
+            $filePath = storage_path('app/public/depot-maps/' . $filename);
             
             // Check if file exists
             if (!file_exists($filePath)) {

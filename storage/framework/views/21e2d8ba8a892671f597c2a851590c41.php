@@ -1,31 +1,42 @@
-<x-warehouse-layout>
-    <x-slot name="header">
+<?php if (isset($component)) { $__componentOriginalc9242005886028143da563f7b99f0c87 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalc9242005886028143da563f7b99f0c87 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.warehouse-layout','data' => []] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('warehouse-layout'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
+     <?php $__env->slot('header', null, []); ?> 
         <div class="flex items-center justify-between">
             <div>
-                <h2 class="font-semibold text-xl text-gray-800">🗺️ Select Map File - {{ $depot->name }}</h2>
+                <h2 class="font-semibold text-xl text-gray-800">🗺️ Select Map File - <?php echo e($depot->name); ?></h2>
                 <p class="text-sm text-gray-600 mt-1">Choose which map file to use for this depot</p>
             </div>
             <div class="flex items-center space-x-3">
-                <a href="{{ route('app.depot-map.index') }}" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                <a href="<?php echo e(route('app.depot-map.index')); ?>" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
                     🗺️ View Map
                 </a>
-                <a href="{{ route('app.depots.index') }}" class="px-3 py-1 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-sm">
+                <a href="<?php echo e(route('app.depots.index')); ?>" class="px-3 py-1 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-sm">
                     ← Back to Depots
                 </a>
             </div>
         </div>
-    </x-slot>
+     <?php $__env->endSlot(); ?>
     <div class="py-6 max-w-4xl mx-auto px-4">
-        @if (session('success'))
+        <?php if(session('success')): ?>
             <div class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
-                {{ session('success') }}
+                <?php echo e(session('success')); ?>
+
             </div>
-        @endif
-        @if (session('error'))
+        <?php endif; ?>
+        <?php if(session('error')): ?>
             <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-                {{ session('error') }}
+                <?php echo e(session('error')); ?>
+
             </div>
-        @endif
+        <?php endif; ?>
         <!-- Current Map Status -->
         <div class="mb-6 bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">📋 Current Map Configuration</h3>
@@ -34,38 +45,40 @@
                     <div class="space-y-3">
                         <div>
                             <label class="text-sm font-medium text-gray-600">Current Depot:</label>
-                            <div class="text-lg font-semibold">{{ $depot->name }}</div>
+                            <div class="text-lg font-semibold"><?php echo e($depot->name); ?></div>
                         </div>
                         <div>
                             <label class="text-sm font-medium text-gray-600">Current Map File:</label>
-                            <div class="text-lg {{ $depot->map_file ? 'text-green-600' : 'text-red-600' }}">
-                                {{ $depot->map_file ?: 'No map file selected' }}
+                            <div class="text-lg <?php echo e($depot->map_file ? 'text-green-600' : 'text-red-600'); ?>">
+                                <?php echo e($depot->map_file ?: 'No map file selected'); ?>
+
                             </div>
                         </div>
-                        @if($depot->map_notes)
+                        <?php if($depot->map_notes): ?>
                             <div>
                                 <label class="text-sm font-medium text-gray-600">Notes:</label>
-                                <div class="text-sm text-gray-700 bg-gray-50 p-2 rounded">{{ $depot->map_notes }}</div>
+                                <div class="text-sm text-gray-700 bg-gray-50 p-2 rounded"><?php echo e($depot->map_notes); ?></div>
                             </div>
-                        @endif
+                        <?php endif; ?>
                     </div>
                 </div>
-                @if($depot->map_file)
+                <?php if($depot->map_file): ?>
                     <div>
                         <label class="text-sm font-medium text-gray-600 block mb-2">Current Map Preview:</label>
                         <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                            @if(file_exists(storage_path('app/public/depot-maps/' . $depot->map_file)))
-                                <img src="{{ asset('storage/depot-maps/' . $depot->map_file) }}" 
-                                     alt="{{ $depot->name }} Map" 
+                            <?php if(file_exists(public_path('storage/depot-maps/' . $depot->map_file))): ?>
+                                <img src="<?php echo e(asset('storage/depot-maps/' . $depot->map_file)); ?>" 
+                                     alt="<?php echo e($depot->name); ?> Map" 
                                      class="max-w-full h-32 object-contain rounded">
-                            @else
+                            <?php else: ?>
                                 <div class="text-red-500 text-center py-4">
-                                    ⚠️ Map file not found: {{ $depot->map_file }}
+                                    ⚠️ Map file not found: <?php echo e($depot->map_file); ?>
+
                                 </div>
-                            @endif
+                            <?php endif; ?>
                         </div>
                     </div>
-                @endif
+                <?php endif; ?>
             </div>
         </div>
         <!-- Map File Upload and Selection Form -->
@@ -77,9 +90,9 @@
             <!-- File Upload Section -->
             <div class="p-6 border-b border-gray-100 bg-blue-50">
                 <h4 class="text-md font-semibold text-gray-800 mb-4">📤 Upload New Map File</h4>
-                <form method="POST" action="{{ route('app.depot-map.upload-map-file') }}" enctype="multipart/form-data" class="space-y-4">
-                    @csrf
-                    <input type="hidden" name="depot_id" value="{{ $depot->id }}">
+                <form method="POST" action="<?php echo e(route('app.depot-map.upload-map-file')); ?>" enctype="multipart/form-data" class="space-y-4">
+                    <?php echo csrf_field(); ?>
+                    <input type="hidden" name="depot_id" value="<?php echo e($depot->id); ?>">
                     <div>
                         <label for="map_file_upload" class="block text-sm font-medium text-gray-700 mb-2">
                             Choose SVG Map File:
@@ -104,7 +117,7 @@
                         </label>
                         <textarea name="map_notes" id="upload_map_notes" rows="2"
                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                  placeholder="Add notes about this map layout...">{{ $depot->map_notes }}</textarea>
+                                  placeholder="Add notes about this map layout..."><?php echo e($depot->map_notes); ?></textarea>
                     </div>
                     <div class="flex justify-end">
                         <button type="submit" 
@@ -115,8 +128,8 @@
                     </div>
                 </form>
             </div>
-            <form method="POST" action="{{ route('app.depot-map.update-map-file') }}" class="p-6">
-                @csrf
+            <form method="POST" action="<?php echo e(route('app.depot-map.update-map-file')); ?>" class="p-6">
+                <?php echo csrf_field(); ?>
                 <!-- Depot Selection -->
                 <div class="mb-6">
                     <label for="depot_id" class="block text-sm font-medium text-gray-700 mb-2">
@@ -124,12 +137,13 @@
                     </label>
                     <select name="depot_id" id="depot_id" 
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            onchange="window.location.href='{{ route('app.depot-map.select-map-file', '') }}/' + this.value">
-                        @foreach($allDepots as $d)
-                            <option value="{{ $d->id }}" {{ $d->id === $depot->id ? 'selected' : '' }}>
-                                {{ $d->name }}{{ $d->map_file ? ' (has map)' : ' (no map)' }}
+                            onchange="window.location.href='<?php echo e(route('app.depot-map.select-map-file', '')); ?>/' + this.value">
+                        <?php $__currentLoopData = $allDepots; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $d): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($d->id); ?>" <?php echo e($d->id === $depot->id ? 'selected' : ''); ?>>
+                                <?php echo e($d->name); ?><?php echo e($d->map_file ? ' (has map)' : ' (no map)'); ?>
+
                             </option>
-                        @endforeach
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
                 </div>
                 <!-- Existing Map File Selection -->
@@ -138,13 +152,13 @@
                     <label for="map_file" class="block text-sm font-medium text-gray-700 mb-2">
                         Choose from uploaded files:
                     </label>
-                    @if(count($availableFiles) > 0)
+                    <?php if(count($availableFiles) > 0): ?>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            @foreach($availableFiles as $file)
+                            <?php $__currentLoopData = $availableFiles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $file): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                 <label class="relative cursor-pointer">
-                                    <input type="radio" name="map_file" value="{{ $file }}" 
+                                    <input type="radio" name="map_file" value="<?php echo e($file); ?>" 
                                            class="sr-only peer" 
-                                           {{ $depot->map_file === $file ? 'checked' : '' }}>
+                                           <?php echo e($depot->map_file === $file ? 'checked' : ''); ?>>
                                     <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-300 peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-colors relative">
                                         <!-- Selected indicator -->
                                         <div class="absolute top-2 right-2 hidden peer-checked:block">
@@ -153,31 +167,31 @@
                                             </div>
                                         </div>
                                         <!-- Current map indicator -->
-                                        @if($depot->map_file === $file)
+                                        <?php if($depot->map_file === $file): ?>
                                             <div class="absolute top-2 left-2">
                                                 <div class="bg-green-500 text-white rounded-full px-2 py-1 text-xs font-bold">
                                                     CURRENT
                                                 </div>
                                             </div>
-                                        @endif
+                                        <?php endif; ?>
                                         <div class="aspect-video bg-gray-100 rounded mb-2 flex items-center justify-center overflow-hidden">
-                                            @if(file_exists(storage_path('app/public/depot-maps/' . $file)))
-                                                <img src="{{ asset('storage/depot-maps/' . $file) }}" 
-                                                     alt="{{ $file }}" 
+                                            <?php if(file_exists(public_path('storage/depot-maps/' . $file))): ?>
+                                                <img src="<?php echo e(asset('storage/depot-maps/' . $file)); ?>" 
+                                                     alt="<?php echo e($file); ?>" 
                                                      class="max-w-full max-h-full object-contain">
-                                            @else
-                                                <div class="text-gray-400">📄 {{ strtoupper(pathinfo($file, PATHINFO_EXTENSION)) }}</div>
-                                            @endif
+                                            <?php else: ?>
+                                                <div class="text-gray-400">📄 <?php echo e(strtoupper(pathinfo($file, PATHINFO_EXTENSION))); ?></div>
+                                            <?php endif; ?>
                                         </div>
-                                        <div class="text-sm font-medium text-center">{{ $file }}</div>
+                                        <div class="text-sm font-medium text-center"><?php echo e($file); ?></div>
                                         <div class="text-xs text-gray-500 text-center mb-2">
-                                            {{ strtoupper(pathinfo($file, PATHINFO_EXTENSION)) }} • 
-                                            {{ number_format(filesize(storage_path('app/public/depot-maps/' . $file)) / 1024, 1) }} KB
+                                            <?php echo e(strtoupper(pathinfo($file, PATHINFO_EXTENSION))); ?> • 
+                                            <?php echo e(number_format(filesize(public_path('storage/depot-maps/' . $file)) / 1024, 1)); ?> KB
                                         </div>
                                         <!-- Delete button -->
                                         <div class="text-center">
                                             <button type="button" 
-                                                    onclick="deleteMapFile('{{ $file }}')" 
+                                                    onclick="deleteMapFile('<?php echo e($file); ?>')" 
                                                     class="px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 transition-colors"
                                                     title="Delete this file">
                                                 🗑️ Delete
@@ -185,9 +199,9 @@
                                         </div>
                                     </div>
                                 </label>
-                            @endforeach
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </div>
-                    @else
+                    <?php else: ?>
                         <div class="text-center py-8 bg-gray-50 rounded-lg">
                             <div class="text-gray-400 text-4xl mb-2">📁</div>
                             <div class="text-gray-600 mb-2">No existing map files found</div>
@@ -195,7 +209,7 @@
                                 Use the upload section above to add your first map file
                             </div>
                         </div>
-                    @endif
+                    <?php endif; ?>
                 </div>
                 <!-- Map Notes -->
                 <div class="mb-6">
@@ -204,12 +218,12 @@
                     </label>
                     <textarea name="map_notes" id="map_notes" rows="3"
                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                              placeholder="Add any notes about this map layout, bay locations, etc.">{{ $depot->map_notes }}</textarea>
+                              placeholder="Add any notes about this map layout, bay locations, etc."><?php echo e($depot->map_notes); ?></textarea>
                 </div>
                 <!-- Submit Button -->
-                @if(count($availableFiles) > 0)
+                <?php if(count($availableFiles) > 0): ?>
                     <!-- Clear Map Option -->
-                    @if($depot->map_file)
+                    <?php if($depot->map_file): ?>
                         <div class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                             <h5 class="text-sm font-medium text-yellow-800 mb-2">Clear Current Map</h5>
                             <p class="text-sm text-yellow-700 mb-3">Remove the current map file assignment (file will not be deleted)</p>
@@ -219,10 +233,10 @@
                                 🚫 Clear Map Assignment
                             </button>
                         </div>
-                    @endif
+                    <?php endif; ?>
                     <div class="flex justify-end space-x-3">
                         <button type="button" 
-                                onclick="window.location.href='{{ route('app.depot-map.index') }}'"
+                                onclick="window.location.href='<?php echo e(route('app.depot-map.index')); ?>'"
                                 class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
                             Cancel
                         </button>
@@ -231,7 +245,7 @@
                             💾 Update Map File
                         </button>
                     </div>
-                @endif
+                <?php endif; ?>
             </form>
         </div>
         <!-- Upload Instructions -->
@@ -284,13 +298,13 @@
             // Create a form to submit the delete request
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = '{{ route("app.depot-map.delete-map-file") }}';
+            form.action = '<?php echo e(route("app.depot-map.delete-map-file")); ?>';
             form.style.display = 'none';
             // Add CSRF token
             const csrfToken = document.createElement('input');
             csrfToken.type = 'hidden';
             csrfToken.name = '_token';
-            csrfToken.value = '{{ csrf_token() }}';
+            csrfToken.value = '<?php echo e(csrf_token()); ?>';
             form.appendChild(csrfToken);
             // Add method override for DELETE
             const methodField = document.createElement('input');
@@ -314,19 +328,19 @@
             // Create a form to submit the clear request
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = '{{ route("app.depot-map.update-map-file") }}';
+            form.action = '<?php echo e(route("app.depot-map.update-map-file")); ?>';
             form.style.display = 'none';
             // Add CSRF token
             const csrfToken = document.createElement('input');
             csrfToken.type = 'hidden';
             csrfToken.name = '_token';
-            csrfToken.value = '{{ csrf_token() }}';
+            csrfToken.value = '<?php echo e(csrf_token()); ?>';
             form.appendChild(csrfToken);
             // Add depot_id
             const depotIdField = document.createElement('input');
             depotIdField.type = 'hidden';
             depotIdField.name = 'depot_id';
-            depotIdField.value = '{{ $depot->id }}';
+            depotIdField.value = '<?php echo e($depot->id); ?>';
             form.appendChild(depotIdField);
             // Don't add map_file field - this will clear it
             // Submit form
@@ -335,4 +349,13 @@
         }
     }
     </script>
-</x-warehouse-layout>
+ <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalc9242005886028143da563f7b99f0c87)): ?>
+<?php $attributes = $__attributesOriginalc9242005886028143da563f7b99f0c87; ?>
+<?php unset($__attributesOriginalc9242005886028143da563f7b99f0c87); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalc9242005886028143da563f7b99f0c87)): ?>
+<?php $component = $__componentOriginalc9242005886028143da563f7b99f0c87; ?>
+<?php unset($__componentOriginalc9242005886028143da563f7b99f0c87); ?>
+<?php endif; ?><?php /**PATH /Users/londo/Herd/test/resources/views/warehouse/depot-map/select-map-file.blade.php ENDPATH**/ ?>
