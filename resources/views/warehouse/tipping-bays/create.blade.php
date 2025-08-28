@@ -134,7 +134,7 @@
                                     <h5 class="text-sm font-medium text-blue-800">Map Position Tips:</h5>
                                     <ul class="mt-2 text-sm text-blue-700 space-y-1">
                                         <li>• Leave positions empty to position manually using the map editor</li>
-                                        <li>• Use the <a href="{{ route('app.depot-map.manage-positions') }}" class="underline hover:no-underline">Map Position Manager</a> for drag-and-drop positioning</li>
+                                        <li>• Use the <a href="{{ route('app.depot-map.manage-positions', auth()->user()->depot_id ?? $depots->first()?->id ?? 1) }}" class="underline hover:no-underline">Map Position Manager</a> for drag-and-drop positioning</li>
                                         <li>• Position values are percentages relative to the map image size</li>
                                         <li>• (0,0) is top-left corner, (100,100) is bottom-right corner</li>
                                     </ul>

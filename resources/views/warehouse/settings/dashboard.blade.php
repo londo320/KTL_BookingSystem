@@ -55,7 +55,7 @@
             <p class="text-sm text-gray-500">See live bay status and operations</p>
           </div>
         </a>
-        <a href="{{ route('app.depot-map.manage-positions') }}" 
+        <a href="{{ route('app.depot-map.manage-positions', auth()->user()->depot_id ?? 1) }}" 
            class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
           <div class="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
             🎯
@@ -136,7 +136,7 @@
       <a href="{{ route('app.depot-map.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         🗺️ Depot Map View
       </a>
-      <a href="{{ route('app.depot-map.manage-positions') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+      <a href="{{ route('app.depot-map.manage-positions', auth()->user()->depot_id ?? 1) }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         🎯 Position Bays on Map
       </a>
       <a href="{{ route('app.arrival-time-settings.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">

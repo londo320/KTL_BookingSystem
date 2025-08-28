@@ -214,7 +214,7 @@
                                     <h5 class="text-sm font-medium text-blue-800">Map Styling Tips:</h5>
                                     <ul class="mt-2 text-sm text-blue-700 space-y-1">
                                         <li>• Leave positions empty to position manually using the map editor</li>
-                                        <li>• Use the <a href="{{ route('app.depot-map.manage-positions') }}" class="underline hover:no-underline">Interactive Map Editor</a> for drag-and-drop positioning and real-time styling</li>
+                                        <li>• Use the <a href="{{ route('app.depot-map.manage-positions', $tippingBay->depot) }}" class="underline hover:no-underline">Interactive Map Editor</a> for drag-and-drop positioning and real-time styling</li>
                                         <li>• Position values are percentages relative to the map image size</li>
                                         <li>• Rotation is useful for aligning bays with your depot layout</li>
                                         <li>• Choose text colors that contrast well with bay status colors</li>
