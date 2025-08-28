@@ -12,7 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->foreignId('customer_id')->nullable()->constrained()->nullOnDelete()->after('depot_id');
+            // Only add the column if it doesn't already exist
+            if (!Schema::hasColumn('users', 'customer_id')) {
+                $table->foreignId('customer_id')->nullable()->constrained()->nullOnDelete()->after('depot_id');
+            }
         });
     }
 
@@ -22,8 +25,11 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropForeign(['customer_id']);
-            $table->dropColumn('customer_id');
+            // Only drop if the column exists
+            if (Schema::hasColumn('users', 'customer_id')) {
+                $table->dropForeign(['customer_id']);
+                $table->dropColumn('customer_id');
+            }
         });
     }
 };

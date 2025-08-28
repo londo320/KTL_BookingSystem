@@ -20,13 +20,13 @@ class BasicDepotSetupSeeder extends Seeder
 
         $this->command->info("Setting up basic depot configuration for: {$depot->name}");
 
-        // Create essential tipping locations
+        // Create essential tipping locations (all parking areas now)
         $locations = [
             [
-                'name' => 'Warehouse A - General',
+                'name' => 'Warehouse A - General (Parking Area)',
                 'code' => 'WH-A',
-                'description' => 'Main warehouse for general cargo',
-                'location_type' => 'general',
+                'description' => 'Main warehouse for general cargo parking',
+                'location_type' => 'parking',
                 'capacity' => 20,
                 'is_active' => true,
                 'map_x' => 25.0,
@@ -36,10 +36,10 @@ class BasicDepotSetupSeeder extends Seeder
                 'map_height' => 80,
             ],
             [
-                'name' => 'Loading Dock',
+                'name' => 'Loading Dock (Parking Area)',
                 'code' => 'DOCK-1',
-                'description' => 'Primary loading and unloading area',
-                'location_type' => 'drop_zone',
+                'description' => 'Primary loading dock parking area',
+                'location_type' => 'parking',
                 'capacity' => 15,
                 'is_active' => true,
                 'map_x' => 65.0,
@@ -49,10 +49,10 @@ class BasicDepotSetupSeeder extends Seeder
                 'map_height' => 70,
             ],
             [
-                'name' => 'Collection Zone',
+                'name' => 'Collection Zone (Parking Area)',
                 'code' => 'COLLECT',
-                'description' => 'Area for trailer collection and departure',
-                'location_type' => 'collection_zone',
+                'description' => 'Area for trailer collection parking',
+                'location_type' => 'parking',
                 'capacity' => 10,
                 'is_active' => true,
                 'map_x' => 75.0,
