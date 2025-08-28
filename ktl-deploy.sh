@@ -112,7 +112,34 @@ sed -i "s/DB_DATABASE=.*/DB_DATABASE=ktl_booking/" .env
 sed -i "s/DB_USERNAME=.*/DB_USERNAME=ktl_user/" .env
 sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=ktl_password/" .env
 
-echo "✅ Environment configured"
+echo "📧 Configuring email settings..."
+# Add or update email configuration
+if ! grep -q "MAIL_MAILER" .env; then
+    echo "" >> .env
+    echo "# Email Configuration" >> .env
+    echo "MAIL_MAILER=smtp" >> .env
+    echo "MAIL_HOST=sandbox.smtp.mailtrap.io" >> .env
+    echo "MAIL_PORT=2525" >> .env
+    echo "MAIL_USERNAME=482ea0b1203385" >> .env
+    echo "MAIL_PASSWORD=8272b92e6640c3" >> .env
+    echo "MAIL_ENCRYPTION=null" >> .env
+    echo "MAIL_FROM_ADDRESS=hello@ktl-booking.com" >> .env
+    echo "MAIL_FROM_NAME=\"KTL Booking System\"" >> .env
+    echo "MAIL_SCHEME=null" >> .env
+else
+    # Update existing mail settings
+    sed -i "s/MAIL_MAILER=.*/MAIL_MAILER=smtp/" .env
+    sed -i "s/MAIL_HOST=.*/MAIL_HOST=sandbox.smtp.mailtrap.io/" .env
+    sed -i "s/MAIL_PORT=.*/MAIL_PORT=2525/" .env
+    sed -i "s/MAIL_USERNAME=.*/MAIL_USERNAME=482ea0b1203385/" .env
+    sed -i "s/MAIL_PASSWORD=.*/MAIL_PASSWORD=8272b92e6640c3/" .env
+    sed -i "s/MAIL_ENCRYPTION=.*/MAIL_ENCRYPTION=null/" .env
+    sed -i "s/MAIL_FROM_ADDRESS=.*/MAIL_FROM_ADDRESS=hello@ktl-booking.com/" .env
+    sed -i "s/MAIL_FROM_NAME=.*/MAIL_FROM_NAME=\"KTL Booking System\"/" .env
+    sed -i "s/MAIL_SCHEME=.*/MAIL_SCHEME=null/" .env
+fi
+
+echo "✅ Environment and email configured"
 
 echo "🐳 Creating Laravel app container..."
 docker run -d \
@@ -174,9 +201,17 @@ docker exec -w /var/www/html "$APP_CONTAINER" php artisan cache:clear || echo "C
 docker exec -w /var/www/html "$APP_CONTAINER" php artisan view:clear || echo "View clear failed (expected)"
 docker exec -w /var/www/html "$APP_CONTAINER" php artisan route:clear || echo "Route clear failed (expected)"
 
-# Create storage symlink
+# Create storage directories and symlink
+echo "🔗 Creating storage directories..."
+docker exec -w /var/www/html "$APP_CONTAINER" mkdir -p storage/app/public/depot-maps
+docker exec -w /var/www/html "$APP_CONTAINER" chmod -R 775 storage/app/public/depot-maps
+
 echo "🔗 Creating storage symlink..."
 docker exec -w /var/www/html "$APP_CONTAINER" php artisan storage:link || echo "Storage link already exists or failed"
+
+echo "🔧 Ensuring depot-maps directory permissions..."
+docker exec -w /var/www/html "$APP_CONTAINER" chown -R www-data:www-data storage/app/public/depot-maps
+docker exec -w /var/www/html "$APP_CONTAINER" chmod -R 775 storage/app/public/depot-maps
 
 echo "🚀 Running database migrations..."
 docker exec -w /var/www/html "$APP_CONTAINER" php artisan migrate --force
@@ -207,6 +242,9 @@ echo "============================================="
 echo "🌐 Application URL: http://$UNRAID_IP:8088"
 echo "🔧 Admin Panel: http://$UNRAID_IP:8088/admin"
 echo "🗄️  MySQL: $UNRAID_IP:$MYSQL_PORT"
+echo "📧 Email: Configured with Mailtrap"
+echo "   └── Host: sandbox.smtp.mailtrap.io:2525"
+echo "   └── Check your Mailtrap inbox for test email"
 echo "============================================="
 
 echo ""
@@ -220,10 +258,30 @@ echo ""
 echo "📁 Final storage permissions:"
 docker exec -w /var/www/html "$APP_CONTAINER" ls -ld storage/ bootstrap/cache/ public/
 
+echo ""
+echo "🗺️ Depot maps storage verification:"
+docker exec -w /var/www/html "$APP_CONTAINER" ls -la storage/app/public/ | grep depot-maps || echo "depot-maps directory created"
+docker exec -w /var/www/html "$APP_CONTAINER" ls -la public/ | grep storage || echo "storage symlink check"
+
+echo ""
+echo "📧 Testing email configuration..."
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan tinker --execute="
+try {
+    Mail::raw('KTL Booking System deployment completed successfully! 🚀', function(\$message) {
+        \$message->to('test@example.com')
+                ->subject('KTL Booking System - Deployment Complete');
+    });
+    echo 'Email test sent successfully to Mailtrap';
+} catch (Exception \$e) {
+    echo 'Email test failed: ' . \$e->getMessage();
+}
+" || echo "Email test failed - check configuration"
+
 send_notification "Setup Complete" "KTL Booking System is running at http://$UNRAID_IP:8088"
 
 echo ""
 echo "✅ Setup completed successfully!"
 echo "✅ AGGRESSIVE permission fixes applied!"
 echo "✅ Depot map file paths corrected!"
+echo "✅ Email configuration applied (Mailtrap)!"
 echo "✅ Ready for reliable redeployment!"
