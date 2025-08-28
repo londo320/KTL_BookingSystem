@@ -118,6 +118,9 @@
             @foreach($movementsOnSite as $movement)
             @php 
               $booking = $movement->booking;
+              $factoryBooking = $movement->factoryBooking;
+              $isFactory = $factoryBooking !== null;
+              $activeBooking = $isFactory ? $factoryBooking : $booking;
               $data = $movement->calculated_data;
               // Priority styling
               $priorityColors = [
@@ -172,25 +175,35 @@
               </td>
               <!-- Booking -->
               <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                <a href="{{ route('app.bookings.show', $booking) }}" class="hover:underline">
-                  {{ $booking->booking_reference }}
-                </a>
-                @if($booking->booked_at)
-                  <br><span class="text-xs text-gray-500">{{ $booking->booked_at->format('M j H:i') }}</span>
+                @if($isFactory)
+                  <a href="{{ route('app.factory-bookings.show', $activeBooking) }}" class="hover:underline">
+                    {{ $activeBooking->reference }}
+                  </a>
+                  <br><span class="text-xs text-orange-600">📍 Factory</span>
+                @else
+                  <a href="{{ route('app.bookings.show', $activeBooking) }}" class="hover:underline">
+                    {{ $activeBooking->booking_reference }}
+                  </a>
+                @endif
+                @if($activeBooking->booked_at ?? $activeBooking->arrived_at)
+                  <br><span class="text-xs text-gray-500">{{ ($activeBooking->booked_at ?? $activeBooking->arrived_at)->format('M j H:i') }}</span>
                 @endif
               </td>
               <!-- Customer -->
               <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ $booking->customer->name ?? 'Unknown' }}
-                @if($booking->poNumbers && $booking->poNumbers->count() > 0)
-                  <br><span class="text-xs text-blue-600">📦 {{ $booking->poNumbers->pluck('po_number')->join(', ') }}</span>
+                {{ $activeBooking?->customer?->name ?? 'Unknown' }}
+                @if($activeBooking?->poNumbers && $activeBooking->poNumbers->count() > 0)
+                  <br><span class="text-xs text-blue-600">📦 {{ $activeBooking->poNumbers->pluck('po_number')->join(', ') }}</span>
                 @endif
               </td>
               <!-- Vehicle/Container -->
               <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                {{ $booking->vehicle_registration ?? 'Not specified' }}
-                @if($booking->container_number)
-                  <br><span class="text-xs font-mono">{{ $booking->container_number }}</span>
+                {{ $activeBooking?->vehicle_registration ?? 'Not specified' }}
+                @if($activeBooking?->container_number)
+                  <br><span class="text-xs font-mono">{{ $activeBooking->container_number }}</span>
+                @endif
+                @if($isFactory && $activeBooking?->trailer_registration)
+                  <br><span class="text-xs text-gray-500">Trailer: {{ $activeBooking->trailer_registration }}</span>
                 @endif
               </td>
               <!-- Status -->
@@ -279,14 +292,21 @@
               <!-- Actions -->
               <td class="px-4 py-4 whitespace-nowrap text-sm">
                 <div class="flex flex-col space-y-1">
-                  <a href="{{ route('app.tipping-workflow.show', $booking) }}" 
-                     class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 text-center">
-                    🔧 Manage
-                  </a>
-                  <a href="{{ route('app.bookings.show', $booking) }}" 
-                     class="px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 text-center">
-                    👁️ View
-                  </a>
+                  @if($isFactory)
+                    <a href="{{ route('app.factory-bookings.show', $activeBooking) }}" 
+                       class="px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 text-center">
+                      👁️ View
+                    </a>
+                  @else
+                    <a href="{{ route('app.tipping-workflow.show', $activeBooking) }}" 
+                       class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 text-center">
+                      🔧 Manage
+                    </a>
+                    <a href="{{ route('app.bookings.show', $activeBooking) }}" 
+                       class="px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 text-center">
+                      👁️ View
+                    </a>
+                  @endif
                 </div>
               </td>
             </tr>

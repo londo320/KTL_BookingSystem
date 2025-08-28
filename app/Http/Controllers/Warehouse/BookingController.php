@@ -3304,16 +3304,27 @@ class BookingController extends Controller
         $this->ensureDepotAccess();
         $allowedDepotIds = $this->getAllowedDepotIds();
 
-        // Get all movements currently on site with comprehensive data
+        // Get all movements currently on site with comprehensive data (including factory bookings)
         $movementsOnSite = Movement::with([
             'booking.slot.depot', 
             'booking.customer', 
             'booking.poNumbers',
+            'factoryBooking.depot',
+            'factoryBooking.customer',
+            'factoryBooking.poNumbers',
             'tippingBay', 
             'tippingLocation'
         ])
-            ->whereNotNull('booking_id')
-            ->whereHas('booking.slot', fn($q) => $q->whereIn('depot_id', $allowedDepotIds))
+            ->where(function($query) use ($allowedDepotIds) {
+                // Regular bookings
+                $query->whereNotNull('booking_id')
+                      ->whereHas('booking.slot', fn($q) => $q->whereIn('depot_id', $allowedDepotIds))
+                      // Factory bookings
+                      ->orWhere(function($subQuery) use ($allowedDepotIds) {
+                          $subQuery->whereNotNull('factory_booking_id')
+                                   ->whereHas('factoryBooking', fn($q) => $q->whereIn('depot_id', $allowedDepotIds));
+                      });
+            })
             ->whereIn('current_status', ['arrived', 'in_parking', 'in_parking', 'in_parking', 'at_bay', 'unloading', 'empty', 'trailer_collected'])
             ->where(function($query) {
                 // For regular departures
@@ -3326,9 +3337,14 @@ class BookingController extends Controller
             })
             ->get()
             ->map(function ($movement) {
-                // Calculate comprehensive timing data
+                // Handle both regular bookings and factory bookings
                 $booking = $movement->booking;
-                $arrival = $movement->actual_arrival ?? $booking->arrived_at;
+                $factoryBooking = $movement->factoryBooking;
+                $isFactory = $factoryBooking !== null;
+                $activeBooking = $isFactory ? $factoryBooking : $booking;
+                
+                // Calculate comprehensive timing data
+                $arrival = $movement->actual_arrival ?? $activeBooking?->arrived_at;
                 
                 // Determine if trailer is loaded or empty
                 $isLoaded = !in_array($movement->current_status, ['empty', 'departed']);
