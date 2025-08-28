@@ -243,6 +243,10 @@ class BookingController extends Controller
                 $query->whereHas('slot', function ($q) {
                     $q->whereDate('start_at', Carbon::today());
                 });
+            } elseif ($quickFilter === 'yesterday') {
+                $query->whereHas('slot', function ($q) {
+                    $q->whereDate('start_at', Carbon::yesterday());
+                });
             } elseif ($quickFilter === 'tomorrow') {
                 $query->whereHas('slot', function ($q) {
                     $q->whereDate('start_at', Carbon::tomorrow());
@@ -387,6 +391,8 @@ class BookingController extends Controller
         if ($quickFilter = $request->input('filter') ?: $request->input('quick_filter')) {
             if ($quickFilter === 'today') {
                 $factoryBookingsQuery->whereDate('arrived_at', Carbon::today());
+            } elseif ($quickFilter === 'yesterday') {
+                $factoryBookingsQuery->whereDate('arrived_at', Carbon::yesterday());
             } elseif ($quickFilter === 'tomorrow') {
                 $factoryBookingsQuery->whereDate('arrived_at', Carbon::tomorrow());
             } elseif ($quickFilter === 'this_week') {
@@ -738,6 +744,10 @@ class BookingController extends Controller
             if ($quickFilter === 'today') {
                 $query->whereHas('slot', function ($q) {
                     $q->whereDate('start_at', Carbon::today());
+                });
+            } elseif ($quickFilter === 'yesterday') {
+                $query->whereHas('slot', function ($q) {
+                    $q->whereDate('start_at', Carbon::yesterday());
                 });
             } elseif ($quickFilter === 'tomorrow') {
                 $query->whereHas('slot', function ($q) {
@@ -2641,6 +2651,10 @@ class BookingController extends Controller
             if ($quickFilter === 'today') {
                 $query->whereHas('slot', function ($q) {
                     $q->whereDate('start_at', Carbon::today());
+                });
+            } elseif ($quickFilter === 'yesterday') {
+                $query->whereHas('slot', function ($q) {
+                    $q->whereDate('start_at', Carbon::yesterday());
                 });
             } elseif ($quickFilter === 'tomorrow') {
                 $query->whereHas('slot', function ($q) {
