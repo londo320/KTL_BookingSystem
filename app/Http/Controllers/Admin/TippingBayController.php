@@ -104,8 +104,8 @@ class TippingBayController extends Controller
             return back()->withErrors(['depot_id' => 'You do not have access to this depot.']);
         }
         
-        // Check if user can create in this depot (must be their default depot)
-        if ($request->depot_id !== $defaultDepotId) {
+        // Check if user can create in this depot (admins can create in any accessible depot, others need it to be their default)
+        if (!$user->hasRole('admin') && $request->depot_id !== $defaultDepotId) {
             return back()->withErrors(['depot_id' => 'You can only create tipping bays in your default depot.']);
         }
 
@@ -157,8 +157,8 @@ class TippingBayController extends Controller
             abort(403, 'You do not have access to this depot.');
         }
         
-        // Check if user can edit this depot (must be their default depot)
-        if ($tippingBay->depot_id !== $defaultDepotId) {
+        // Check if user can edit this depot (admins can edit any accessible depot, others need it to be their default)
+        if (!$user->hasRole('admin') && $tippingBay->depot_id !== $defaultDepotId) {
             abort(403, 'You can only edit tipping bays in your default depot. Please change your default depot in your profile if needed.');
         }
 
@@ -196,8 +196,8 @@ class TippingBayController extends Controller
             return back()->withErrors(['depot_id' => 'You do not have access to this depot.']);
         }
         
-        // Check if user can edit this depot (must be their default depot)
-        if ($tippingBay->depot_id !== $defaultDepotId || $request->depot_id !== $defaultDepotId) {
+        // Check if user can edit this depot (admins can edit any accessible depot, others need it to be their default)
+        if (!$user->hasRole('admin') && ($tippingBay->depot_id !== $defaultDepotId || $request->depot_id !== $defaultDepotId)) {
             return back()->withErrors(['depot_id' => 'You can only edit tipping bays in your default depot.']);
         }
 
