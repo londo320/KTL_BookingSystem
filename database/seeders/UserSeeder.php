@@ -29,6 +29,17 @@ class UserSeeder extends Seeder
             $depot->update(['map_file' => 'Wimblington.svg']);
         }
 
+        // Create protected system owner first
+        $paulCarr = User::create([
+            'name' => 'Paul Carr',
+            'email' => 'paul.carr@knowleslogistics.com',
+            'password' => Hash::make('password123'),
+            'depot_id' => $depot->id,
+            'email_verified_at' => now(),
+            'is_active' => true,
+        ]);
+        $paulCarr->assignRole('admin');
+
         $admin = User::create([
             'name' => 'Admin User',
             'email' => 'admin@example.com',
