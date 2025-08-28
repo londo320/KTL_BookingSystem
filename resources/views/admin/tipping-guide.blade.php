@@ -36,8 +36,8 @@
                                 <li>Enter <strong>gate number</strong> if applicable</li>
                                 <li><strong>Choose trailer destination:</strong>
                                     <ul class="ml-4 mt-1 list-disc list-inside">
-                                        <li><strong>Drop Location:</strong> For staged tipping (trailer waits in drop zone)</li>
-                                        <li><strong>Direct to Bay:</strong> Skip drop zone, go straight to tipping bay</li>
+                                        <li><strong>Drop Location:</strong> For staged tipping (trailer waits in parking area)</li>
+                                        <li><strong>Direct to Bay:</strong> Skip parking area, go straight to tipping bay</li>
                                     </ul>
                                 </li>
                                 <li>Click "Mark Arrived"</li>
@@ -58,7 +58,7 @@
                             <h4 class="font-medium text-gray-800">Move to Tipping Bay</h4>
                             <p class="text-gray-600 mt-1">Once trailer is dropped:</p>
                             <ul class="mt-2 text-sm text-gray-700 list-disc list-inside space-y-1">
-                                <li>Use the tipping workflow to move trailer from drop zone to bay</li>
+                                <li>Use the tipping workflow to move trailer from parking area to bay</li>
                                 <li>Or assign a bay directly during booking creation/editing</li>
                                 <li>System tracks the location and timing automatically</li>
                             </ul>
@@ -133,7 +133,7 @@
                 <div class="flex items-start">
                     <div class="flex-shrink-0 text-blue-500 text-xl mr-3">📍</div>
                     <div>
-                        <strong>Location Tracking:</strong> Always know where trailers are on-site (drop zones, specific bays)
+                        <strong>Location Tracking:</strong> Always know where trailers are on-site (parking areas, specific bays)
                     </div>
                 </div>
                 <div class="flex items-start">
@@ -163,7 +163,7 @@
                 <div>
                     <h4 class="font-medium text-gray-700 mb-2">Status Meanings:</h4>
                     <ul class="space-y-1 text-gray-600">
-                        <li><strong>Trailer Dropped:</strong> In drop zone, awaiting bay</li>
+                        <li><strong>Trailer Dropped:</strong> In parking area, awaiting bay</li>
                         <li><strong>In Bay:</strong> Moved to tipping bay, ready to start</li>
                         <li><strong>Tipping in Progress:</strong> Currently being tipped</li>
                         <li><strong>Tipping Complete:</strong> Ready for collection</li>
@@ -173,7 +173,7 @@
                     <h4 class="font-medium text-gray-700 mb-2">Key Menu Items:</h4>
                     <ul class="space-y-1 text-gray-600">
                         <li><strong>📊 Dashboard:</strong> Tipping workflow overview</li>
-                        <li><strong>📍 Drop Locations:</strong> Manage drop zones</li>
+                        <li><strong>📍 Drop Locations:</strong> Manage parking areas</li>
                         <li><strong>🚛 Tipping Bays:</strong> Manage tipping bays</li>
                         <li><strong>🏗️ Dropped Trailers:</strong> See all on-site trailers</li>
                     </ul>

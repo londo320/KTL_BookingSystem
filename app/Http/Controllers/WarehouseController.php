@@ -101,14 +101,13 @@ class WarehouseController extends Controller
 
         $todaysBookings = $todaysBookingsQuery->with(['slot.depot', 'customer', 'bookingType'])->get();
 
-        // Current arrivals on site - Regular bookings
+        // Current arrivals on site - Regular bookings (simplified logic)
         $currentlyOnSiteQuery = Booking::whereHas('slot', function ($q) use ($allowedDepotIds) {
             $q->whereIn('depot_id', $allowedDepotIds);
         })
             ->whereNotNull('arrived_at')
-            ->whereNull('departed_at')
             ->whereDoesntHave('movements', function ($q) {
-                $q->whereIn('current_status', ['departed', 'trailer_collected']);
+                $q->whereNotNull('trailer_collected_at'); // Simple: if trailer collected, not on site
             });
 
         if ($allowedCustomerIds !== null) {
@@ -128,6 +127,22 @@ class WarehouseController extends Controller
 
         $factoryOnSite = $factoryOnSiteQuery->count();
         $currentlyOnSite = $regularOnSite + $factoryOnSite;
+
+        // Dropped trailers count (units departed, trailers still on site) - simplified
+        $droppedTrailersQuery = Booking::whereHas('slot', function ($q) use ($allowedDepotIds) {
+            $q->whereIn('depot_id', $allowedDepotIds);
+        })
+            ->whereNotNull('arrived_at')
+            ->whereNotNull('departed_at')        // Unit has departed
+            ->whereDoesntHave('movements', function ($q) {
+                $q->whereNotNull('trailer_collected_at'); // But trailer not collected yet
+            });
+
+        if ($allowedCustomerIds !== null) {
+            $droppedTrailersQuery->whereIn('customer_id', $allowedCustomerIds)->whereNotNull('customer_id');
+        }
+
+        $droppedTrailers = $droppedTrailersQuery->count();
 
         // Today's arrivals
         $todaysArrivalsQuery = Booking::whereHas('slot', function ($q) use ($allowedDepotIds) {
@@ -160,7 +175,7 @@ class WarehouseController extends Controller
         ->whereHas('movements', function ($q) {
             $q->where('current_status', 'empty')
               ->whereNotNull('unloading_completed_at')
-              ->whereNotIn('current_status', ['trailer_dropped']); // Exclude dropped trailers (always ontime)
+              ->whereNotIn('current_status', ['in_parking']); // Exclude dropped trailers (always ontime)
         })
         // Complex query: tipping completion > (slot_end + arrival_delay)
         ->whereRaw('
@@ -187,7 +202,7 @@ class WarehouseController extends Controller
             $q->whereIn('depot_id', $allowedDepotIds);
         })
         ->whereHas('movements', function ($q) {
-            $q->whereIn('current_status', ['trailer_dropped', 'empty'])
+            $q->whereIn('current_status', ['in_parking', 'empty'])
               ->whereNotNull('unloading_completed_at');
         });
         
@@ -225,14 +240,13 @@ class WarehouseController extends Controller
             ->take(10)
             ->get();
 
-        // Current arrivals - Regular bookings
+        // Current arrivals - Regular bookings (simplified logic)
         $currentArrivalsQuery = Booking::whereHas('slot', function ($q) use ($allowedDepotIds) {
             $q->whereIn('depot_id', $allowedDepotIds);
         })
             ->whereNotNull('arrived_at')
-            ->whereNull('departed_at')
             ->whereDoesntHave('movements', function ($q) {
-                $q->whereIn('current_status', ['departed', 'trailer_collected']);
+                $q->whereNotNull('trailer_collected_at'); // Simple: if trailer collected, not on site
             });
 
         if ($allowedCustomerIds !== null) {

@@ -370,4 +370,59 @@ class FactoryBookingWorkflowController extends Controller
 
         return $assignedDepotIds;
     }
+
+    public function addPoLine(Request $request, FactoryBooking $factoryBooking)
+    {
+        $request->validate([
+            'po_id' => 'required|integer|exists:booking_po_numbers,id',
+            'expected_cases' => 'required|integer|min:0',
+            'expected_pallets' => 'required|integer|min:0',
+            'actual_cases' => 'nullable|integer|min:0',
+            'actual_pallets' => 'nullable|integer|min:0',
+        ]);
+
+        $poNumber = $factoryBooking->poNumbers()->find($request->po_id);
+        if (!$poNumber) {
+            return response()->json(['success' => false, 'message' => 'PO number not found']);
+        }
+
+        // Get the next line number
+        $lineNumber = $poNumber->lines()->max('line_number') + 1;
+
+        $poNumber->lines()->create([
+            'line_number' => $lineNumber,
+            'expected_cases' => $request->expected_cases,
+            'expected_pallets' => $request->expected_pallets,
+            'actual_cases' => $request->actual_cases ?: null,
+            'actual_pallets' => $request->actual_pallets ?: null,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'PO line added successfully']);
+    }
+
+    public function updatePoLine(Request $request, FactoryBooking $factoryBooking)
+    {
+        $request->validate([
+            'line_id' => 'required|integer|exists:po_lines,id',
+            'expected_cases' => 'required|integer|min:0',
+            'expected_pallets' => 'required|integer|min:0',
+            'actual_cases' => 'nullable|integer|min:0',
+            'actual_pallets' => 'nullable|integer|min:0',
+        ]);
+
+        // Find the line and verify it belongs to this factory booking
+        $line = \App\Models\PoLine::find($request->line_id);
+        if (!$line || !$factoryBooking->poNumbers()->where('id', $line->booking_po_number_id)->exists()) {
+            return response()->json(['success' => false, 'message' => 'PO line not found']);
+        }
+
+        $line->update([
+            'expected_cases' => $request->expected_cases,
+            'expected_pallets' => $request->expected_pallets,
+            'actual_cases' => $request->actual_cases ?: null,
+            'actual_pallets' => $request->actual_pallets ?: null,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'PO line updated successfully']);
+    }
 }

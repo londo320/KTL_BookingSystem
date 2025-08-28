@@ -34,7 +34,7 @@
                         @if($booking->tippingBay)
                             {{ $booking->tippingBay->name }} (Bay)
                         @elseif($booking->tippingLocation)
-                            {{ $booking->tippingLocation->name }} (Drop Zone)
+                            {{ $booking->tippingLocation->name }} (Parking Area)
                         @else
                             Location not set
                         @endif

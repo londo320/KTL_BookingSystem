@@ -246,7 +246,9 @@
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-gray-900">📦 PO Numbers</h3>
             @if($factoryBooking->poNumbers->count() === 0)
-              <a href="#" class="text-sm text-blue-600 hover:text-blue-800">+ Add PO Numbers</a>
+              <button type="button" onclick="showAddPoModal()" class="text-sm text-blue-600 hover:text-blue-800">+ Add PO Numbers</button>
+            @else
+              <button type="button" onclick="showAddPoModal()" class="text-sm text-blue-600 hover:text-blue-800">+ Add More POs</button>
             @endif
           </div>
           @if($factoryBooking->poNumbers->count() > 0)
@@ -390,4 +392,69 @@
       </div>
     </div>
   </div>
+
+  <!-- Add PO Numbers Modal -->
+  <div id="addPoModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen">
+      <div class="bg-white rounded-lg p-6 w-96 max-w-md">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Add PO Numbers</h3>
+        <form id="addPoForm" method="POST" action="{{ route('app.factory-bookings.add-po-numbers', $factoryBooking) }}">
+          @csrf
+          <div id="poInputs">
+            <div class="po-input-group mb-3">
+              <label class="block text-sm font-medium text-gray-700 mb-1">PO Number</label>
+              <div class="flex">
+                <input type="text" name="po_numbers[]" class="flex-1 border border-gray-300 rounded-l-md px-3 py-2" placeholder="Enter PO number" required>
+                <button type="button" onclick="removePoInput(this)" class="px-3 py-2 bg-red-500 text-white rounded-r-md hover:bg-red-600 text-sm">×</button>
+              </div>
+            </div>
+          </div>
+          <button type="button" onclick="addPoInput()" class="text-sm text-blue-600 hover:text-blue-800 mb-4">+ Add Another PO</button>
+          <div class="flex justify-end space-x-2">
+            <button type="button" onclick="hideAddPoModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">Cancel</button>
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Add PO Numbers</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showAddPoModal() {
+      document.getElementById('addPoModal').classList.remove('hidden');
+    }
+
+    function hideAddPoModal() {
+      document.getElementById('addPoModal').classList.add('hidden');
+    }
+
+    function addPoInput() {
+      const poInputs = document.getElementById('poInputs');
+      const newInput = document.createElement('div');
+      newInput.className = 'po-input-group mb-3';
+      newInput.innerHTML = `
+        <label class="block text-sm font-medium text-gray-700 mb-1">PO Number</label>
+        <div class="flex">
+          <input type="text" name="po_numbers[]" class="flex-1 border border-gray-300 rounded-l-md px-3 py-2" placeholder="Enter PO number" required>
+          <button type="button" onclick="removePoInput(this)" class="px-3 py-2 bg-red-500 text-white rounded-r-md hover:bg-red-600 text-sm">×</button>
+        </div>
+      `;
+      poInputs.appendChild(newInput);
+    }
+
+    function removePoInput(button) {
+      const group = button.closest('.po-input-group');
+      const poInputs = document.getElementById('poInputs');
+      if (poInputs.children.length > 1) {
+        group.remove();
+      }
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('addPoModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        hideAddPoModal();
+      }
+    });
+  </script>
 </x-app-layout>

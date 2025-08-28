@@ -74,7 +74,7 @@ class TippingLocationController extends Controller
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|max:50|unique:tipping_locations,code,NULL,id,depot_id,'.$request->depot_id,
             'description' => 'nullable|string',
-            'location_type' => 'required|in:drop_zone,collection_zone,general',
+            'location_type' => 'required|in:parking',
             'capacity' => 'required|integer|min:1|max:50',
             'is_active' => 'boolean',
         ]);
@@ -143,7 +143,7 @@ class TippingLocationController extends Controller
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|max:50|unique:tipping_locations,code,'.$tippingLocation->id.',id,depot_id,'.$request->depot_id,
             'description' => 'nullable|string',
-            'location_type' => 'required|in:drop_zone,collection_zone,general',
+            'location_type' => 'required|in:parking',
             'capacity' => 'required|integer|min:1|max:50',
             'is_active' => 'boolean',
         ]);

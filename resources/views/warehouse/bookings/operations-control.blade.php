@@ -59,7 +59,7 @@
         </div>
         <div class="text-center p-1 bg-yellow-100 rounded flex-1 min-w-0">
           <div class="text-sm font-bold text-yellow-600">{{ $stats['in_drop_zone'] }}</div>
-          <div class="text-xs text-yellow-600">📍 In Drop Zone</div>
+          <div class="text-xs text-yellow-600">📍 In Parking Area</div>
         </div>
         <div class="text-center p-1 bg-orange-100 rounded flex-1 min-w-0">
           <div class="text-sm font-bold text-orange-600">{{ $stats['at_bay'] }}</div>
@@ -115,7 +115,7 @@
               $statusConfig = [
                 'arrived' => ['icon' => '🚛', 'label' => 'Just Arrived', 'color' => 'bg-blue-100 text-blue-800', 'row' => 'hover:bg-blue-50'],
                 'in_waiting' => ['icon' => '⏳', 'label' => 'Waiting', 'color' => 'bg-yellow-100 text-yellow-800', 'row' => 'hover:bg-yellow-50'],
-                'in_location' => ['icon' => '📍', 'label' => 'In Drop Zone', 'color' => 'bg-yellow-100 text-yellow-800', 'row' => 'hover:bg-yellow-50'],
+                'in_location' => ['icon' => '📍', 'label' => 'In Parking Area', 'color' => 'bg-yellow-100 text-yellow-800', 'row' => 'hover:bg-yellow-50'],
                 'trailer_dropped' => ['icon' => '🔄', 'label' => 'Trailer Dropped', 'color' => 'bg-orange-100 text-orange-800', 'row' => 'hover:bg-orange-50'],
                 'at_bay' => ['icon' => '🚛', 'label' => 'At Bay', 'color' => 'bg-orange-100 text-orange-800', 'row' => 'hover:bg-orange-50'],
                 'unloading' => ['icon' => '⚡', 'label' => 'Tipping Active', 'color' => 'bg-red-100 text-red-800', 'row' => 'hover:bg-red-50'],
@@ -131,7 +131,7 @@
                 $locationDetail = $movement->current_status === 'unloading' ? 'Currently tipping' : 'At bay';
               } elseif ($movement->tippingLocation) {
                 $location = '📍 ' . $movement->tippingLocation->name;
-                $locationDetail = 'In drop zone';
+                $locationDetail = 'In parking area';
               } elseif ($movement->current_status === 'arrived') {
                 $location = 'Gate Entry';
                 $locationDetail = 'No location assigned';
@@ -190,12 +190,12 @@
                   @if($canTakeAction)
                     <a href="{{ route('app.tipping-workflow.show', $booking) }}" 
                        class="inline-block px-3 py-1 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600">
-                      📍 Assign Drop Zone
+                      📍 Assign Parking Area
                     </a>
                   @else
                     <span class="inline-block px-3 py-1 bg-gray-300 text-gray-500 text-sm rounded cursor-not-allowed" 
                           title="Actions only available for your default depot">
-                      📍 Assign Drop Zone
+                      📍 Assign Parking Area
                     </span>
                   @endif
                 @elseif(in_array($movement->current_status, ['in_location']) && !$movement->unloading_started_at)
@@ -250,12 +250,12 @@
                   @if($canTakeAction)
                     <a href="{{ route('app.tipping-workflow.show', $booking) }}" 
                        class="inline-block px-3 py-1 bg-purple-500 text-white text-sm rounded hover:bg-purple-600">
-                      🔄 Move to Collection Zone
+                      🔄 Move to Parking Area
                     </a>
                   @else
                     <span class="inline-block px-3 py-1 bg-gray-300 text-gray-500 text-sm rounded cursor-not-allowed" 
                           title="Actions only available for your default depot">
-                      🔄 Move to Collection Zone
+                      🔄 Move to Parking Area
                     </span>
                   @endif
                 @elseif($movement->current_status === 'trailer_collected')
@@ -370,14 +370,14 @@
         }
       });
     });
-    // Assign Drop Zone
+    // Assign Parking Area
     async function assignDropZone(bookingId) {
       selectedBookingId = bookingId;
       try {
         const response = await fetch('/admin/operations/available-locations?type=drop');
         const locations = await response.json();
         if (locations.length === 0) {
-          showToast('No available drop zones', 'error');
+          showToast('No available parking areas', 'error');
           return;
         }
         let content = '<div class="space-y-2">';
@@ -396,9 +396,9 @@
             <button onclick="confirmDropZoneAssignment()" class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">Assign Zone</button>
           </div>
         `;
-        showModal('Select Drop Zone', content);
+        showModal('Select Parking Area', content);
       } catch (error) {
-        showToast('Error loading drop zones', 'error');
+        showToast('Error loading parking areas', 'error');
       }
     }
     function selectLocation(locationId, element) {
@@ -414,7 +414,7 @@
     }
     async function confirmDropZoneAssignment() {
       if (!selectedLocationId) {
-        showToast('Please select a drop zone', 'error');
+        showToast('Please select a parking area', 'error');
         return;
       }
       try {
@@ -430,11 +430,11 @@
         });
         const data = await response.json();
         if (data.success) {
-          showToast('Drop zone assigned successfully!', 'success');
+          showToast('parking area assigned successfully!', 'success');
           hideModal();
           setTimeout(() => window.location.reload(), 1500);
         } else {
-          showToast(data.error || 'Failed to assign drop zone', 'error');
+          showToast(data.error || 'Failed to assign parking area', 'error');
         }
       } catch (error) {
         showToast('Network error occurred', 'error');
@@ -534,9 +534,9 @@
         showToast('Network error occurred', 'error');
       }
     }
-    // Move to Collection Zone
+    // Move to Parking Area
     async function moveToCollection(bookingId) {
-      if (!confirm('Move empty trailer to collection zone?')) {
+      if (!confirm('Move empty trailer to parking area?')) {
         return;
       }
       try {
@@ -549,7 +549,7 @@
         });
         const data = await response.json();
         if (data.success) {
-          showToast('Trailer moved to collection zone!', 'success');
+          showToast('Trailer moved to parking area!', 'success');
           setTimeout(() => window.location.reload(), 1500);
         } else {
           showToast(data.error || 'Failed to move trailer', 'error');

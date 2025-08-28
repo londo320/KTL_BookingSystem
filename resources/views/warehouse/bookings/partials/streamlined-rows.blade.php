@@ -159,7 +159,7 @@
                 $trailerStatus = 'needs assignment';
                 $statusBadgeClass = 'bg-red-100 text-red-800';
               } elseif ($movement->unit_departed_at && !$movement->collection_unit_departed_at) {
-                $detailedLocation = $movement->tippingLocation ? $movement->tippingLocation->name : 'Drop zone';
+                $detailedLocation = $movement->tippingLocation ? $movement->tippingLocation->name : 'parking area';
                 $trailerStatus = 'unit departed';
                 $statusBadgeClass = 'bg-orange-100 text-orange-800';
               }

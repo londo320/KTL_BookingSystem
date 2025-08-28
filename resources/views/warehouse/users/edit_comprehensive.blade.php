@@ -420,7 +420,7 @@
                                 <input type="radio" name="permission_level" value="shunter" class="mt-1 mr-3" onchange="applyPermissionLevel('shunter')">
                                 <div class="flex-1">
                                     <div class="font-medium text-gray-900">🚛 Shunter Operations</div>
-                                    <div class="text-sm text-gray-600 mt-1">Specialized for trailer operations - move between bays, tipping, collection zones</div>
+                                    <div class="text-sm text-gray-600 mt-1">Specialized for trailer operations - move between bays, tipping, parking areas</div>
                                     <div class="text-xs text-gray-500 mt-1">Perfect for: Shunt drivers, Yard operators, Trailer handlers</div>
                                 </div>
                             </label>
@@ -764,7 +764,7 @@ function applyPermissionLevel(level) {
     const levelInfo = {
         'view': { name: 'View Only', color: 'bg-gray-100 text-gray-700', description: 'Can see dashboards, bookings, and reports but cannot make changes.' },
         'standard': { name: 'Standard Access', color: 'bg-green-100 text-green-700', description: 'Can view and process arrivals, manage bookings, control basic tipping operations.' },
-        'shunter': { name: 'Shunter Operations', color: 'bg-orange-100 text-orange-700', description: 'Specialized trailer operations - move trailers between bays, manage tipping, control collection zones.' },
+        'shunter': { name: 'Shunter Operations', color: 'bg-orange-100 text-orange-700', description: 'Specialized trailer operations - move trailers between bays, manage tipping, control parking areas.' },
         'full': { name: 'Full Control', color: 'bg-blue-100 text-blue-700', description: 'Complete access - can view, edit, create/delete bookings, manage customers, configure settings.' }
     };
     

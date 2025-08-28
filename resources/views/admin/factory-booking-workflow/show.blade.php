@@ -266,22 +266,107 @@
             <div><strong>Time on Site:</strong> {{ $factoryBooking->getTimeOnSite() }}</div>
           </div>
         </div>
-        {{-- PO Information --}}
+        {{-- PO Information with Line Management --}}
         @if($factoryBooking->poNumbers->count() > 0)
           <div class="bg-white rounded-lg shadow-sm border p-6">
-            <h4 class="font-medium text-gray-800 mb-3">📦 PO Numbers</h4>
-            <div class="space-y-3">
+            <div class="flex justify-between items-center mb-4">
+              <h4 class="font-medium text-gray-800">📦 PO Numbers & Load Details</h4>
+              <button type="button" onclick="togglePoManagement()" class="text-sm text-blue-600 hover:text-blue-800">
+                <span id="toggleText">Manage Lines →</span>
+              </button>
+            </div>
+            
+            <div class="space-y-4">
               @foreach($factoryBooking->poNumbers as $po)
-                <div class="p-3 bg-gray-50 rounded-md">
-                  <div class="font-medium">{{ $po->po_number }}</div>
-                  @if($po->description)
-                    <div class="text-sm text-gray-600">{{ $po->description }}</div>
-                  @endif
-                  @if($po->lines->count() > 0)
-                    <div class="mt-2 text-xs text-gray-500">
-                      {{ $po->lines->count() }} line(s)
+                <div class="border rounded-lg p-4">
+                  <div class="flex justify-between items-start mb-3">
+                    <div>
+                      <h5 class="font-medium text-lg">PO: {{ $po->po_number }}</h5>
+                      @if($po->lines->count() > 0)
+                        <div class="text-sm text-gray-600 mt-1">
+                          Expected: {{ $po->total_expected_cases }} cases, {{ $po->total_expected_pallets }} pallets
+                          @if($po->total_actual_cases > 0)
+                            | Actual: {{ $po->total_actual_cases }} cases, {{ $po->total_actual_pallets }} pallets
+                          @endif
+                        </div>
+                      @else
+                        <div class="text-sm text-gray-500">No line details added</div>
+                      @endif
                     </div>
-                  @endif
+                  </div>
+
+                  <!-- PO Line Management (Hidden by default) -->
+                  <div id="po-lines-{{ $po->id }}" class="po-lines-section hidden mt-4 border-t pt-4">
+                    <h6 class="font-medium text-gray-700 mb-3">Line Details</h6>
+                    
+                    @if($po->lines->count() > 0)
+                      <div class="space-y-3 mb-4">
+                        @foreach($po->lines as $line)
+                          <div class="bg-gray-50 p-3 rounded border" data-line-id="{{ $line->id }}">
+                            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+                              <div>
+                                <label class="block text-xs font-medium text-gray-700">Expected Cases</label>
+                                <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm expected-cases" 
+                                       value="{{ $line->expected_cases }}" min="0">
+                              </div>
+                              <div>
+                                <label class="block text-xs font-medium text-gray-700">Expected Pallets</label>
+                                <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm expected-pallets" 
+                                       value="{{ $line->expected_pallets }}" min="0">
+                              </div>
+                              <div>
+                                <label class="block text-xs font-medium text-gray-700">Actual Cases</label>
+                                <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm actual-cases" 
+                                       value="{{ $line->actual_cases }}" min="0">
+                              </div>
+                              <div>
+                                <label class="block text-xs font-medium text-gray-700">Actual Pallets</label>
+                                <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm actual-pallets" 
+                                       value="{{ $line->actual_pallets }}" min="0">
+                              </div>
+                            </div>
+                            <div class="mt-2 flex justify-end">
+                              <button type="button" onclick="updatePoLine({{ $line->id }})" class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
+                                Update Line
+                              </button>
+                            </div>
+                          </div>
+                        @endforeach
+                      </div>
+                    @endif
+
+                    <!-- Add New Line Form -->
+                    <div class="bg-blue-50 p-3 rounded border">
+                      <h6 class="font-medium text-gray-700 mb-2">Add New Line</h6>
+                      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+                        <div>
+                          <label class="block text-xs font-medium text-gray-700">Expected Cases</label>
+                          <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm" 
+                                 id="new-expected-cases-{{ $po->id }}" min="0">
+                        </div>
+                        <div>
+                          <label class="block text-xs font-medium text-gray-700">Expected Pallets</label>
+                          <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm" 
+                                 id="new-expected-pallets-{{ $po->id }}" min="0">
+                        </div>
+                        <div>
+                          <label class="block text-xs font-medium text-gray-700">Actual Cases</label>
+                          <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm" 
+                                 id="new-actual-cases-{{ $po->id }}" min="0">
+                        </div>
+                        <div>
+                          <label class="block text-xs font-medium text-gray-700">Actual Pallets</label>
+                          <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm" 
+                                 id="new-actual-pallets-{{ $po->id }}" min="0">
+                        </div>
+                      </div>
+                      <div class="mt-2 flex justify-end">
+                        <button type="button" onclick="addPoLine({{ $po->id }})" class="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">
+                          Add Line
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               @endforeach
             </div>
@@ -304,4 +389,91 @@
       </div>
     </div>
   </div>
+
+  <script>
+    function togglePoManagement() {
+      const sections = document.querySelectorAll('.po-lines-section');
+      const toggleText = document.getElementById('toggleText');
+      const isHidden = sections[0].classList.contains('hidden');
+      
+      sections.forEach(section => {
+        if (isHidden) {
+          section.classList.remove('hidden');
+        } else {
+          section.classList.add('hidden');
+        }
+      });
+      
+      toggleText.textContent = isHidden ? '← Hide Lines' : 'Manage Lines →';
+    }
+
+    function updatePoLine(lineId) {
+      const lineDiv = document.querySelector(`[data-line-id="${lineId}"]`);
+      const expectedCases = lineDiv.querySelector('.expected-cases').value;
+      const expectedPallets = lineDiv.querySelector('.expected-pallets').value;
+      const actualCases = lineDiv.querySelector('.actual-cases').value;
+      const actualPallets = lineDiv.querySelector('.actual-pallets').value;
+      
+      fetch(`{{ route('app.factory-booking-workflow.update-po-line', $factoryBooking) }}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({
+          line_id: lineId,
+          expected_cases: expectedCases || 0,
+          expected_pallets: expectedPallets || 0,
+          actual_cases: actualCases || 0,
+          actual_pallets: actualPallets || 0
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          location.reload(); // Reload to show updated totals
+        } else {
+          alert('Error updating line: ' + data.message);
+        }
+      })
+      .catch(error => {
+        alert('Error updating line');
+        console.error(error);
+      });
+    }
+
+    function addPoLine(poId) {
+      const expectedCases = document.getElementById(`new-expected-cases-${poId}`).value;
+      const expectedPallets = document.getElementById(`new-expected-pallets-${poId}`).value;
+      const actualCases = document.getElementById(`new-actual-cases-${poId}`).value;
+      const actualPallets = document.getElementById(`new-actual-pallets-${poId}`).value;
+      
+      fetch(`{{ route('app.factory-booking-workflow.add-po-line', $factoryBooking) }}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({
+          po_id: poId,
+          expected_cases: expectedCases || 0,
+          expected_pallets: expectedPallets || 0,
+          actual_cases: actualCases || 0,
+          actual_pallets: actualPallets || 0
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          location.reload(); // Reload to show new line
+        } else {
+          alert('Error adding line: ' + data.message);
+        }
+      })
+      .catch(error => {
+        alert('Error adding line');
+        console.error(error);
+      });
+    }
+  </script>
 </x-app-layout>

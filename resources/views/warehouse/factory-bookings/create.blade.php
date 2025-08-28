@@ -26,213 +26,245 @@
     @endif
     <form method="POST" action="{{ route('app.factory-bookings.store') }}" class="space-y-6">
       @csrf
-      {{-- Gate Information --}}
-      <div class="bg-white rounded-lg shadow-sm border p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <span class="mr-2">🚪</span>
-          Gate Information
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {{-- Depot Selection --}}
-          <div>
-            <label for="depot_id" class="block text-sm font-medium text-gray-700 mb-2">
-              Depot <span class="text-red-500">*</span>
-            </label>
-            <select name="depot_id" id="depot_id" required 
-                    class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-              <option value="">Select Depot</option>
-              @foreach($depots as $depot)
-                <option value="{{ $depot->id }}" {{ old('depot_id') == $depot->id ? 'selected' : '' }}>
-                  {{ $depot->name }}
-                </option>
-              @endforeach
-            </select>
-            @if($depots->count() === 1)
-              <p class="mt-1 text-xs text-gray-500">Auto-selected based on your access</p>
-            @endif
-          </div>
-          {{-- Priority --}}
-          <div>
-            <label for="priority" class="block text-sm font-medium text-gray-700 mb-2">
-              Priority (0-100)
-            </label>
-            <div class="relative">
-              <input type="number" name="priority" id="priority" min="0" max="100" 
+      
+      <div class="space-y-6">
+        {{-- REQUIRED FIELDS --}}
+        <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+          <h3 class="text-lg font-medium text-blue-900 mb-3">📋 Required Information</h3>
+          
+          <div class="grid grid-cols-2 gap-4">
+            {{-- Depot Selection --}}
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-blue-800">Depot <span class="text-red-500">*</span></label>
+              <select name="depot_id" required class="mt-1 block w-full border-blue-300 rounded bg-white">
+                <option value="">– Choose depot –</option>
+                @foreach($depots as $depot)
+                  <option value="{{ $depot->id }}"
+                    @selected(old('depot_id') == $depot->id)
+                  >
+                    {{ $depot->name }}
+                  </option>
+                @endforeach
+              </select>
+              @if($depots->count() === 1)
+                <p class="text-xs text-blue-600 mt-1">Auto-selected based on your access</p>
+              @endif
+              @error('depot_id')<p class="text-red-600 text-sm">{{ $message }}</p>@enderror
+            </div>
+
+            {{-- Customer --}}
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-blue-800">Customer <span class="text-red-500">*</span></label>
+              <select name="customer_id" required class="mt-1 block w-full border-blue-300 rounded bg-white">
+                <option value="">– Choose customer –</option>
+                @foreach($customers as $customer)
+                  <option value="{{ $customer->id }}"
+                    @selected(old('customer_id') == $customer->id)
+                  >
+                    {{ $customer->name }}
+                  </option>
+                @endforeach
+              </select>
+              @error('customer_id')<p class="text-red-600 text-sm">{{ $message }}</p>@enderror
+            </div>
+
+            {{-- Trailer Type --}}
+            <div>
+              <label class="block text-sm font-medium text-blue-800">Trailer Type <span class="text-red-500">*</span></label>
+              <select name="trailer_type_id" required class="mt-1 block w-full border-blue-300 rounded bg-white">
+                <option value="">– Choose type –</option>
+                @foreach($trailerTypes as $trailerType)
+                  <option value="{{ $trailerType->id }}"
+                    @selected(old('trailer_type_id') == $trailerType->id)
+                  >
+                    {{ $trailerType->name }}
+                  </option>
+                @endforeach
+              </select>
+              @error('trailer_type_id')<p class="text-red-600 text-sm">{{ $message }}</p>@enderror
+            </div>
+
+            {{-- Carrier Company --}}
+            <div>
+              <label class="block text-sm font-medium text-blue-800">Carrier Company <span class="text-red-500">*</span></label>
+              <div class="relative">
+                <input type="text" 
+                       id="admin-carrier-search" 
+                       name="carrier_name"
+                       value="{{ old('carrier_name') }}"
+                       placeholder="Search or type carrier name..."
+                       required
+                       autocomplete="off"
+                       class="mt-1 block w-full border-blue-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10">
+                
+                {{-- Hidden carrier_id field --}}
+                <input type="hidden" 
+                       id="admin-carrier-id" 
+                       name="carrier_id" 
+                       value="{{ old('carrier_id') }}">
+                
+                {{-- Search dropdown --}}
+                <div id="admin-carrier-dropdown" 
+                     class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {{-- Results will be populated by JavaScript --}}
+                </div>
+                
+                {{-- Status indicators --}}
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                  <span id="admin-carrier-status" class="text-xs"></span>
+                </div>
+              </div>
+              
+              <div class="mt-2">
+                <a href="{{ route('app.carriers.create') }}" target="_blank"
+                   class="text-xs text-blue-600 hover:text-blue-800 underline">
+                  🏢 Manage carriers
+                </a>
+              </div>
+              
+              @error('carrier_id')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
+              @error('carrier_name')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
+            </div>
+
+            {{-- Priority --}}
+            <div>
+              <label class="block text-sm font-medium text-blue-800">Priority (0-100)</label>
+              <input type="number" name="priority" min="0" max="100" 
                      value="{{ old('priority', 50) }}"
-                     class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-              <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <span class="text-gray-400 text-sm">Default: 50</span>
-              </div>
+                     placeholder="50"
+                     class="mt-1 block w-full border-blue-300 rounded bg-white">
+              <p class="text-xs text-blue-600 mt-1">Higher = more urgent</p>
+              @error('priority')<p class="text-red-600 text-sm">{{ $message }}</p>@enderror
             </div>
-            <p class="mt-1 text-xs text-gray-500">
-              Higher numbers = higher priority (80+ urgent, 50 normal, 20- low)
-            </p>
-          </div>
-        </div>
-      </div>
-      {{-- Customer & Carrier Information --}}
-      <div class="bg-white rounded-lg shadow-sm border p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <span class="mr-2">🏢</span>
-          Customer & Carrier Information
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {{-- Customer --}}
-          <div>
-            <label for="customer_id" class="block text-sm font-medium text-gray-700 mb-2">
-              Customer <span class="text-red-500">*</span>
-            </label>
-            <select name="customer_id" id="customer_id" required 
-                    class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-              <option value="">Select Customer</option>
-              @foreach($customers as $customer)
-                <option value="{{ $customer->id }}" {{ old('customer_id') == $customer->id ? 'selected' : '' }}>
-                  {{ $customer->name }}
-                </option>
-              @endforeach
-            </select>
-          </div>
-          {{-- Carrier with Search --}}
-          <div>
-            <label for="carrier_search" class="block text-sm font-medium text-gray-700 mb-2">
-              Carrier Company <span class="text-red-500">*</span>
-            </label>
-            <div class="relative">
-              <input type="text" 
-                     id="carrier-search" 
-                     name="carrier_name"
-                     value="{{ old('carrier_name') }}"
-                     placeholder="Search or type carrier name..."
-                     required
-                     autocomplete="off"
-                     class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 pr-10">
-              {{-- Hidden carrier_id field --}}
-              <input type="hidden" 
-                     id="carrier-id" 
-                     name="carrier_id" 
-                     value="{{ old('carrier_id') }}">
-              {{-- Search dropdown --}}
-              <div id="carrier-dropdown" 
-                   class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                {{-- Results will be populated by JavaScript --}}
-              </div>
-              {{-- Status indicators --}}
-              <div class="absolute inset-y-0 right-0 flex items-center pr-3">
-                <span id="carrier-status" class="text-xs"></span>
-              </div>
-            </div>
-            <p class="text-xs text-gray-500 mt-1">Search existing carriers or type to create new</p>
-          </div>
-        </div>
-      </div>
-      {{-- Vehicle Information --}}
-      <div class="bg-white rounded-lg shadow-sm border p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <span class="mr-2">🚛</span>
-          Vehicle Information
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {{-- Vehicle Registration --}}
-          <div>
-            <label for="vehicle_registration" class="block text-sm font-medium text-gray-700 mb-2">
-              Vehicle Registration <span class="text-red-500">*</span>
-            </label>
-            <input type="text" name="vehicle_registration" id="vehicle_registration" required 
-                   value="{{ old('vehicle_registration') }}"
-                   placeholder="e.g., AB12 XYZ"
-                   class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 uppercase">
-          </div>
-          {{-- Trailer Registration --}}
-          <div>
-            <label for="trailer_registration" class="block text-sm font-medium text-gray-700 mb-2">
-              Trailer Registration (Optional)
-            </label>
-            <input type="text" name="trailer_registration" id="trailer_registration" 
-                   value="{{ old('trailer_registration') }}"
-                   placeholder="e.g., TR12 345"
-                   class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 uppercase">
-          </div>
-          {{-- Trailer Type --}}
-          <div>
-            <label for="trailer_type_id" class="block text-sm font-medium text-gray-700 mb-2">
-              🚛 Trailer Type <span class="text-red-500">*</span>
-            </label>
-            <select name="trailer_type_id" id="trailer_type_id" required
-                    class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-              <option value="">– Select Trailer Type –</option>
-              @foreach($trailerTypes as $trailerType)
-                <option value="{{ $trailerType->id }}" {{ old('trailer_type_id') == $trailerType->id ? 'selected' : '' }}>
-                  {{ $trailerType->name }}
-                </option>
-              @endforeach
-            </select>
-            <p class="text-xs text-gray-500 mt-1">Required: Type and size of trailer/container</p>
-          </div>
-          {{-- Tipping Type Selection --}}
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-3">🚛 Tipping Type <span class="text-red-500">*</span></label>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label class="tipping-type-option flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 hover:shadow-md transition-all duration-200" data-value="live_tip">
-                <input type="radio" name="tipping_type" value="live_tip" 
-                       @checked(old('tipping_type') == 'live_tip')
-                       class="sr-only" required>
-                <div class="flex items-center w-full">
-                  <span class="text-3xl mr-4">🚛📦</span>
-                  <div class="flex-1">
-                    <div class="font-semibold text-lg text-gray-900">Live Tip</div>
-                    <div class="text-sm text-gray-600 mt-1">Vehicle stays connected during tipping</div>
-                    <div class="text-xs text-blue-600 mt-2 font-medium">Best for: Quick turnaround, driver waiting</div>
-                  </div>
-                  <div class="selection-indicator ml-3 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center">
-                    <div class="w-3 h-3 bg-blue-500 rounded-full opacity-0 transition-opacity"></div>
-                  </div>
+
+            {{-- Tipping Type --}}
+            <div>
+              <label class="block text-sm font-medium text-blue-800">🚛 Tipping Type <span class="text-red-500">*</span></label>
+              <div class="mt-2 space-y-2">
+                <div class="flex items-center">
+                  <input type="radio" id="tipping_type_live" name="tipping_type" value="live_tip" 
+                         @checked(old('tipping_type') == 'live_tip')
+                         class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300" required>
+                  <label for="tipping_type_live" class="ml-3 flex items-center">
+                    <span class="text-lg mr-2">🚛📦</span>
+                    <div>
+                      <div class="text-sm font-medium text-gray-900">Live Tip</div>
+                      <div class="text-xs text-gray-500">Unit stays connected during tipping</div>
+                    </div>
+                  </label>
                 </div>
-              </label>
-              <label class="tipping-type-option flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-green-300 hover:shadow-md transition-all duration-200" data-value="drop">
-                <input type="radio" name="tipping_type" value="drop" 
-                       @checked(old('tipping_type') == 'drop')
-                       class="sr-only" required>
-                <div class="flex items-center w-full">
-                  <span class="text-3xl mr-4">📦🚚</span>
-                  <div class="flex-1">
-                    <div class="font-semibold text-lg text-gray-900">Drop</div>
-                    <div class="text-sm text-gray-600 mt-1">Vehicle leaves, trailer handled separately</div>
-                    <div class="text-xs text-green-600 mt-2 font-medium">Best for: Long jobs, trailer swaps</div>
-                  </div>
-                  <div class="selection-indicator ml-3 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center">
-                    <div class="w-3 h-3 bg-green-500 rounded-full opacity-0 transition-opacity"></div>
-                  </div>
+                <div class="flex items-center">
+                  <input type="radio" id="tipping_type_drop" name="tipping_type" value="drop" 
+                         @checked(old('tipping_type') == 'drop')
+                         class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300" required>
+                  <label for="tipping_type_drop" class="ml-3 flex items-center">
+                    <span class="text-lg mr-2">📦</span>
+                    <div>
+                      <div class="text-sm font-medium text-gray-900">Drop</div>
+                      <div class="text-xs text-gray-500">Unit leaves, trailer handled separately</div>
+                    </div>
+                  </label>
                 </div>
-              </label>
+              </div>
+              <p class="text-xs text-gray-500 mt-2">Select how this booking will be handled during tipping</p>
+              @error('tipping_type')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
             </div>
-            <p class="text-xs text-gray-500 mt-1">Required: How will this delivery be handled during tipping?</p>
           </div>
         </div>
-      </div>
-      {{-- Additional Information --}}
-      <div class="bg-white rounded-lg shadow-sm border p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <span class="mr-2">📝</span>
-          Additional Information
-        </h3>
-        <div class="space-y-4">
-          {{-- Delivery Notes --}}
-          <div>
-            <label for="delivery_notes" class="block text-sm font-medium text-gray-700 mb-2">
-              Delivery Notes (Optional)
-            </label>
-            <textarea name="delivery_notes" id="delivery_notes" rows="3" 
-                      placeholder="Any relevant information about the delivery..."
-                      class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">{{ old('delivery_notes') }}</textarea>
+
+        {{-- PO NUMBERS SECTION --}}
+        <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+          <h3 class="text-lg font-medium text-green-900 mb-3">📦 PO Numbers & Expected Quantities</h3>
+          <p class="text-sm text-green-700 mb-3">At least one PO with expected quantities is required</p>
+          <div id="po-container" class="space-y-4">
+            {{-- Initial PO Number --}}
+            <div class="po-group bg-white p-4 rounded border">
+              <div class="flex justify-between items-center mb-3">
+                <label class="block text-sm font-medium text-gray-700">PO Number <span class="text-red-500">*</span></label>
+                <button type="button" onclick="removePo(this)" class="text-red-600 hover:text-red-800 text-sm hidden">Remove PO</button>
+              </div>
+              <input type="text" name="po_numbers[0][po_number]" required
+                     placeholder="Enter PO number..."
+                     class="w-full border-gray-300 rounded mb-3">
+              
+              <div class="lines-container">
+                <div class="line-group mb-3">
+                  <div class="flex justify-between items-center mb-2">
+                    <label class="text-sm font-medium text-gray-600">Line 1</label>
+                    <button type="button" onclick="removeLine(this)" class="text-red-600 hover:text-red-800 text-xs hidden">Remove Line</button>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-xs font-medium text-gray-600 mb-1">Expected Cases <span class="text-red-500">*</span></label>
+                      <input type="number" name="po_numbers[0][lines][0][expected_cases]" min="0" required
+                             class="w-full border-gray-300 rounded text-sm">
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium text-gray-600 mb-1">Expected Pallets <span class="text-red-500">*</span></label>
+                      <input type="number" name="po_numbers[0][lines][0][expected_pallets]" min="0" required
+                             class="w-full border-gray-300 rounded text-sm">
+                    </div>
+                  </div>
+                  <input type="hidden" name="po_numbers[0][lines][0][line_number]" value="1">
+                </div>
+              </div>
+              
+              <button type="button" onclick="addLine(this)" class="text-blue-600 hover:text-blue-800 text-sm">+ Add Line</button>
+            </div>
           </div>
-          {{-- Gate Notes --}}
-          <div>
-            <label for="gate_notes" class="block text-sm font-medium text-gray-700 mb-2">
-              Gate Staff Notes (Optional)
-            </label>
-            <textarea name="gate_notes" id="gate_notes" rows="3" 
-                      placeholder="Internal notes for gate staff and operations..."
-                      class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">{{ old('gate_notes') }}</textarea>
+          
+          <button type="button" onclick="addPo()" class="mt-4 text-blue-600 hover:text-blue-800 text-sm">+ Add Another PO</button>
+        </div>
+
+        {{-- OPTIONAL TRANSPORTATION DETAILS --}}
+        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <h3 class="text-lg font-medium text-gray-700 mb-3">🚛 Transportation Details <span class="text-sm font-normal text-gray-500">(Optional - can be added later)</span></h3>
+          
+          <div class="grid grid-cols-2 gap-4">
+            {{-- Vehicle Registration --}}
+            <div>
+              <label class="block text-sm font-medium text-gray-600">Vehicle Registration <span class="text-red-500">*</span></label>
+              <input type="text" name="vehicle_registration" required
+                     value="{{ old('vehicle_registration') }}"
+                     placeholder="e.g., AB12 CDE"
+                     class="mt-1 block w-full border-gray-300 rounded-lg uppercase">
+              @error('vehicle_registration')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
+            </div>
+
+            {{-- Container Number --}}
+            <div>
+              <label class="block text-sm font-medium text-gray-600">Vehicle/Trailer Number</label>
+              <input type="text" name="trailer_registration"
+                     value="{{ old('trailer_registration') }}"
+                     placeholder="e.g., TR12 345"
+                     class="mt-1 block w-full border-gray-300 rounded-lg uppercase">
+              @error('trailer_registration')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
+            </div>
+          </div>
+        </div>
+
+        {{-- NOTES & INSTRUCTIONS --}}
+        <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+          <h3 class="text-lg font-medium text-yellow-900 mb-3">📝 Notes & Instructions</h3>
+          
+          <div class="space-y-4">
+            {{-- General Notes --}}
+            <div>
+              <label class="block text-sm font-medium text-yellow-800">General Notes</label>
+              <textarea name="delivery_notes" rows="2"
+                        placeholder="Internal notes about this booking..."
+                        class="mt-1 block w-full border-yellow-300 rounded bg-white">{{ old('delivery_notes') }}</textarea>
+              @error('delivery_notes')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
+            </div>
+
+            {{-- Special Instructions --}}
+            <div>
+              <label class="block text-sm font-medium text-yellow-800">Special Instructions</label>
+              <textarea name="gate_notes" rows="2"
+                        placeholder="Special handling instructions for the driver/operator..."
+                        class="mt-1 block w-full border-yellow-300 rounded bg-white">{{ old('gate_notes') }}</textarea>
+              @error('gate_notes')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
+            </div>
           </div>
         </div>
       </div>
@@ -260,223 +292,332 @@
       </div>
     </form>
   </div>
-  {{-- JavaScript for carrier search and form interactions --}}
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       // Auto-uppercase script for vehicle registrations
-      document.getElementById('vehicle_registration').addEventListener('input', function(e) {
-        e.target.value = e.target.value.toUpperCase();
-      });
-      document.getElementById('trailer_registration').addEventListener('input', function(e) {
-        e.target.value = e.target.value.toUpperCase();
-      });
+      const vehicleReg = document.querySelector('input[name="vehicle_registration"]');
+      const trailerReg = document.querySelector('input[name="trailer_registration"]');
+      
+      if (vehicleReg) {
+        vehicleReg.addEventListener('input', function(e) {
+          e.target.value = e.target.value.toUpperCase();
+        });
+      }
+      
+      if (trailerReg) {
+        trailerReg.addEventListener('input', function(e) {
+          e.target.value = e.target.value.toUpperCase();
+        });
+      }
+      
       // Auto-select depot if only one available
-      const depotSelect = document.getElementById('depot_id');
-      if (depotSelect.options.length === 2) { // Only "Select Depot" + one depot
+      const depotSelect = document.querySelector('select[name="depot_id"]');
+      if (depotSelect && depotSelect.options.length === 2) { // Only "Select Depot" + one depot
         depotSelect.selectedIndex = 1;
       }
+      
       // Carrier search functionality
-      const searchInput = document.getElementById('carrier-search');
-      const carrierIdInput = document.getElementById('carrier-id');
-      const dropdown = document.getElementById('carrier-dropdown');
-      const statusSpan = document.getElementById('carrier-status');
+      const searchInput = document.getElementById('admin-carrier-search');
+      const carrierIdInput = document.getElementById('admin-carrier-id');
+      const dropdown = document.getElementById('admin-carrier-dropdown');
+      const statusSpan = document.getElementById('admin-carrier-status');
+      
+      if (!searchInput) return; // Exit if elements don't exist
+      
       let searchTimeout;
       let selectedCarrierId = carrierIdInput.value;
       let currentPage = 1;
       let isLoading = false;
+      
       // Update status based on current state
       function updateStatus() {
-        if (selectedCarrierId) {
-          statusSpan.textContent = '✓';
-          statusSpan.className = 'text-xs text-green-600';
-        } else if (searchInput.value.trim()) {
-          statusSpan.textContent = '+';
-          statusSpan.className = 'text-xs text-blue-600';
-          statusSpan.title = 'Will create new carrier';
-        } else {
-          statusSpan.textContent = '';
-          statusSpan.className = 'text-xs';
-        }
+          if (selectedCarrierId) {
+              statusSpan.textContent = '✓';
+              statusSpan.className = 'text-xs text-green-600';
+          } else if (searchInput.value.trim()) {
+              statusSpan.textContent = '+';
+              statusSpan.className = 'text-xs text-blue-600';
+              statusSpan.title = 'Will create new carrier';
+          } else {
+              statusSpan.textContent = '';
+              statusSpan.className = 'text-xs';
+          }
       }
-      // Search carriers
+      
+      // Search carriers function (same as in edit form)
       function searchCarriers(query, page = 1) {
-        if (query.length < 2) {
-          dropdown.classList.add('hidden');
-          return;
-        }
-        if (isLoading) return;
-        isLoading = true;
-        fetch(`{{ route('api.carriers.search') }}?q=${encodeURIComponent(query)}&page=${page}`)
-          .then(response => response.json())
-          .then(data => {
-            if (page === 1) {
-              populateDropdown(data, query);
-            } else {
-              appendToDropdown(data, query);
-            }
-            currentPage = page;
-            isLoading = false;
-          })
-          .catch(error => {
-            console.error('Search failed:', error);
-            dropdown.classList.add('hidden');
-            isLoading = false;
-          });
+          if (query.length < 2) {
+              dropdown.classList.add('hidden');
+              return;
+          }
+          
+          if (isLoading) return;
+          isLoading = true;
+          
+          fetch(`{{ route('api.carriers.search') }}?q=${encodeURIComponent(query)}&page=${page}`)
+              .then(response => response.json())
+              .then(data => {
+                  if (page === 1) {
+                      populateDropdown(data, query);
+                  } else {
+                      appendToDropdown(data, query);
+                  }
+                  currentPage = page;
+                  isLoading = false;
+              })
+              .catch(error => {
+                  console.error('Search failed:', error);
+                  dropdown.classList.add('hidden');
+                  isLoading = false;
+              });
       }
-      // Populate dropdown with results
+      
+      // Populate dropdown with results (same as in edit form)
       function populateDropdown(data, query) {
-        dropdown.innerHTML = '';
-        // Show total results if more than displayed
-        if (data.total > data.carriers.length) {
-          const headerItem = document.createElement('div');
-          headerItem.className = 'px-3 py-2 bg-gray-100 border-b border-gray-200 text-xs text-gray-600';
-          headerItem.innerHTML = `Showing ${data.carriers.length} of ${data.total} carriers`;
-          dropdown.appendChild(headerItem);
-        }
-        // Show existing carriers
-        data.carriers.forEach(carrier => {
-          const item = document.createElement('div');
-          item.className = 'px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100';
-          item.innerHTML = `
-            <div class="font-medium text-gray-900">${carrier.name}</div>
-            <div class="text-xs text-gray-500">
-              ${carrier.is_active ? 'Active carrier' : 'Inactive carrier - will be reactivated'}
-            </div>
-          `;
-          item.onclick = () => selectCarrier(carrier.id, carrier.name);
-          dropdown.appendChild(item);
-        });
-        // Add "Load more" option if there are more results
-        if (data.has_more) {
-          const loadMoreItem = document.createElement('div');
-          loadMoreItem.className = 'px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-200 bg-gray-25 text-center';
-          loadMoreItem.innerHTML = `<div class="text-sm text-gray-600">📄 Load more carriers...</div>`;
-          loadMoreItem.onclick = () => {
-            loadMoreItem.innerHTML = '<div class="text-sm text-gray-600">⏳ Loading...</div>';
-            searchCarriers(query, currentPage + 1);
-          };
-          dropdown.appendChild(loadMoreItem);
-        }
-        // Add "Create new" option if no exact match
-        if (!data.exact_match && query.trim()) {
-          const createItem = document.createElement('div');
-          createItem.className = 'px-3 py-2 hover:bg-green-50 cursor-pointer border-t-2 border-green-200 bg-green-25';
-          createItem.innerHTML = `
-            <div class="font-medium text-green-800">➕ Create "${query}"</div>
-            <div class="text-xs text-green-600">Add as new carrier and use immediately</div>
-          `;
-          createItem.onclick = () => selectNewCarrier(query);
-          dropdown.appendChild(createItem);
-        }
-        dropdown.classList.remove('hidden');
+          dropdown.innerHTML = '';
+          
+          if (data.total > data.carriers.length) {
+              const headerItem = document.createElement('div');
+              headerItem.className = 'px-3 py-2 bg-gray-100 border-b border-gray-200 text-xs text-gray-600';
+              headerItem.innerHTML = `Showing ${data.carriers.length} of ${data.total} carriers`;
+              dropdown.appendChild(headerItem);
+          }
+          
+          data.carriers.forEach(carrier => {
+              const item = document.createElement('div');
+              item.className = 'px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100';
+              item.innerHTML = `
+                  <div class="font-medium text-gray-900">${carrier.name}</div>
+                  <div class="text-xs text-gray-500">
+                      ${carrier.is_active ? 'Active carrier' : 'Inactive carrier - will be reactivated'}
+                  </div>
+              `;
+              item.onclick = () => selectCarrier(carrier.id, carrier.name);
+              dropdown.appendChild(item);
+          });
+          
+          if (data.has_more) {
+              const loadMoreItem = document.createElement('div');
+              loadMoreItem.className = 'px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-200 bg-gray-25 text-center';
+              loadMoreItem.innerHTML = `<div class="text-sm text-gray-600">📄 Load more carriers...</div>`;
+              loadMoreItem.onclick = () => {
+                  loadMoreItem.innerHTML = '<div class="text-sm text-gray-600">⏳ Loading...</div>';
+                  searchCarriers(query, currentPage + 1);
+              };
+              dropdown.appendChild(loadMoreItem);
+          }
+          
+          if (!data.exact_match && query.trim()) {
+              const createItem = document.createElement('div');
+              createItem.className = 'px-3 py-2 hover:bg-green-50 cursor-pointer border-t-2 border-green-200 bg-green-25';
+              createItem.innerHTML = `
+                  <div class="font-medium text-green-800">➕ Create "${query}"</div>
+                  <div class="text-xs text-green-600">Add as new carrier and use immediately</div>
+              `;
+              createItem.onclick = () => quickCreateCarrier(query);
+              dropdown.appendChild(createItem);
+          }
+          
+          dropdown.classList.remove('hidden');
       }
+      
       // Select existing carrier
       function selectCarrier(id, name) {
-        selectedCarrierId = id;
-        carrierIdInput.value = id;
-        searchInput.value = name;
-        dropdown.classList.add('hidden');
-        updateStatus();
+          selectedCarrierId = id;
+          carrierIdInput.value = id;
+          searchInput.value = name;
+          dropdown.classList.add('hidden');
+          updateStatus();
       }
-      // Select new carrier (just set the name, creation happens on form submit)
-      function selectNewCarrier(name) {
-        selectedCarrierId = null;
-        carrierIdInput.value = '';
-        searchInput.value = name;
-        dropdown.classList.add('hidden');
-        updateStatus();
+      
+      // Quick create carrier (immediate API call)
+      function quickCreateCarrier(name) {
+          const createButton = dropdown.querySelector('[onclick*="quickCreateCarrier"]');
+          if (createButton) {
+              createButton.innerHTML = `
+                  <div class="font-medium text-green-800">⏳ Creating "${name}"...</div>
+                  <div class="text-xs text-green-600">Please wait...</div>
+              `;
+          }
+          
+          fetch('{{ route('api.carriers.quick-create') }}', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+              },
+              body: JSON.stringify({ name: name })
+          })
+          .then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  selectCarrier(data.carrier.id, data.carrier.name);
+                  statusSpan.textContent = '✓';
+                  statusSpan.className = 'text-xs text-green-600';
+                  statusSpan.title = data.message;
+              } else {
+                  alert('Failed to create carrier. Please try again.');
+                  dropdown.classList.add('hidden');
+              }
+          })
+          .catch(error => {
+              console.error('Create failed:', error);
+              alert('Failed to create carrier. Please try again.');
+              dropdown.classList.add('hidden');
+          });
       }
+      
       // Search input handler
       searchInput.addEventListener('input', function() {
-        const query = this.value.trim();
-        // Reset selection when typing
-        selectedCarrierId = null;
-        carrierIdInput.value = '';
-        currentPage = 1;
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-          searchCarriers(query, 1);
-        }, 300);
-        updateStatus();
+          const query = this.value.trim();
+          selectedCarrierId = null;
+          carrierIdInput.value = '';
+          currentPage = 1;
+          clearTimeout(searchTimeout);
+          searchTimeout = setTimeout(() => {
+              searchCarriers(query, 1);
+          }, 300);
+          updateStatus();
       });
+      
       // Hide dropdown when clicking outside
       document.addEventListener('click', function(e) {
-        if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
-          dropdown.classList.add('hidden');
-        }
+          if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+              dropdown.classList.add('hidden');
+          }
       });
+      
       // Show dropdown on focus if there's content
       searchInput.addEventListener('focus', function() {
-        if (this.value.length >= 2) {
-          searchCarriers(this.value);
-        }
-      });
-      // Carrier name capitalization
-      searchInput.addEventListener('blur', function() {
-        if (this.value.trim()) {
-          this.value = capitalizeWords(this.value.trim());
-        }
-      });
-      function capitalizeWords(str) {
-        return str.replace(/\b\w+/g, function(word) {
-          return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-        });
-      }
-      // Tipping Type Visual Selection
-      const tippingTypeOptions = document.querySelectorAll('.tipping-type-option');
-      const tippingTypeInputs = document.querySelectorAll('input[name="tipping_type"]');
-      function updateTippingTypeSelection() {
-        // Reset all options
-        tippingTypeOptions.forEach(option => {
-          const indicator = option.querySelector('.selection-indicator div');
-          const border = option.querySelector('.selection-indicator');
-          // Reset styles
-          option.classList.remove('border-blue-500', 'border-green-500', 'bg-blue-50', 'bg-green-50', 'ring-2', 'ring-blue-200', 'ring-green-200');
-          option.classList.add('border-gray-200');
-          border.classList.remove('border-blue-500', 'border-green-500');
-          border.classList.add('border-gray-300');
-          indicator.classList.remove('opacity-100');
-          indicator.classList.add('opacity-0');
-        });
-        // Highlight selected option
-        const selectedInput = document.querySelector('input[name="tipping_type"]:checked');
-        if (selectedInput) {
-          const selectedOption = selectedInput.closest('.tipping-type-option');
-          const indicator = selectedOption.querySelector('.selection-indicator div');
-          const border = selectedOption.querySelector('.selection-indicator');
-          const value = selectedInput.value;
-          if (value === 'live_tip') {
-            selectedOption.classList.remove('border-gray-200');
-            selectedOption.classList.add('border-blue-500', 'bg-blue-50', 'ring-2', 'ring-blue-200');
-            border.classList.remove('border-gray-300');
-            border.classList.add('border-blue-500');
-            indicator.classList.remove('opacity-0');
-            indicator.classList.add('opacity-100');
-          } else if (value === 'drop') {
-            selectedOption.classList.remove('border-gray-200');
-            selectedOption.classList.add('border-green-500', 'bg-green-50', 'ring-2', 'ring-green-200');
-            border.classList.remove('border-gray-300');
-            border.classList.add('border-green-500');
-            indicator.classList.remove('opacity-0');
-            indicator.classList.add('opacity-100');
+          if (this.value.length >= 2) {
+              searchCarriers(this.value);
           }
-        }
-      }
-      // Add click handlers to tipping type options
-      tippingTypeOptions.forEach(option => {
-        option.addEventListener('click', function() {
-          const input = this.querySelector('input[type="radio"]');
-          input.checked = true;
-          updateTippingTypeSelection();
-        });
       });
-      // Add change handlers to radio inputs (for keyboard navigation)
-      tippingTypeInputs.forEach(input => {
-        input.addEventListener('change', updateTippingTypeSelection);
-      });
-      // Initial updates
+      
+      // Initial status update
       updateStatus();
-      updateTippingTypeSelection();
     });
+
+    // PO Management Functions
+    let poCounter = 1;
+    let lineCounters = {0: 1};
+
+    function addPo() {
+        const container = document.getElementById('po-container');
+        const poDiv = document.createElement('div');
+        poDiv.className = 'po-group bg-white p-4 rounded border';
+        poDiv.innerHTML = `
+            <div class="flex justify-between items-center mb-3">
+                <label class="block text-sm font-medium text-gray-700">PO Number <span class="text-red-500">*</span></label>
+                <button type="button" onclick="removePo(this)" class="text-red-600 hover:text-red-800 text-sm">Remove PO</button>
+            </div>
+            <input type="text" name="po_numbers[${poCounter}][po_number]" required
+                   placeholder="Enter PO number..."
+                   class="w-full border-gray-300 rounded mb-3">
+            
+            <div class="lines-container">
+                <div class="line-group mb-3">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-sm font-medium text-gray-600">Line 1</label>
+                        <button type="button" onclick="removeLine(this)" class="text-red-600 hover:text-red-800 text-xs hidden">Remove Line</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Expected Cases <span class="text-red-500">*</span></label>
+                            <input type="number" name="po_numbers[${poCounter}][lines][0][expected_cases]" min="0" required
+                                   class="w-full border-gray-300 rounded text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Expected Pallets <span class="text-red-500">*</span></label>
+                            <input type="number" name="po_numbers[${poCounter}][lines][0][expected_pallets]" min="0" required
+                                   class="w-full border-gray-300 rounded text-sm">
+                        </div>
+                    </div>
+                    <input type="hidden" name="po_numbers[${poCounter}][lines][0][line_number]" value="1">
+                </div>
+            </div>
+            
+            <button type="button" onclick="addLine(this)" class="text-blue-600 hover:text-blue-800 text-sm">+ Add Line</button>
+        `;
+        
+        container.appendChild(poDiv);
+        lineCounters[poCounter] = 1;
+        poCounter++;
+        updateRemoveButtons();
+    }
+
+    function removePo(button) {
+        button.closest('.po-group').remove();
+        updateRemoveButtons();
+    }
+
+    function addLine(button) {
+        const poGroup = button.closest('.po-group');
+        const linesContainer = poGroup.querySelector('.lines-container');
+        const poIndex = Array.from(poGroup.parentNode.children).indexOf(poGroup);
+        const lineIndex = lineCounters[poIndex] || 0;
+        
+        const lineDiv = document.createElement('div');
+        lineDiv.className = 'line-group mb-3';
+        lineDiv.innerHTML = `
+            <div class="flex justify-between items-center mb-2">
+                <label class="text-sm font-medium text-gray-600">Line ${lineIndex + 1}</label>
+                <button type="button" onclick="removeLine(this)" class="text-red-600 hover:text-red-800 text-xs">Remove Line</button>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Expected Cases <span class="text-red-500">*</span></label>
+                    <input type="number" name="po_numbers[${poIndex}][lines][${lineIndex}][expected_cases]" min="0" required
+                           class="w-full border-gray-300 rounded text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Expected Pallets <span class="text-red-500">*</span></label>
+                    <input type="number" name="po_numbers[${poIndex}][lines][${lineIndex}][expected_pallets]" min="0" required
+                           class="w-full border-gray-300 rounded text-sm">
+                </div>
+            </div>
+            <input type="hidden" name="po_numbers[${poIndex}][lines][${lineIndex}][line_number]" value="${lineIndex + 1}">
+        `;
+        
+        linesContainer.appendChild(lineDiv);
+        lineCounters[poIndex] = (lineCounters[poIndex] || 0) + 1;
+        updateLineRemoveButtons(poGroup);
+    }
+
+    function removeLine(button) {
+        const poGroup = button.closest('.po-group');
+        button.closest('.line-group').remove();
+        updateLineRemoveButtons(poGroup);
+        
+        // Re-number remaining lines
+        const lines = poGroup.querySelectorAll('.line-group');
+        lines.forEach((line, index) => {
+            line.querySelector('label').textContent = `Line ${index + 1}`;
+        });
+    }
+
+    function updateRemoveButtons() {
+        const poGroups = document.querySelectorAll('.po-group');
+        poGroups.forEach((group, index) => {
+            const removeButton = group.querySelector('button[onclick="removePo(this)"]');
+            if (poGroups.length > 1) {
+                removeButton.classList.remove('hidden');
+            } else {
+                removeButton.classList.add('hidden');
+            }
+        });
+    }
+
+    function updateLineRemoveButtons(poGroup) {
+        const lines = poGroup.querySelectorAll('.line-group');
+        lines.forEach((line, index) => {
+            const removeButton = line.querySelector('button[onclick="removeLine(this)"]');
+            if (lines.length > 1) {
+                removeButton.classList.remove('hidden');
+            } else {
+                removeButton.classList.add('hidden');
+            }
+        });
+    }
   </script>
 </x-warehouse-layout>

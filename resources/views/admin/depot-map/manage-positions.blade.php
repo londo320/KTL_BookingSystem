@@ -312,7 +312,7 @@
                             <!-- Locations Section -->
                             @if($locations->count() > 0)
                                 <hr class="my-4 border-gray-200">
-                                <h5 class="text-sm font-medium text-gray-600 mb-3">📦 Drop/Collection Zones</h5>
+                                <h5 class="text-sm font-medium text-gray-600 mb-3">📦 Drop/Parking Areas</h5>
                                 @foreach($locations as $location)
                                     <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-blue-50">
                                         <div class="flex items-center space-x-3">

@@ -19,7 +19,7 @@
       <!-- Simplified Departure Form -->
       <form id="departureForm" method="POST" class="mt-6">
         @csrf
-        @method('PUT')
+        @method('PATCH')
         
         <div class="grid grid-cols-1 gap-4">
           
@@ -115,7 +115,14 @@ function openDepartureModal(bookingId, bookingRef, customer, vehicleReg, current
   `;
 
   // Update form action - determine correct prefix
-  const routePrefix = window.location.pathname.includes('/depot-admin/') ? '/depot-admin' : '/admin';
+  let routePrefix = '/admin'; // default
+  if (window.location.pathname.includes('/app/')) {
+    routePrefix = '/app';
+  } else if (window.location.pathname.includes('/depot-admin/')) {
+    routePrefix = '/depot-admin';
+  } else if (window.location.pathname.includes('/admin/')) {
+    routePrefix = '/admin';
+  }
   document.getElementById('departureForm').action = `${routePrefix}/bookings/${bookingId}/departure`;
 
   // Update departure time display

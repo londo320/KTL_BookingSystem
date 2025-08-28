@@ -59,7 +59,7 @@ class Trailer extends Model
     public function isOnSite(): bool
     {
         return $this->movements()
-            ->whereIn('current_status', ['arrived', 'in_waiting', 'at_bay', 'unloading', 'loading', 'loaded', 'trailer_dropped'])
+            ->whereIn('current_status', ['arrived', 'in_parking', 'at_bay', 'unloading', 'loading', 'loaded', 'in_parking'])
             ->exists();
     }
 

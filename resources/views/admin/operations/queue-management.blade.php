@@ -220,21 +220,45 @@
                     <div class="flex flex-col space-y-1">
                       @php
                         $tippingType = $booking->tipping_type;
+                        $currentStatus = $movement->current_status;
                         $isLiveTip = $tippingType === 'live_tip';
                         $isDrop = $tippingType === 'drop';
                       @endphp
                       @if($isLiveTip)
-                        {{-- Live Tip Workflow: Move to Tipping Bay --}}
-                        <button onclick="shuntToBay({{ $booking->id }})" 
-                                class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
-                          🚛📦 Move to Bay
-                        </button>
+                        {{-- Live Tip Workflow --}}
+                        @if($currentStatus === 'in_parking')
+                          <button onclick="shuntToBay({{ $booking->id }})" 
+                                  class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
+                            🚛📦 Move to Bay
+                          </button>
+                        @elseif($currentStatus === 'at_bay')
+                          <button onclick="startTipping({{ $booking->id }})" 
+                                  class="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">
+                            📦 Start Tipping
+                          </button>
+                        @elseif($currentStatus === 'unloading')
+                          <button onclick="completeTipping({{ $booking->id }})" 
+                                  class="px-3 py-1 bg-orange-500 text-white text-xs rounded hover:bg-orange-600">
+                            ✅ Complete Tipping
+                          </button>
+                        @else
+                          <div class="text-xs text-gray-500">Status: {{ $currentStatus }}</div>
+                        @endif
                       @elseif($isDrop)
                         {{-- Drop Workflow: Start Tipping Process --}}
-                        <button onclick="startTipping({{ $booking->id }})" 
-                                class="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">
-                          📦 Start Tipping
-                        </button>
+                        @if(in_array($currentStatus, ['in_parking', 'at_bay']))
+                          <button onclick="startTipping({{ $booking->id }})" 
+                                  class="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">
+                            📦 Start Tipping
+                          </button>
+                        @elseif($currentStatus === 'unloading')
+                          <button onclick="completeTipping({{ $booking->id }})" 
+                                  class="px-3 py-1 bg-orange-500 text-white text-xs rounded hover:bg-orange-600">
+                            ✅ Complete Tipping
+                          </button>
+                        @else
+                          <div class="text-xs text-gray-500">Status: {{ $currentStatus }}</div>
+                        @endif
                       @else
                         {{-- No Tipping Type Set: Show Both Options --}}
                         <div class="text-xs text-yellow-600 mb-1">Set Tip Type First</div>
@@ -364,16 +388,16 @@
         <div class="bg-white rounded-lg shadow">
           <div class="px-6 py-4 border-b border-gray-200 bg-green-50">
             <h3 class="text-lg font-medium text-green-800">🚐 NEW ARRIVALS</h3>
-            <p class="text-sm text-green-600 mt-1">Need drop zone assignment</p>
+            <p class="text-sm text-green-600 mt-1">Need parking area assignment</p>
           </div>
           <div class="p-4 space-y-2">
             @foreach($newArrivals->take(3) as $movement)
             <div class="border border-gray-200 rounded p-2">
               <div class="text-sm font-medium">{{ $movement->booking->booking_reference }}</div>
               <div class="text-xs text-gray-500">{{ $movement->booking->customer->name ?? 'Unknown' }}</div>
-              <button onclick="assignDropZone({{ $movement->booking->id }})" 
+              <button onclick="assignParkingArea({{ $movement->booking->id }})" 
                       class="mt-1 px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">
-                📍 Assign Drop Zone
+                📍 Assign Parking Area
               </button>
             </div>
             @endforeach
@@ -442,20 +466,20 @@
       </div>
     </div>
   </div>
-  <!-- Drop Zone Modal -->
-  <div id="zone-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+  <!-- Parking Area Modal -->
+  <div id="parking-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
     <div class="flex items-center justify-center min-h-screen px-4">
       <div class="bg-white rounded-lg max-w-md w-full p-6">
-        <h3 class="text-lg font-medium mb-4">Select Drop Zone</h3>
-        <div id="zone-list" class="space-y-2 mb-4">
+        <h3 class="text-lg font-medium mb-4">Select Parking Area</h3>
+        <div id="parking-list" class="space-y-2 mb-4">
           <!-- Dynamic zone options will be loaded here -->
         </div>
         <div class="flex justify-end space-x-2">
-          <button onclick="closeZoneModal()" class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50">
+          <button onclick="closeParkingModal()" class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50">
             Cancel
           </button>
-          <button id="confirm-zone" onclick="confirmZoneSelection()" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
-            Assign Zone
+          <button id="confirm-parking" onclick="confirmParkingSelection()" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+            Assign Parking Area
           </button>
         </div>
       </div>
@@ -464,7 +488,7 @@
   <script>
     let selectedBookingId = null;
     let selectedBayId = null;
-    let selectedZoneId = null;
+    let selectedParkingId = null;
     function shuntToBay(bookingId) {
       selectedBookingId = bookingId;
       selectedBayId = null;
@@ -495,34 +519,34 @@
           alert('Error loading available bays');
         });
     }
-    function assignDropZone(bookingId) {
+    function assignParkingArea(bookingId) {
       selectedBookingId = bookingId;
-      selectedZoneId = null;
-      // Load available drop zones
+      selectedParkingId = null;
+      // Load available parking areas
       fetch('/admin/operations/available-locations?type=drop')
         .then(response => response.json())
-        .then(zones => {
-          const zoneList = document.getElementById('zone-list');
-          zoneList.innerHTML = '';
-          if (zones.length === 0) {
-            zoneList.innerHTML = '<div class="text-gray-500 text-center py-4">No available zones</div>';
+        .then(areas => {
+          const parkingList = document.getElementById('parking-list');
+          parkingList.innerHTML = '';
+          if (areas.length === 0) {
+            parkingList.innerHTML = '<div class="text-gray-500 text-center py-4">No available parking areas</div>';
             return;
           }
-          zones.forEach(zone => {
-            const zoneOption = document.createElement('div');
-            zoneOption.className = 'p-3 border border-gray-200 rounded cursor-pointer hover:bg-green-50';
-            zoneOption.innerHTML = `
-              <div class="font-medium">${zone.name}</div>
-              <div class="text-sm text-gray-500">${zone.code || ''}</div>
+          areas.forEach(area => {
+            const areaOption = document.createElement('div');
+            areaOption.className = 'p-3 border border-gray-200 rounded cursor-pointer hover:bg-green-50';
+            areaOption.innerHTML = `
+              <div class="font-medium">${area.name}</div>
+              <div class="text-sm text-gray-500">${area.code || ''}</div>
             `;
-            zoneOption.onclick = () => selectZone(zone.id, zoneOption);
-            zoneList.appendChild(zoneOption);
+            areaOption.onclick = () => selectParkingArea(area.id, areaOption);
+            parkingList.appendChild(areaOption);
           });
-          document.getElementById('zone-modal').classList.remove('hidden');
+          document.getElementById('parking-modal').classList.remove('hidden');
         })
         .catch(error => {
-          console.error('Error loading zones:', error);
-          alert('Error loading available zones');
+          console.error('Error loading parking areas:', error);
+          alert('Error loading available parking areas');
         });
     }
     function selectBay(bayId, element) {
@@ -536,10 +560,10 @@
       element.classList.add('bg-blue-100', 'border-blue-500');
       element.classList.remove('border-gray-200');
     }
-    function selectZone(zoneId, element) {
-      selectedZoneId = zoneId;
+    function selectParkingArea(areaId, element) {
+      selectedParkingId = areaId;
       // Remove previous selections
-      document.querySelectorAll('#zone-list > div').forEach(div => {
+      document.querySelectorAll('#parking-list > div').forEach(div => {
         div.classList.remove('bg-green-100', 'border-green-500');
         div.classList.add('border-gray-200');
       });
@@ -577,19 +601,19 @@
       });
       closeBayModal();
     }
-    function confirmZoneSelection() {
-      if (!selectedZoneId) {
-        alert('Please select a zone');
+    function confirmParkingSelection() {
+      if (!selectedParkingId) {
+        alert('Please select a parking area');
         return;
       }
-      fetch(`/admin/operations/${selectedBookingId}/assign-drop-zone`, {
+      fetch(`/admin/operations/${selectedBookingId}/assign-parking-area`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-TOKEN': '{{ csrf_token() }}'
         },
         body: JSON.stringify({
-          location_id: selectedZoneId
+          location_id: selectedParkingId
         })
       })
       .then(response => response.json())
@@ -598,24 +622,24 @@
           alert(data.message);
           window.location.reload();
         } else {
-          alert(data.error || 'Error assigning zone');
+          alert(data.error || 'Error assigning parking area');
         }
       })
       .catch(error => {
         console.error('Error:', error);
-        alert('Error assigning zone');
+        alert('Error assigning parking area');
       });
-      closeZoneModal();
+      closeParkingModal();
     }
     function closeBayModal() {
       document.getElementById('bay-modal').classList.add('hidden');
       selectedBookingId = null;
       selectedBayId = null;
     }
-    function closeZoneModal() {
-      document.getElementById('zone-modal').classList.add('hidden');
+    function closeParkingModal() {
+      document.getElementById('parking-modal').classList.add('hidden');
       selectedBookingId = null;
-      selectedZoneId = null;
+      selectedParkingId = null;
     }
     // Open priority settings in new window/tab
     function openPrioritySettings() {

@@ -560,7 +560,7 @@
       document.getElementById('vehicleRegistration').value = vehicleReg;
       document.getElementById('containerNumber').value = containerNum;
       document.getElementById('carrierCompany').value = carrierCompany;
-      // Auto-assign to available drop zone if only one available
+      // Auto-assign to available parking area if only one available
       const dropZones = document.querySelectorAll('#tippingLocation option:not([value=""])');
       if (dropZones.length === 1) {
         document.getElementById('tippingLocation').value = dropZones[0].value;

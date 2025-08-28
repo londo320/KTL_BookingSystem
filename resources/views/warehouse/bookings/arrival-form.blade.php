@@ -220,7 +220,7 @@
                             @error('tipping_location_id')
                                 <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
                             @enderror
-                            <p class="text-xs text-gray-500 mt-1">Optional: Assign vehicle to drop zone</p>
+                            <p class="text-xs text-gray-500 mt-1">Optional: Assign vehicle to parking area</p>
                         </div>
                         <!-- Tipping Bay Assignment -->
                         <div>

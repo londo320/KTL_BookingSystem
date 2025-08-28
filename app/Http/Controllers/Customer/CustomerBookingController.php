@@ -743,7 +743,9 @@ class CustomerBookingController extends Controller
                 $query->whereNotNull('arrived_at')
                     ->whereRaw('arrived_at > DATE_ADD((SELECT start_at FROM slots WHERE slots.id = bookings.slot_id), INTERVAL 30 MINUTE)');
             } elseif ($arrival === 'onsite') {
-                $query->whereNotNull('arrived_at')->whereNull('departed_at');
+                $query->whereNotNull('arrived_at')->whereDoesntHave('movements', function ($q) {
+                    $q->whereNotNull('trailer_collected_at');
+                });
             } elseif ($arrival === 'completed') {
                 $query->whereNotNull('arrived_at')->whereNotNull('departed_at');
             }

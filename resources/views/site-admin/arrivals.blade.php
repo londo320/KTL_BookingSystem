@@ -225,7 +225,7 @@
                                     @endforeach
                                 @endif
                             </select>
-                            <p class="text-xs text-gray-500 mt-1">Optional: Assign vehicle to drop zone</p>
+                            <p class="text-xs text-gray-500 mt-1">Optional: Assign vehicle to parking area</p>
                         </div>
 
                         <!-- Tipping Bay Assignment -->

@@ -613,7 +613,7 @@
             @endif
             @if($booking->waiting_area_location)
               <div>
-                <label class="text-sm font-medium text-gray-600">🅿️ Waiting Area</label>
+                <label class="text-sm font-medium text-gray-600">🅿️ Parking Area</label>
                 <p class="text-lg">{{ $booking->waiting_area_location }}</p>
               </div>
             @endif
@@ -1406,7 +1406,7 @@
       <h3 class="text-lg font-semibold mb-4 text-purple-800">🏁 Record Departure</h3>
       <form id="departureForm" method="POST">
         @csrf
-        @method('PUT')
+        @method('PATCH')
         {{-- Show tipping type if available --}}
         @if($booking->tipping_type)
           <div class="mb-4 p-3 bg-blue-50 rounded-lg">
@@ -1591,7 +1591,16 @@
     function openDepartureModal(bookingId) {
       document.getElementById('departureModal').classList.remove('hidden');
       document.getElementById('departureModal').classList.add('flex');
-      document.getElementById('departureForm').action = `/admin/bookings/${bookingId}/departure`;
+      // Update form action - determine correct prefix
+      let routePrefix = '/admin'; // default
+      if (window.location.pathname.includes('/app/')) {
+        routePrefix = '/app';
+      } else if (window.location.pathname.includes('/depot-admin/')) {
+        routePrefix = '/depot-admin';
+      } else if (window.location.pathname.includes('/admin/')) {
+        routePrefix = '/admin';
+      }
+      document.getElementById('departureForm').action = `${routePrefix}/bookings/${bookingId}/departure`;
     }
     function closeDepartureModal() {
       document.getElementById('departureModal').classList.add('hidden');

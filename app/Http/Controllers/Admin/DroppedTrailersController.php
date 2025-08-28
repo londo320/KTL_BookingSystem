@@ -38,8 +38,10 @@ class DroppedTrailersController extends Controller
         $query = Booking::with(['customer', 'slot.depot', 'movements.tippingLocation', 'movements.tippingBay'])
             ->whereHas('slot', fn ($q) => $q->whereIn('depot_id', $allowedDepotIds))
             ->whereNotNull('arrived_at')
-            ->whereNull('departed_at')
-            ->whereHas('movements', fn ($q) => $q->whereIn('current_status', ['trailer_dropped', 'at_bay', 'unloading', 'empty']));
+            ->whereNotNull('departed_at')        // Unit has departed
+            ->whereDoesntHave('movements', function ($q) {
+                $q->whereNotNull('trailer_collected_at'); // But trailer not collected yet
+            });
 
         // Filter by specific depot if selected, otherwise show all
         if ($currentDepotId) {

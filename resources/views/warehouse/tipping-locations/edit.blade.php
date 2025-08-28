@@ -62,7 +62,7 @@
                             </label>
                             <input type="text" name="name" id="name" value="{{ old('name', $tippingLocation->name) }}" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                   placeholder="e.g., Drop Zone A, Trailer Park 1" required>
+                                   placeholder="e.g., Parking Area A, Trailer Park 1" required>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -80,11 +80,11 @@
                                 Location Type <span class="text-red-500">*</span>
                             </label>
                             <select name="location_type" id="location_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
-                                <option value="drop_zone" {{ old('location_type', $tippingLocation->location_type) == 'drop_zone' ? 'selected' : '' }}>Drop Zone</option>
-                                <option value="collection_zone" {{ old('location_type', $tippingLocation->location_type) == 'collection_zone' ? 'selected' : '' }}>Collection Zone</option>
+                                <option value="drop_zone" {{ old('location_type', $tippingLocation->location_type) == 'drop_zone' ? 'selected' : '' }}>Parking Area</option>
+                                <option value="collection_zone" {{ old('location_type', $tippingLocation->location_type) == 'collection_zone' ? 'selected' : '' }}>Parking Area</option>
                                 <option value="general" {{ old('location_type', $tippingLocation->location_type) == 'general' ? 'selected' : '' }}>General</option>
                             </select>
-                            <p class="text-xs text-gray-500 mt-1">Drop zones for incoming trailers, collection zones for awaiting pickup</p>
+                            <p class="text-xs text-gray-500 mt-1">parking areas for incoming trailers, parking areas for awaiting pickup</p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2" for="capacity">

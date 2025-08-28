@@ -138,7 +138,7 @@
                 'trailer_dropped' => '🔄 Trailer Detached',
                 'trailer_collected' => '🚚 Being Collected',
                 'arrived' => '🚐 Just Arrived',
-                'in_waiting' => '⏳ In Waiting Area',
+                'in_waiting' => '⏳ In Parking Area',
                 default => ucwords(str_replace('_', ' ', $movement->current_status))
               };
               // Status colors

@@ -29,7 +29,7 @@ class OperationsController extends Controller
 
         $movement->update([
             'tipping_location_id' => $location->id,
-            'current_status' => 'in_location',
+            'current_status' => 'in_parking',
             'moved_to_location_at' => now(),
         ]);
 
@@ -136,7 +136,7 @@ class OperationsController extends Controller
             }
         } else {
             // Drop workflow: Can tip from various statuses
-            if (!in_array($movement->current_status, ['arrived', 'in_waiting', 'in_location', 'trailer_dropped'])) {
+            if (!in_array($movement->current_status, ['arrived', 'in_parking'])) {
                 return response()->json([
                     'success' => false,
                     'error' => 'Drop: Booking is not ready to start tipping (current status: ' . $movement->current_status . ')'
@@ -155,7 +155,7 @@ class OperationsController extends Controller
         // Start tipping process
         $booking->update([
             'tipping_started_at' => now(),
-            'tipping_status' => 'in_progress'
+            'tipping_status' => 'tipping_in_progress'
         ]);
         
         $movement->update([
@@ -229,7 +229,7 @@ class OperationsController extends Controller
         $movement->update([
             'tipping_location_id' => $location->id,
             'tipping_bay_id' => null,
-            'current_status' => 'trailer_dropped',
+            'current_status' => 'back_to_parking',
             'moved_to_location_at' => now(),
         ]);
 
@@ -262,8 +262,8 @@ class OperationsController extends Controller
             $movement->tippingBay->markAvailable($booking);
         }
 
-        // Determine status based on trailer state
-        $newStatus = in_array($movement->current_status, ['empty']) ? 'trailer_dropped' : 'in_location';
+        // Determine status based on trailer state  
+        $newStatus = in_array($movement->current_status, ['empty']) ? 'back_to_parking' : 'in_parking';
 
         $movement->update([
             'tipping_location_id' => $location->id,
@@ -326,7 +326,7 @@ class OperationsController extends Controller
         $type = $request->get('type', 'drop'); // drop or collection
         
         $locations = TippingLocation::where('is_active', true)
-            ->where('location_type', $type === 'collection' ? 'collection' : 'drop')
+            ->where('location_type', 'parking') // Simplified: all locations are now parking areas
             ->available()
             ->get(['id', 'name', 'code']);
 

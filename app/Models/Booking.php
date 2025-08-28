@@ -42,7 +42,7 @@ class Booking extends Model
         'tipping_location_id',
         'tipping_bay_id',
         'tipping_status',
-        'trailer_dropped_at',
+        'in_parking_at',
         'moved_to_bay_at',
         'tipping_started_at',
         'tipping_completed_at',
@@ -75,7 +75,7 @@ class Booking extends Model
         'bay_transferred_at' => 'datetime',
         'vehicle_details' => 'array', // JSON casting
         // Tipping workflow casts
-        'trailer_dropped_at' => 'datetime',
+        'in_parking_at' => 'datetime',
         'moved_to_bay_at' => 'datetime',
         'tipping_started_at' => 'datetime',
         'tipping_completed_at' => 'datetime',
@@ -443,14 +443,14 @@ class Booking extends Model
     {
         $movement = $this->getOrCreateMovement();
 
-        if (! in_array($movement->current_status, ['scheduled', 'arrived', 'in_waiting'])) {
+        if (! in_array($movement->current_status, ['scheduled', 'arrived', 'in_parking'])) {
             return false;
         }
 
         $movement->update([
             'tipping_location_id' => $location->id,
-            'current_status' => 'trailer_dropped',
-            'trailer_dropped_at' => now(),
+            'current_status' => 'in_parking',
+            'in_parking_at' => now(),
             'operation_notes' => $notes ? ($movement->operation_notes ? $movement->operation_notes."\n".$notes : $notes) : $movement->operation_notes,
         ]);
 
@@ -460,7 +460,7 @@ class Booking extends Model
             "Trailer dropped at location: {$location->name}",
             null,
             null,
-            ['location_id' => $location->id, 'location_name' => $location->name, 'action_type' => 'trailer_dropped']
+            ['location_id' => $location->id, 'location_name' => $location->name, 'action_type' => 'in_parking']
         );
 
         return true;
@@ -470,7 +470,7 @@ class Booking extends Model
     {
         $movement = $this->getOrCreateMovement();
 
-        if (! in_array($movement->current_status, ['scheduled', 'trailer_dropped', 'in_waiting', 'arrived'])) {
+        if (! in_array($movement->current_status, ['scheduled', 'in_parking', 'in_parking', 'arrived'])) {
             return false;
         }
 
@@ -481,12 +481,20 @@ class Booking extends Model
         \DB::transaction(function () use ($bay, $notes, $movement) {
             $movement->update([
                 'tipping_bay_id' => $bay->id,
-                'current_status' => 'at_bay',
+                'current_status' => 'unloading', // Start tipping immediately
+                'moved_to_bay_at' => now(),
+                'unloading_started_at' => now(), // Start tipping timer
                 'custom_fields' => array_merge(
                     $movement->custom_fields ?? [],
                     ['moved_to_bay_at' => now()->toISOString()]
                 ),
                 'operation_notes' => $notes ? ($movement->operation_notes ? $movement->operation_notes."\n".$notes : $notes) : $movement->operation_notes,
+            ]);
+
+            // Also update booking status
+            $this->update([
+                'tipping_started_at' => now(),
+                'tipping_status' => 'tipping_in_progress'
             ]);
 
             $bay->markOccupied($this);
@@ -505,13 +513,13 @@ class Booking extends Model
     }
 
     /**
-     * Move trailer directly to bay without drop location (skip trailer_dropped stage)
+     * Move trailer directly to bay without drop location (skip in_parking stage)
      */
     public function moveDirectlyToBay(TippingBay $bay, ?string $notes = null): bool
     {
         $movement = $this->getOrCreateMovement();
 
-        if (! in_array($movement->current_status, ['scheduled', 'arrived', 'in_waiting'])) {
+        if (! in_array($movement->current_status, ['scheduled', 'arrived', 'in_parking'])) {
             return false;
         }
 
@@ -660,67 +668,61 @@ class Booking extends Model
     {
         $movement = $this->getOrCreateMovement();
 
-        if (! in_array($movement->current_status, ['empty', 'at_bay', 'trailer_dropped'])) {
+        if (! in_array($movement->current_status, ['empty', 'at_bay', 'in_parking'])) {
             return false;
         }
 
         // Check if trailer is being left on site
         $trailerLeftOnSite = $movement->custom_fields['trailer_left_on_site'] ?? false;
+        $departureTime = now();
         
-        \DB::transaction(function () use ($notes, $movement, $trailerLeftOnSite) {
-            // Determine the correct status based on whether trailer is left on site
+        \DB::transaction(function () use ($notes, $movement, $trailerLeftOnSite, $departureTime) {
+            // Always record unit departure time
+            $this->update([
+                'status' => 'completed',
+                'departed_at' => $departureTime, // Always set - this is when the UNIT left
+            ]);
+            
             if ($trailerLeftOnSite) {
-                // Trailer stays on site - preserve current status or set appropriate status
-                $newStatus = $movement->current_status;
-                
-                // If trailer was in a bay and is being left, move it back to dropped status
-                if (in_array($movement->current_status, ['at_bay', 'empty'])) {
-                    $newStatus = $movement->custom_fields['trailer_status'] === 'empty_available' ? 'empty' : 'trailer_dropped';
-                }
+                // Unit departed, trailer dropped on site
+                $newStatus = $movement->custom_fields['trailer_status'] === 'empty_available' ? 'empty' : 'in_parking';
                 
                 $movement->update([
                     'current_status' => $newStatus,
-                    'unit_departed_at' => now(), // Record when the unit (vehicle) departed
+                    'actual_departure' => $departureTime,
+                    // trailer_collected_at stays NULL - trailer still on site
                     'operation_notes' => $notes ? ($movement->operation_notes ? $movement->operation_notes."\n".$notes : $notes) : $movement->operation_notes,
                 ]);
                 
-                // Free up the bay if it was occupied (trailer moved back to drop zone)
+                // Note: trailer_collected_at is tracked in movements table
+                
+                // Free up bay if occupied (trailer moved to drop zone)
                 if ($movement->tippingBay && in_array($movement->current_status, ['at_bay', 'empty'])) {
                     $movement->tippingBay->markAvailable($this);
-                    // Clear bay assignment since trailer is no longer in bay
                     $movement->update(['tipping_bay_id' => null]);
                 }
             } else {
-                // Vehicle departed with trailer - complete departure
+                // Unit and trailer departed together
                 $movement->update([
                     'current_status' => 'departed',
-                    'actual_departure' => now(),
+                    'actual_departure' => $departureTime,
+                    'trailer_collected_at' => $departureTime, // Collected at same time as departure
                     'operation_notes' => $notes ? ($movement->operation_notes ? $movement->operation_notes."\n".$notes : $notes) : $movement->operation_notes,
                 ]);
                 
-                // Free up the bay if it was occupied
+                // Note: trailer_collected_at is tracked in movements table
+                
+                // Free up bay if occupied
                 if ($movement->tippingBay) {
                     $movement->tippingBay->markAvailable($this);
                 }
-            }
-
-            // Only mark as departed if trailer actually left site
-            if ($trailerLeftOnSite) {
-                // Vehicle departed but trailer still on site - don't set departed_at yet
-                // No update needed - trailer still on site
-            } else {
-                // Vehicle and trailer departed together
-                $this->update([
-                    'status' => 'completed',
-                    'departed_at' => now(),
-                ]);
             }
         });
 
         BookingHistory::recordAction(
             $this,
             'completed',
-            $trailerLeftOnSite ? 'Vehicle departed - trailer left on site' : 'Vehicle and trailer departed from site',
+            $trailerLeftOnSite ? 'Unit departed - trailer dropped on site awaiting collection' : 'Unit and trailer departed together',
             null,
             null,
             ['final_status' => $movement->current_status, 'action_type' => 'trailer_departed', 'trailer_left_on_site' => $trailerLeftOnSite]
@@ -737,7 +739,7 @@ class Booking extends Model
         $movement = $this->getOrCreateMovement();
 
         // Can only collect if trailer is empty or ready
-        if (!in_array($movement->current_status, ['empty', 'trailer_dropped'])) {
+        if (!in_array($movement->current_status, ['empty', 'in_parking'])) {
             return false;
         }
 
@@ -756,10 +758,9 @@ class Booking extends Model
                 $movement->update(['tipping_bay_id' => null]);
             }
 
-            // IMPORTANT: Update booking's departed_at time
+            // Note: trailer_collected_at is tracked in movements table, just update booking status
             $this->update([
                 'status' => 'completed',
-                'departed_at' => now(),
                 'departure_vehicle_registration' => $collectionVehicle,
             ]);
         });
@@ -792,12 +793,12 @@ class Booking extends Model
             'scheduled' => ['class' => 'bg-gray-100 text-gray-800', 'label' => '⏳ Scheduled'],
             'en_route' => ['class' => 'bg-blue-100 text-blue-800', 'label' => '🚛 En Route'],
             'arrived' => ['class' => 'bg-indigo-100 text-indigo-800', 'label' => '📍 Arrived'],
-            'in_waiting' => ['class' => 'bg-yellow-100 text-yellow-800', 'label' => '⏸️ Waiting'],
-            'in_location' => [
+            'in_parking' => ['class' => 'bg-yellow-100 text-yellow-800', 'label' => '⏸️ Waiting'],
+            'in_parking' => [
                 'class' => $isEmptyTrailer ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800',
                 'label' => $isEmptyTrailer ? '✅ Empty Unit in Location' : '🚛 Unit & Trailer in Location'
             ],
-            'trailer_dropped' => [
+            'in_parking' => [
                 'class' => $isEmptyTrailer ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800',
                 'label' => $isEmptyTrailer ? '✅ Empty Trailer Dropped' : '📍 Trailer Dropped (Loaded)'
             ],
@@ -817,7 +818,7 @@ class Booking extends Model
         $config = $statusConfig[$movementStatus] ?? $statusConfig['scheduled'];
         
         // Override with timing-based color if applicable
-        if ($timeInfo && in_array($movementStatus, ['arrived', 'in_waiting', 'in_location', 'trailer_dropped', 'at_bay'])) {
+        if ($timeInfo && in_array($movementStatus, ['arrived', 'in_parking', 'in_parking', 'in_parking', 'at_bay'])) {
             $config['class'] = $timingColor;
         }
 
@@ -922,8 +923,8 @@ class Booking extends Model
         $movementStatus = $this->getCurrentMovementStatus();
 
         return match ($movementStatus) {
-            'scheduled', 'en_route', 'arrived', 'in_waiting' => true, // Can drop trailer or move to bay
-            'trailer_dropped' => true, // Can move to bay
+            'scheduled', 'en_route', 'arrived', 'in_parking' => true, // Can drop trailer or move to bay
+            'in_parking' => true, // Can move to bay
             'at_bay' => true, // Can start unloading
             'unloading' => true, // Can complete unloading
             'empty', 'loaded', 'ready_to_depart' => true, // Can depart
@@ -942,7 +943,7 @@ class Booking extends Model
     {
         return $query->whereHas('movements', function ($q) {
             $q->whereIn('current_status', [
-                'trailer_dropped',
+                'in_parking',
                 'at_bay',
                 'unloading',
             ]);
@@ -1069,7 +1070,7 @@ class Booking extends Model
     public function getTrailerDroppedAtAttribute()
     {
         $movement = $this->movements()->first();
-        return $movement?->trailer_dropped_at;
+        return $movement?->in_parking_at;
     }
 
     public function getMovedToBayAtAttribute()
@@ -1121,10 +1122,11 @@ class Booking extends Model
 
         return match ($movement->current_status) {
             'scheduled', 'en_route', 'arrived' => 'on_site',
-            'in_waiting' => 'waiting_area',
-            'trailer_dropped' => 'dropped',
+            'in_parking' => 'waiting_area',
             'at_bay', 'unloading' => 'tipping_bay',
             'empty', 'loaded', 'ready_to_depart' => 'ready',
+            'back_to_parking' => 'parking_area',
+            'trailer_dropped' => 'dropped',
             'departed', 'trailer_collected' => 'departed',
             default => 'unknown'
         };
@@ -1138,11 +1140,11 @@ class Booking extends Model
         return $movement?->custom_fields['trailer_left_on_site'] ?? false;
     }
 
-    public function getTrailerCollectedAtAttribute(): ?string
+    public function getTrailerCollectedAtAttribute()
     {
         $movement = $this->movements()->first();
 
-        return $movement?->trailer_collected_at;
+        return $movement?->trailer_collected_at; // Returns Carbon instance from movement
     }
 
     public function getDroppedTrailerStatusAttribute(): ?string

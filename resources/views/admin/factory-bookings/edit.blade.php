@@ -198,6 +198,92 @@
           </div>
         </div>
       </div>
+
+      {{-- PO Numbers & Load Details --}}
+      <div class="bg-white rounded-lg shadow-sm border p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <span class="mr-2">📦</span>
+          PO Numbers & Load Details
+        </h3>
+        
+        @if($factoryBooking->poNumbers->count() > 0)
+          <div class="space-y-4 mb-6">
+            @foreach($factoryBooking->poNumbers as $poIndex => $po)
+              <div class="border rounded-lg p-4 bg-gray-50">
+                <div class="flex justify-between items-center mb-3">
+                  <h4 class="font-medium text-lg">PO: {{ $po->po_number }}</h4>
+                  <button type="button" onclick="removePo({{ $po->id }})" 
+                          class="text-red-600 hover:text-red-800 text-sm">Remove PO</button>
+                </div>
+                
+                @if($po->lines->count() > 0)
+                  <div class="space-y-3">
+                    <div class="text-sm text-gray-600 mb-2">
+                      <strong>Totals:</strong> 
+                      Expected: {{ $po->total_expected_cases }} cases, {{ $po->total_expected_pallets }} pallets
+                      @if($po->total_actual_cases > 0)
+                        | Actual: {{ $po->total_actual_cases }} cases, {{ $po->total_actual_pallets }} pallets
+                      @endif
+                    </div>
+                    
+                    @foreach($po->lines as $lineIndex => $line)
+                      <div class="bg-white p-3 rounded border">
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                          <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Expected Cases</label>
+                            <input type="number" 
+                                   name="pos[{{ $poIndex }}][lines][{{ $lineIndex }}][expected_cases]"
+                                   value="{{ $line->expected_cases }}" min="0"
+                                   class="w-full border-gray-300 rounded-md text-sm">
+                            <input type="hidden" name="pos[{{ $poIndex }}][lines][{{ $lineIndex }}][id]" value="{{ $line->id }}">
+                          </div>
+                          <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Expected Pallets</label>
+                            <input type="number" 
+                                   name="pos[{{ $poIndex }}][lines][{{ $lineIndex }}][expected_pallets]"
+                                   value="{{ $line->expected_pallets }}" min="0"
+                                   class="w-full border-gray-300 rounded-md text-sm">
+                          </div>
+                          <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Actual Cases</label>
+                            <input type="number" 
+                                   name="pos[{{ $poIndex }}][lines][{{ $lineIndex }}][actual_cases]"
+                                   value="{{ $line->actual_cases }}" min="0"
+                                   class="w-full border-gray-300 rounded-md text-sm">
+                          </div>
+                          <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Actual Pallets</label>
+                            <input type="number" 
+                                   name="pos[{{ $poIndex }}][lines][{{ $lineIndex }}][actual_pallets]"
+                                   value="{{ $line->actual_pallets }}" min="0"
+                                   class="w-full border-gray-300 rounded-md text-sm">
+                          </div>
+                        </div>
+                        <div class="mt-2 flex justify-end">
+                          <button type="button" onclick="removeLine(this)" 
+                                  class="text-xs text-red-600 hover:text-red-800">Remove Line</button>
+                        </div>
+                      </div>
+                    @endforeach
+                  </div>
+                @endif
+                
+                <button type="button" onclick="addLine({{ $poIndex }})" 
+                        class="mt-3 text-sm text-blue-600 hover:text-blue-800">+ Add Line</button>
+                
+                <input type="hidden" name="pos[{{ $poIndex }}][id]" value="{{ $po->id }}">
+                <input type="hidden" name="pos[{{ $poIndex }}][po_number]" value="{{ $po->po_number }}">
+              </div>
+            @endforeach
+          </div>
+        @endif
+        
+        <div class="border-t pt-4">
+          <button type="button" onclick="addPo()" 
+                  class="text-blue-600 hover:text-blue-800 text-sm">+ Add PO Number</button>
+        </div>
+      </div>
+
       {{-- Current Status Display --}}
       <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h4 class="text-blue-800 font-medium mb-2">📊 Current Status</h4>
@@ -223,8 +309,126 @@
       </div>
     </form>
   </div>
-  {{-- Auto-uppercase script for vehicle registrations --}}
+  {{-- JavaScript for dynamic PO management and auto-uppercase --}}
   <script>
+    let poCounter = {{ $factoryBooking->poNumbers->count() }};
+    let lineCounters = {};
+    
+    // Initialize line counters for existing POs
+    @foreach($factoryBooking->poNumbers as $poIndex => $po)
+      lineCounters[{{ $poIndex }}] = {{ $po->lines->count() }};
+    @endforeach
+
+    function addPo() {
+      const container = document.querySelector('.space-y-4');
+      if (!container) {
+        // If no existing POs, create the container
+        const section = document.querySelector('.border-t').parentNode;
+        const newContainer = document.createElement('div');
+        newContainer.className = 'space-y-4 mb-6';
+        section.insertBefore(newContainer, section.querySelector('.border-t'));
+      }
+      
+      const poNumber = prompt('Enter PO Number:');
+      if (!poNumber) return;
+      
+      const poDiv = document.createElement('div');
+      poDiv.className = 'border rounded-lg p-4 bg-gray-50';
+      poDiv.innerHTML = `
+        <div class="flex justify-between items-center mb-3">
+          <h4 class="font-medium text-lg">PO: ${poNumber}</h4>
+          <button type="button" onclick="removePo(null, this)" class="text-red-600 hover:text-red-800 text-sm">Remove PO</button>
+        </div>
+        <button type="button" onclick="addLine(${poCounter})" class="mt-3 text-sm text-blue-600 hover:text-blue-800">+ Add Line</button>
+        <input type="hidden" name="pos[${poCounter}][po_number]" value="${poNumber}">
+      `;
+      
+      const posContainer = document.querySelector('.space-y-4') || document.querySelector('.border-t').parentNode.insertBefore(document.createElement('div'), document.querySelector('.border-t'));
+      if (!posContainer.className) {
+        posContainer.className = 'space-y-4 mb-6';
+      }
+      posContainer.appendChild(poDiv);
+      
+      lineCounters[poCounter] = 0;
+      poCounter++;
+    }
+
+    function removePo(poId, button) {
+      if (poId) {
+        // Add hidden field to mark for deletion
+        const form = document.querySelector('form');
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'delete_pos[]';
+        input.value = poId;
+        form.appendChild(input);
+      }
+      
+      button.closest('.border.rounded-lg').remove();
+    }
+
+    function addLine(poIndex) {
+      if (!lineCounters[poIndex]) lineCounters[poIndex] = 0;
+      
+      const poDiv = document.querySelector(`input[name="pos[${poIndex}][po_number]"], input[name="pos[${poIndex}][id]"]`).closest('.border.rounded-lg');
+      const addButton = poDiv.querySelector('button[onclick*="addLine"]');
+      
+      // Create lines container if it doesn't exist
+      let linesContainer = poDiv.querySelector('.space-y-3');
+      if (!linesContainer) {
+        linesContainer = document.createElement('div');
+        linesContainer.className = 'space-y-3';
+        addButton.parentNode.insertBefore(linesContainer, addButton);
+      }
+      
+      const lineDiv = document.createElement('div');
+      lineDiv.className = 'bg-white p-3 rounded border';
+      lineDiv.innerHTML = `
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Expected Cases</label>
+            <input type="number" name="pos[${poIndex}][lines][${lineCounters[poIndex]}][expected_cases]" min="0" class="w-full border-gray-300 rounded-md text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Expected Pallets</label>
+            <input type="number" name="pos[${poIndex}][lines][${lineCounters[poIndex]}][expected_pallets]" min="0" class="w-full border-gray-300 rounded-md text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Actual Cases</label>
+            <input type="number" name="pos[${poIndex}][lines][${lineCounters[poIndex]}][actual_cases]" min="0" class="w-full border-gray-300 rounded-md text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Actual Pallets</label>
+            <input type="number" name="pos[${poIndex}][lines][${lineCounters[poIndex]}][actual_pallets]" min="0" class="w-full border-gray-300 rounded-md text-sm">
+          </div>
+        </div>
+        <div class="mt-2 flex justify-end">
+          <button type="button" onclick="removeLine(this)" class="text-xs text-red-600 hover:text-red-800">Remove Line</button>
+        </div>
+      `;
+      
+      linesContainer.appendChild(lineDiv);
+      lineCounters[poIndex]++;
+    }
+
+    function removeLine(button) {
+      const lineDiv = button.closest('.bg-white.p-3');
+      const lineId = lineDiv.querySelector('input[name*="[id]"]');
+      
+      if (lineId) {
+        // Mark existing line for deletion
+        const form = document.querySelector('form');
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'delete_lines[]';
+        input.value = lineId.value;
+        form.appendChild(input);
+      }
+      
+      lineDiv.remove();
+    }
+
+    // Auto-uppercase script for vehicle registrations
     document.getElementById('vehicle_registration').addEventListener('input', function(e) {
       e.target.value = e.target.value.toUpperCase();
     });

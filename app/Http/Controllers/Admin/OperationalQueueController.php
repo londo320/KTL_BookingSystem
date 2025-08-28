@@ -43,17 +43,28 @@ class OperationalQueueController extends Controller
         // Filter movements by selected depot or show all allowed depots
         $depotIds = $currentDepotId ? [$currentDepotId] : $allowedDepotIds;
         
-        // Get all active movements for queue management
+        // Get all active movements for queue management (including factory bookings)
         $allMovements = Movement::with([
             'booking.slot.depot', 
             'booking.customer', 
             'booking.poNumbers',
+            'factoryBooking.depot',
+            'factoryBooking.customer',
+            'factoryBooking.poNumbers',
             'tippingBay', 
             'tippingLocation'
         ])
-            ->whereNotNull('booking_id')
-            ->whereHas('booking.slot', fn($q) => $q->whereIn('depot_id', $depotIds))
-            ->whereIn('current_status', ['arrived', 'in_waiting', 'in_location', 'at_bay', 'unloading', 'empty', 'trailer_dropped', 'trailer_collected'])
+            ->where(function($query) use ($depotIds) {
+                // Regular bookings
+                $query->whereNotNull('booking_id')
+                      ->whereHas('booking.slot', fn($q) => $q->whereIn('depot_id', $depotIds))
+                      // Factory bookings
+                      ->orWhere(function($subQuery) use ($depotIds) {
+                          $subQuery->whereNotNull('factory_booking_id')
+                                   ->whereHas('factoryBooking', fn($q) => $q->whereIn('depot_id', $depotIds));
+                      });
+            })
+            ->whereIn('current_status', ['arrived', 'in_parking', 'at_bay', 'unloading', 'empty', 'back_to_parking', 'trailer_collected'])
             ->where(function($query) {
                 $query->whereNull('actual_departure')
                       ->whereNull('collection_unit_departed_at');
@@ -95,20 +106,23 @@ class OperationalQueueController extends Controller
      */
     private function calculateTippingPriority($movements)
     {
-        // Get loaded trailers ready for tipping (arrived, waiting, in locations, or dropped but not yet unloaded)
-        $readyToTip = $movements->whereIn('current_status', ['arrived', 'in_waiting', 'in_location', 'trailer_dropped'])
+        // Get loaded trailers ready for tipping (arrived or in parking but not yet unloaded)
+        $readyToTip = $movements->whereIn('current_status', ['arrived', 'in_parking'])
             ->filter(function($movement) {
                 // Include trailers that haven't started unloading yet
-                if ($movement->current_status === 'trailer_dropped') {
+                if ($movement->current_status === 'in_parking') {
                     // Only include if not yet started unloading (still loaded)
                     return $movement->unloading_started_at === null;
                 }
-                // Include other statuses
-                return in_array($movement->current_status, ['arrived', 'in_waiting', 'in_location']);
+                // Include arrived trailers
+                return $movement->current_status === 'arrived';
             });
 
         return $readyToTip->map(function($movement) {
-            $booking = $movement->booking;
+            // Get the bookable model (regular booking or factory booking)
+            $booking = $movement->booking ?? $movement->factoryBooking;
+            $isFactoryBooking = $movement->factoryBooking !== null;
+            
             $priority = 0;
             $reasons = [];
 
@@ -122,18 +136,22 @@ class OperationalQueueController extends Controller
 
             // 2. Waiting Time (older bookings first)
             $waitingMinutes = 0;
-            if ($movement->current_status === 'trailer_dropped' && $movement->trailer_dropped_at) {
-                $waitingMinutes = round($movement->trailer_dropped_at->diffInMinutes(now()));
-            } elseif ($movement->moved_to_location_at) {
+            if ($movement->current_status === 'in_parking' && $movement->moved_to_location_at) {
                 $waitingMinutes = round($movement->moved_to_location_at->diffInMinutes(now()));
+            } else {
+                // For regular bookings check arrived_at, for factory bookings use arrived_at directly
+                $arrivalTime = $isFactoryBooking ? $booking->arrived_at : $movement->booking->arrived_at;
+                if ($arrivalTime) {
+                    $waitingMinutes = round($arrivalTime->diffInMinutes(now()));
+                }
             }
             $priority += min($waitingMinutes, 480); // Max 8 hours boost
             if ($waitingMinutes > 120) {
                 $reasons[] = 'Long Wait (' . round($waitingMinutes/60, 1) . 'h)';
             }
 
-            // 3. Appointment Time (scheduled bookings priority)
-            if ($booking->slot && $booking->slot->start_at) {
+            // 3. Appointment Time (scheduled bookings priority - only for regular bookings)
+            if (!$isFactoryBooking && $booking->slot && $booking->slot->start_at) {
                 $scheduledTime = Carbon::parse($booking->slot->start_at);
                 if ($scheduledTime->isPast() && $scheduledTime->diffInMinutes(now()) > 30) {
                     $priority += 50;
@@ -174,7 +192,8 @@ class OperationalQueueController extends Controller
         })->sortBy([
             // Primary sort: Live Tips first, then Drops (tipping_type priority)
             function($movement) {
-                $tippingType = $movement->booking->tipping_type;
+                $booking = $movement->booking ?? $movement->factoryBooking;
+                $tippingType = $booking->tipping_type ?? null;
                 // Live tips get priority 1, drops get priority 2, null/unset gets priority 3
                 if ($tippingType === 'live_tip') return 1;
                 if ($tippingType === 'drop') return 2;
@@ -182,7 +201,8 @@ class OperationalQueueController extends Controller
             },
             // Secondary sort: Within same tipping type, prioritize by slot date/time
             function($movement) {
-                return $movement->booking->slot->start_at ?? now()->addYears(1);
+                $booking = $movement->booking ?? $movement->factoryBooking;
+                return $booking->slot->start_at ?? $booking->arrived_at ?? now()->addYears(1);
             },
             // Tertiary sort: Within same slot time, sort by priority score (descending)
             function($movement) {
@@ -238,7 +258,7 @@ class OperationalQueueController extends Controller
      */
     private function getCollectionUrgency($movements)
     {
-        $emptyTrailers = $movements->whereIn('current_status', ['trailer_dropped', 'empty'])
+        $emptyTrailers = $movements->whereIn('current_status', ['empty', 'back_to_parking'])
             ->filter(function($movement) {
                 // Only show trailers that have been unloaded
                 return $movement->unloading_completed_at !== null;
@@ -267,12 +287,12 @@ class OperationalQueueController extends Controller
     {
         return [
             'total_on_site' => $movements->count(),
-            'ready_to_tip' => $movements->whereIn('current_status', ['in_location', 'trailer_dropped'])
-                ->filter(fn($m) => $m->current_status !== 'trailer_dropped' || $m->unloading_started_at === null)->count(),
+            'ready_to_tip' => $movements->whereIn('current_status', ['in_parking'])
+                ->filter(fn($m) => $m->unloading_started_at === null)->count(),
             'currently_tipping' => $movements->where('current_status', 'unloading')->count(),
-            'awaiting_bays' => $movements->whereIn('current_status', ['in_location', 'trailer_dropped'])
-                ->filter(fn($m) => $m->current_status !== 'trailer_dropped' || $m->unloading_started_at === null)->count(),
-            'empty_waiting_collection' => $movements->whereIn('current_status', ['trailer_dropped', 'empty'])
+            'awaiting_bays' => $movements->whereIn('current_status', ['in_parking'])
+                ->filter(fn($m) => $m->unloading_started_at === null)->count(),
+            'empty_waiting_collection' => $movements->whereIn('current_status', ['empty', 'back_to_parking'])
                 ->filter(fn($m) => $m->unloading_completed_at !== null)->count(),
             'average_wait_time' => $this->calculateAverageWaitTime($movements),
             'efficiency_score' => $this->calculateEfficiencyScore($movements)
@@ -281,7 +301,7 @@ class OperationalQueueController extends Controller
 
     private function calculateAverageWaitTime($movements)
     {
-        $waitingMovements = $movements->whereIn('current_status', ['in_location', 'trailer_dropped']);
+        $waitingMovements = $movements->whereIn('current_status', ['in_parking']);
         if ($waitingMovements->isEmpty()) return 0;
 
         $totalWaitMinutes = $waitingMovements->sum(function($movement) {
@@ -340,7 +360,7 @@ class OperationalQueueController extends Controller
         $movement = $booking->getOrCreateMovement();
 
         // Check if booking is ready to start tipping
-        if (!in_array($movement->current_status, ['arrived', 'in_waiting', 'in_location', 'trailer_dropped'])) {
+        if (!in_array($movement->current_status, ['arrived', 'in_parking'])) {
             return response()->json([
                 'success' => false,
                 'error' => 'Booking is not ready to start tipping (current status: ' . $movement->current_status . ')'
@@ -351,7 +371,7 @@ class OperationalQueueController extends Controller
             // Start the tipping process for Drop workflow
             $booking->update([
                 'tipping_started_at' => now(),
-                'tipping_status' => 'in_progress'
+                'tipping_status' => 'tipping_in_progress'
             ]);
 
             // Update movement status

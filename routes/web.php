@@ -132,6 +132,7 @@ Route::middleware('auth')->group(function () {
         // Booking specific actions
         Route::post('/bookings/{booking}/arrived', [BookingController::class, 'markArrived'])->name('bookings.arrived');
         Route::post('/bookings/{booking}/departed', [BookingController::class, 'markDeparted'])->name('bookings.departed');
+        Route::patch('/bookings/{booking}/departure', [BookingController::class, 'markDeparted'])->name('bookings.departure');
         Route::get('/bookings/{booking}/arrival', [BookingController::class, 'arrivalForm'])->name('bookings.arrival.form');
         Route::post('/bookings/{booking}/arrival', [BookingController::class, 'arrival'])->name('bookings.arrival');
         Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
@@ -160,6 +161,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/factory-bookings/{factoryBooking}/start-processing', [FactoryBookingController::class, 'startProcessing'])->name('factory-bookings.start-processing');
         Route::post('/factory-bookings/{factoryBooking}/complete', [FactoryBookingController::class, 'complete'])->name('factory-bookings.complete');
         Route::post('/factory-bookings/{factoryBooking}/mark-departed', [FactoryBookingController::class, 'markDeparted'])->name('factory-bookings.mark-departed');
+        Route::post('/factory-bookings/{factoryBooking}/add-po-numbers', [FactoryBookingController::class, 'addPoNumbers'])->name('factory-bookings.add-po-numbers');
         Route::get('/factory-bookings/{factoryBooking}/workflow', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'show'])->name('factory-bookings.workflow.show');
         
         // ──── Customers ────
@@ -252,12 +254,11 @@ Route::middleware('auth')->group(function () {
         // ──── Inbound Module Routes (Slot Management) ────
         Route::middleware(['inbound-access'])->group(function () {
             // Slot management
-            Route::resource('slots', SlotController::class);
-            Route::get('/slots/generate/form', [SlotGeneratorController::class, 'form'])->name('slots.generate.form');
-            Route::post('/slots/generate', [SlotGeneratorController::class, 'generate'])->name('slots.generate');
+            Route::resource('slots', SlotController::class)->except(['show']);
+            Route::post('/slots/generate', [SlotGeneratorController::class, 'store'])->name('slots.generate');
             Route::get('/slot-usage', [SlotUsageController::class, 'index'])->name('slot-usage.index');
             Route::get('/slot-capacity', [SlotCapacityController::class, 'index'])->name('slot-capacity.index');
-            Route::post('/slot-capacity', [SlotCapacityController::class, 'store'])->name('slot-capacity.store');
+            Route::post('/slot-capacity', [SlotCapacityController::class, 'update'])->name('slot-capacity.update');
             Route::resource('slot-release-rules', SlotReleaseRuleController::class)
                 ->names('slotReleaseRules')
                 ->parameters(['slot-release-rules' => 'rule']);
@@ -277,6 +278,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/factory-booking-workflow/{factoryBooking}/start-tipping', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'startTipping'])->name('factory-booking-workflow.start-tipping');
         Route::post('/factory-booking-workflow/{factoryBooking}/complete-tipping', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'completeTipping'])->name('factory-booking-workflow.complete-tipping');
         Route::post('/factory-booking-workflow/{factoryBooking}/trailer-depart', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'trailerDepart'])->name('factory-booking-workflow.trailer-depart');
+        Route::post('/factory-booking-workflow/{factoryBooking}/add-po-line', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'addPoLine'])->name('factory-booking-workflow.add-po-line');
+        Route::post('/factory-booking-workflow/{factoryBooking}/update-po-line', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'updatePoLine'])->name('factory-booking-workflow.update-po-line');
         }); // End Inbound Module Routes
         
         // ──── General Management Routes (Always Available) ────
@@ -374,6 +377,10 @@ Route::middleware('auth')->group(function () {
         
         // Arrivals management
         Route::get('/arrivals', [BookingController::class, 'arrivals'])->name('arrivals.index');
+        
+        // Slot generation
+        Route::get('/slots/generate', [\App\Http\Controllers\Admin\SlotGeneratorController::class, 'index'])->name('slots.generate.form');
+        Route::post('/slots/generate', [\App\Http\Controllers\Admin\SlotGeneratorController::class, 'store'])->name('slots.generate');
     });
     
     /**
@@ -479,8 +486,6 @@ Route::middleware('auth')->group(function () {
         Route::get('booking-rules', [BookingRulesController::class, 'index'])->name('booking-rules.index');
         Route::post('booking-rules', [BookingRulesController::class, 'store'])->name('booking-rules.store');
 
-        Route::get('slot-capacity', [SlotCapacityController::class, 'index'])->name('slot-capacity.index');
-        Route::post('slot-capacity', [SlotCapacityController::class, 'update'])->name('slot-capacity.update');
 
         Route::get('slot-usage', [SlotUsageController::class, 'index'])->name('slot-usage.index');
 

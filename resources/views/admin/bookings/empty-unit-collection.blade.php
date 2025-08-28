@@ -19,7 +19,7 @@
         <div>
           <h3 class="text-lg font-medium text-gray-900">Record Unit Collection</h3>
           <p class="text-sm text-gray-600">
-            Use this form when a vehicle arrives to collect a trailer from either collection zones or tipping bays (no booking reference required).
+            Use this form when a vehicle arrives to collect a trailer from either parking areas or tipping bays (no booking reference required).
           </p>
         </div>
       </div>

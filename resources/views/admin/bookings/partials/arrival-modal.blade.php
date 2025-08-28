@@ -87,7 +87,7 @@
             <h4 class="font-medium text-blue-800 mb-3">🎯 Quick Assignment</h4>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <!-- Auto Drop Zone -->
+              <!-- Auto Parking Area -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Drop Location</label>
                 <select id="tippingLocation" name="tipping_location_id" class="w-full border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500">
@@ -106,7 +106,7 @@
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Direct to Bay</label>
                 <select id="tippingBay" name="tipping_bay_id" class="w-full border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500">
-                  <option value="">– Skip to drop zone first –</option>
+                  <option value="">– Skip to parking area first –</option>
                   @if(isset($tippingBays))
                     @foreach($tippingBays->where('is_active', true) as $bay)
                       <option value="{{ $bay->id }}" @disabled($bay->is_occupied ?? false)>
@@ -190,10 +190,10 @@ function openArrivalModal(bookingId, bookingRef, customer, depot, scheduledTime,
   document.getElementById('containerNumber').value = containerNum || '';
   document.getElementById('carrierCompany').value = carrierCompany || '';
 
-  // Auto-select first available drop zone if only one
-  const dropZones = document.querySelectorAll('#tippingLocation option:not([value=""])');
-  if (dropZones.length === 1) {
-    document.getElementById('tippingLocation').value = dropZones[0].value;
+  // Auto-select first available parking area if only one
+  const parkingAreas = document.querySelectorAll('#tippingLocation option:not([value=""])');
+  if (parkingAreas.length === 1) {
+    document.getElementById('tippingLocation').value = parkingAreas[0].value;
   }
 
   // Update arrival time display

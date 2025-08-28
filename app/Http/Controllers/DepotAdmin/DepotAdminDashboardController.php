@@ -101,9 +101,8 @@ class DepotAdminDashboardController extends Controller
             $q->whereIn('depot_id', $allowedDepotIds);
         })
             ->whereNotNull('arrived_at')
-            ->whereNull('departed_at')
             ->whereDoesntHave('movements', function ($q) {
-                $q->whereIn('current_status', ['departed', 'trailer_collected']);
+                $q->whereNotNull('trailer_collected_at'); // Simple: if trailer collected, not on site
             });
 
         if ($allowedCustomerIds !== null) {
@@ -217,9 +216,8 @@ class DepotAdminDashboardController extends Controller
             $q->whereIn('depot_id', $allowedDepotIds);
         })
             ->whereNotNull('arrived_at')
-            ->whereNull('departed_at')
             ->whereDoesntHave('movements', function ($q) {
-                $q->whereIn('current_status', ['departed', 'trailer_collected']);
+                $q->whereNotNull('trailer_collected_at'); // Simple: if trailer collected, not on site
             });
 
         if ($allowedCustomerIds !== null) {

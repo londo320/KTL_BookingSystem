@@ -42,9 +42,9 @@ class TippingWorkflowController extends Controller
             ->available()
             ->get();
 
-        // Get collection zones for empty trailers
-        $collectionZones = TippingLocation::forDepot($booking->slot->depot_id)
-            ->collectionZones()
+        // Get parking areas for empty trailers
+        $parkingAreas = TippingLocation::forDepot($booking->slot->depot_id)
+            ->parking()
             ->available()
             ->get();
 
@@ -65,7 +65,7 @@ class TippingWorkflowController extends Controller
         return view('warehouse.tipping-workflow.show', compact(
             'booking',
             'availableLocations',
-            'collectionZones',
+            'parkingAreas',
             'availableBays',
             'operators',
             'workflowEnabled',
@@ -144,14 +144,22 @@ class TippingWorkflowController extends Controller
             $movement = $booking->getOrCreateMovement();
             $movement->update([
                 'tipping_bay_id' => $bay->id,
-                'current_status' => 'at_bay',
+                'current_status' => 'unloading', // Start tipping immediately
                 'moved_to_bay_at' => now(),
+                'unloading_started_at' => now(), // Start tipping timer
                 'operation_notes' => $request->notes ? ($movement->operation_notes ? $movement->operation_notes."\n".$request->notes : $request->notes) : $movement->operation_notes,
             ]);
+            
+            // Also update booking status
+            $booking->update([
+                'tipping_started_at' => now(),
+                'tipping_status' => 'tipping_in_progress'
+            ]);
+            
             $bay->markOccupied($booking);
         }
 
-        return back()->with('success', 'Trailer moved to '.$bay->name);
+        return back()->with('success', 'Trailer moved to '.$bay->name.' and tipping started automatically');
     }
 
     public function startTipping(Request $request, Booking $booking)
@@ -505,17 +513,17 @@ class TippingWorkflowController extends Controller
 
         $location = TippingLocation::findOrFail($request->tipping_location_id);
 
-        // Verify location is a collection zone and in same depot
+        // Verify location is a parking area and in same depot
         if ($location->depot_id !== $booking->slot->depot_id) {
             return back()->withErrors(['tipping_location_id' => 'Location must be within the same depot as the booking: ' . $booking->slot->depot->name]);
         }
 
-        if ($location->location_type !== TippingLocation::TYPE_COLLECTION_ZONE) {
-            return back()->withErrors(['tipping_location_id' => 'Selected location must be a collection zone.']);
+        if ($location->location_type !== TippingLocation::TYPE_PARKING) {
+            return back()->withErrors(['tipping_location_id' => 'Selected location must be a parking area.']);
         }
         
         if (! $location->isAvailable()) {
-            return back()->withErrors(['tipping_location_id' => 'Selected collection zone is not currently available.']);
+            return back()->withErrors(['tipping_location_id' => 'Selected parking area is not currently available.']);
         }
 
         $movement = $booking->getOrCreateMovement();

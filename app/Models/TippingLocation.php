@@ -39,10 +39,8 @@ class TippingLocation extends Model
         'map_rotation' => 'decimal:2',
     ];
 
-    // Location type constants
-    public const TYPE_DROP_ZONE = 'drop_zone';
-    public const TYPE_COLLECTION_ZONE = 'collection_zone';
-    public const TYPE_GENERAL = 'general';
+    // Location type constants - SIMPLIFIED
+    public const TYPE_PARKING = 'parking'; // Replaces drop_zone, collection_zone, general, waiting
 
     public function depot(): BelongsTo
     {
@@ -104,19 +102,9 @@ class TippingLocation extends Model
     }
 
     // Location type scopes
-    public function scopeDropZones($query)
+    public function scopeParking($query)
     {
-        return $query->where('location_type', self::TYPE_DROP_ZONE);
-    }
-
-    public function scopeCollectionZones($query)
-    {
-        return $query->where('location_type', self::TYPE_COLLECTION_ZONE);
-    }
-
-    public function scopeGeneral($query)
-    {
-        return $query->where('location_type', self::TYPE_GENERAL);
+        return $query->where('location_type', self::TYPE_PARKING);
     }
 
     public function markOccupied(?Booking $booking = null): void

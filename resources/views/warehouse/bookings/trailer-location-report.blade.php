@@ -50,7 +50,7 @@
       </div>
       <div class="bg-white p-4 rounded-lg shadow">
         <div class="text-2xl font-bold text-indigo-600">{{ $stats['in_waiting_areas'] ?? 0 }}</div>
-        <div class="text-sm text-gray-600">In Waiting Areas</div>
+        <div class="text-sm text-gray-600">In Parking Areas</div>
       </div>
       <div class="bg-white p-4 rounded-lg shadow">
         <div class="text-2xl font-bold text-red-600">{{ $stats['overdue_collections'] ?? 0 }}</div>
@@ -136,7 +136,7 @@
                     'trailer_dropped' => '🔄 Trailer Detached',
                     'in_location' => '🚛 Parked - Waiting',
                     'arrived' => '🚐 Just Arrived',
-                    'in_waiting' => '⏳ In Waiting Area',
+                    'in_waiting' => '⏳ In Parking Area',
                     default => '⏳ ' . ucwords(str_replace('_', ' ', $movement->current_status))
                   };
                   $statusClass = match($movement->current_status) {
@@ -378,8 +378,8 @@
                     </form>
                   @endif
                 @else
-                  {{-- If trailer is in waiting area, show location --}}
-                  <span class="text-xs text-gray-500">In waiting area</span>
+                  {{-- If trailer is in parking area, show location --}}
+                  <span class="text-xs text-gray-500">In parking area</span>
                 @endif
               </td>
             </tr>

@@ -206,6 +206,27 @@
             </div>
         </div>
         
+        <!-- Dropped Trailers Stats (if any) -->
+        @if($stats['dropped_trailers'] > 0)
+        <div class="mb-8">
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg max-w-md mx-auto">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="text-2xl">📦</div>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-yellow-800">
+                            <strong>{{ $stats['dropped_trailers'] }}</strong> trailer{{ $stats['dropped_trailers'] > 1 ? 's' : '' }} awaiting collection
+                        </p>
+                        <p class="text-xs text-yellow-600">
+                            Units departed, trailers still on site
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+        
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Upcoming Bookings -->
             <div class="bg-white overflow-hidden shadow rounded-lg">

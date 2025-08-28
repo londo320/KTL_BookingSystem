@@ -303,7 +303,9 @@ class BookingController extends Controller
             } elseif ($arr === 'arrived') {
                 $query->whereNotNull('arrived_at');
             } elseif ($arr === 'onsite') {
-                $query->whereNotNull('arrived_at')->whereNull('departed_at');
+                $query->whereNotNull('arrived_at')->whereDoesntHave('movements', function ($q) {
+                    $q->whereNotNull('trailer_collected_at');
+                });
             } elseif ($arr === 'completed') {
                 $query->whereNotNull('arrived_at')->whereNotNull('departed_at');
             } elseif ($arr === 'late_runners') {
@@ -365,7 +367,7 @@ class BookingController extends Controller
         $regularBookings = $query->get();
 
         // Get factory bookings with similar filtering
-        $factoryBookingsQuery = FactoryBooking::with(['depot', 'customer', 'carrier', 'poNumbers.lines.expectedPalletType', 'poNumbers.lines.actualPalletType'])
+        $factoryBookingsQuery = FactoryBooking::with(['depot', 'customer', 'carrier', 'movements', 'poNumbers.lines.expectedPalletType', 'poNumbers.lines.actualPalletType'])
             ->whereIn('depot_id', $allowedDepotIds);
         
         if ($allowedCustomerIds !== null) {
@@ -458,6 +460,20 @@ class BookingController extends Controller
                 'depot_id' => $factoryBooking->depot_id,
             ];
 
+            // Calculate PO totals similar to Booking model accessors
+            $totalExpectedCases = $factoryBooking->poNumbers->sum(function ($po) {
+                return $po->total_expected_cases;
+            });
+            $totalActualCases = $factoryBooking->poNumbers->sum(function ($po) {
+                return $po->total_actual_cases;
+            });
+            $totalExpectedPallets = $factoryBooking->poNumbers->sum(function ($po) {
+                return $po->total_expected_pallets;
+            });
+            $totalActualPallets = $factoryBooking->poNumbers->sum(function ($po) {
+                return $po->total_actual_pallets;
+            });
+
             return (object) [
                 'id' => $factoryBooking->id,
                 'booking_reference' => $factoryBooking->reference,
@@ -476,11 +492,26 @@ class BookingController extends Controller
                 'status' => $factoryBooking->status,
                 'estimated_arrival' => null,
                 'poNumbers' => $factoryBooking->poNumbers, // Factory bookings have PO numbers too
-                'movements' => collect(), // Simple movements collection
+                // Get factory booking movements for proper status
+                'movements' => $factoryBooking->movements,
                 'type' => 'factory', // Mark as factory booking
                 'original_factory_booking' => $factoryBooking, // Keep reference to original
-                'tipping_status' => $factoryBooking->completed_at ? 'completed' : 'processing',
+                'tipping_status' => $this->getFactoryBookingTippingStatus($factoryBooking),
                 'special_instructions' => $factoryBooking->delivery_notes,
+                // Add PO total properties that the view expects
+                'total_expected_cases' => $totalExpectedCases,
+                'total_actual_cases' => $totalActualCases,
+                'total_case_variance' => $totalActualCases - $totalExpectedCases,
+                'total_expected_pallets' => $totalExpectedPallets,
+                'total_actual_pallets' => $totalActualPallets,
+                'total_pallet_variance' => $totalActualPallets - $totalExpectedPallets,
+                // Add location properties for factory bookings
+                'current_location' => $factoryBooking->completed_at ? 'departed' : 'on_site',
+                'waiting_area_location' => null,
+                'tipping_bay_id' => null,
+                'trailer_left_on_site' => false, // Factory bookings don't typically leave trailers
+                'trailer_collected_at' => $factoryBooking->completed_at, // Same as completion for factory bookings
+                'tipping_status_badge' => $factoryBooking->tipping_status_badge, // Use factory booking's own badge
             ];
         });
 
@@ -764,7 +795,9 @@ class BookingController extends Controller
                 $query->whereNotNull('arrived_at')
                     ->whereRaw('arrived_at > (SELECT start_at FROM slots WHERE slots.id = bookings.slot_id)');
             } elseif ($arrivalStatus === 'onsite') {
-                $query->whereNotNull('arrived_at')->whereNull('departed_at');
+                $query->whereNotNull('arrived_at')->whereDoesntHave('movements', function ($q) {
+                    $q->whereNotNull('trailer_collected_at');
+                });
             }
         }
 
@@ -782,7 +815,7 @@ class BookingController extends Controller
         } elseif ($status === 'confirmed') {
             $query->where('status', 'confirmed');
         } elseif ($status === 'in_progress') {
-            $query->whereNotNull('arrived_at')->whereNull('departed_at');
+            $query->whereNotNull('arrived_at')->whereNull('trailer_collected_at');
         }
         // For 'all' status, don't add any additional filter
 
@@ -1464,7 +1497,7 @@ class BookingController extends Controller
 
             // Handle waiting area in movement custom fields
             if (! empty($validated['waiting_area_location'])) {
-                $movementData['current_status'] = 'in_waiting';
+                $movementData['current_status'] = 'in_parking';
                 $movementData['custom_fields'] = array_merge(
                     $movement->custom_fields ?? [],
                     [
@@ -1768,9 +1801,9 @@ class BookingController extends Controller
         // Filter by default depot only for empty unit collection to reduce complexity
         $targetDepotIds = $defaultDepotId ? [$defaultDepotId] : $allowedDepotIds;
         
-        // Get available collection zones and tipping bays for location dropdown (from user's default depot)
-        $collectionZones = \App\Models\TippingLocation::whereIn('depot_id', $targetDepotIds)
-            ->where('location_type', \App\Models\TippingLocation::TYPE_COLLECTION_ZONE)
+        // Get available parking areas and tipping bays for location dropdown (from user's default depot)
+        $parkingAreas = \App\Models\TippingLocation::whereIn('depot_id', $targetDepotIds)
+            ->where('location_type', \App\Models\TippingLocation::TYPE_PARKING)
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
@@ -1786,7 +1819,7 @@ class BookingController extends Controller
             ->whereHas('booking.slot', function($q) use ($targetDepotIds) {
                 $q->whereIn('depot_id', $targetDepotIds);
             })
-            ->whereIn('current_status', ['empty', 'trailer_dropped', 'awaiting_collection']) // Include both empty and full trailers
+            ->whereIn('current_status', ['empty', 'in_parking', 'awaiting_collection', 'back_to_parking', 'trailer_dropped']) // Include all trailers ready for collection
             ->whereNull('trailer_collected_at')
             ->get();
 
@@ -1802,12 +1835,16 @@ class BookingController extends Controller
                 $currentLocation = $movement->tippingLocation->name . ' (' . ucwords(str_replace('_', ' ', $movement->tippingLocation->location_type)) . ')';
             } elseif ($movement->current_status === 'empty') {
                 $currentLocation = 'Ready for Collection (Location TBD)';
-            } elseif ($movement->current_status === 'trailer_dropped') {
+            } elseif ($movement->current_status === 'in_parking') {
                 $currentLocation = 'Dropped on Site (Location TBD)';
+            } elseif ($movement->current_status === 'back_to_parking') {
+                $currentLocation = 'Empty Trailer in Parking Area';
+            } elseif ($movement->current_status === 'trailer_dropped') {
+                $currentLocation = 'Trailer Dropped (Unit Departed)';
             }
             
             // Add enhanced info to booking
-            $booking->current_location = $currentLocation;
+            $booking->location_display = $currentLocation;
             $booking->movement_status = $movement->current_status;
             $booking->customer_name = $booking->customer ? $booking->customer->name : 'Unknown Customer';
             $booking->depot_name = $booking->slot && $booking->slot->depot ? $booking->slot->depot->name : 'Unknown Depot';
@@ -1818,7 +1855,7 @@ class BookingController extends Controller
             return $booking;
         })->sortBy('trailer_display_number'); // Sort alphabetically by trailer number
 
-        return view('warehouse.bookings.empty-unit-collection', compact('availableTrailers', 'collectionZones', 'tippingBays'));
+        return view('warehouse.bookings.empty-unit-collection', compact('availableTrailers', 'parkingAreas', 'tippingBays'));
     }
 
     public function trailerLocationReport(Request $request)
@@ -1864,15 +1901,15 @@ class BookingController extends Controller
                             ->whereHas('factoryBooking', fn($q) => $q->whereIn('depot_id', $depotIds));
                     });
             })
-            ->whereIn('current_status', ['arrived', 'in_waiting', 'trailer_dropped', 'in_location', 'at_bay', 'unloading', 'empty'])
-            ->orderBy('trailer_dropped_at', 'asc') // Oldest first
+            ->whereIn('current_status', ['arrived', 'in_parking', 'in_parking', 'in_parking', 'at_bay', 'unloading', 'empty'])
+            ->orderBy('moved_to_location_at', 'asc') // Oldest first
             ->get();
 
         // Enhanced grouping by status
-        $waitingToTip = $movementsOnSite->whereIn('current_status', ['trailer_dropped', 'arrived', 'in_location']); // Need to start tipping
+        $waitingToTip = $movementsOnSite->whereIn('current_status', ['in_parking', 'arrived', 'in_parking']); // Need to start tipping
         $currentlyTipping = $movementsOnSite->whereIn('current_status', ['at_bay', 'unloading']); // Actively being tipped
         $emptyTrailers = $movementsOnSite->where('current_status', 'empty'); // Tipped and ready for collection
-        $generalWaiting = $movementsOnSite->where('current_status', 'in_waiting'); // In waiting areas
+        $generalWaiting = $movementsOnSite->where('current_status', 'in_parking'); // In waiting areas
         
         // Calculate time on site for all trailers
         $trailersWithTime = $movementsOnSite->map(function ($movement) {
@@ -1884,7 +1921,7 @@ class BookingController extends Controller
             
             // Determine if tipping is completed
             $movement->tipping_completed = $movement->current_status === 'empty';
-            $movement->needs_tipping = in_array($movement->current_status, ['trailer_dropped', 'arrived']);
+            $movement->needs_tipping = in_array($movement->current_status, ['in_parking', 'arrived']);
             $movement->being_tipped = in_array($movement->current_status, ['at_bay', 'unloading']);
             
             // Check if this is a factory booking and if it's overdue (>60 minutes)
@@ -1911,7 +1948,7 @@ class BookingController extends Controller
             'awaiting_collection' => $waitingToTip->count(),
             'empty_available' => $emptyTrailers->count(),
             'being_tipped' => $currentlyTipping->count(),
-            'in_waiting_areas' => $generalWaiting->count(),
+            'in_parking_areas' => $generalWaiting->count(),
             'overdue_collections' => $emptyTrailers->filter(fn($m) => $m->time_on_site_hours > 24)->count(),
             'factory_bookings' => $trailersWithTime->where('is_factory_booking', true)->count(),
             'factory_overdue' => $trailersWithTime->where('factory_overdue', true)->count(),
@@ -2154,10 +2191,14 @@ class BookingController extends Controller
                     $query->whereNull('arrived_at');
                     break;
                 case 'arrived':
-                    $query->whereNotNull('arrived_at')->whereNull('departed_at');
+                    $query->whereNotNull('arrived_at')->whereDoesntHave('movements', function ($q) {
+                    $q->whereNotNull('trailer_collected_at');
+                });
                     break;
                 case 'onsite':
-                    $query->whereNotNull('arrived_at')->whereNull('departed_at');
+                    $query->whereNotNull('arrived_at')->whereDoesntHave('movements', function ($q) {
+                    $q->whereNotNull('trailer_collected_at');
+                });
                     break;
             }
         }
@@ -2279,8 +2320,8 @@ class BookingController extends Controller
                     'scheduled' => '⏳ Scheduled',
                     'en_route' => '🚛 En Route',
                     'arrived' => '📍 Arrived',
-                    'in_waiting' => '⏸️ Waiting',
-                    'trailer_dropped' => '📍 Trailer Dropped',
+                    'in_parking' => '⏸️ Waiting',
+                    'in_parking' => '📍 Trailer Dropped',
                     'at_bay' => '🚛 At Bay',
                     'unloading' => '⚡ Unloading',
                     'empty' => '✅ Empty',
@@ -2422,8 +2463,8 @@ class BookingController extends Controller
                     'scheduled' => '⏳ Scheduled',
                     'en_route' => '🚛 En Route',
                     'arrived' => '📍 Arrived',
-                    'in_waiting' => '⏸️ Waiting',
-                    'trailer_dropped' => '📍 Trailer Dropped',
+                    'in_parking' => '⏸️ Waiting',
+                    'in_parking' => '📍 Trailer Dropped',
                     'at_bay' => '🚛 At Bay',
                     'unloading' => '⚡ Unloading',
                     'empty' => '✅ Empty',
@@ -2661,7 +2702,9 @@ class BookingController extends Controller
             } elseif ($arr === 'arrived') {
                 $query->whereNotNull('arrived_at');
             } elseif ($arr === 'onsite') {
-                $query->whereNotNull('arrived_at')->whereNull('departed_at');
+                $query->whereNotNull('arrived_at')->whereDoesntHave('movements', function ($q) {
+                    $q->whereNotNull('trailer_collected_at');
+                });
             } elseif ($arr === 'completed') {
                 $query->whereNotNull('arrived_at')->whereNotNull('departed_at');
             } elseif ($arr === 'late_runners') {
@@ -2962,7 +3005,7 @@ class BookingController extends Controller
 
             // Move to waiting area
             $movement->update([
-                'current_status' => 'trailer_dropped',
+                'current_status' => 'in_parking',
                 'tipping_bay_id' => null,
                 'tipping_location_id' => $dropLocation->id,
                 'custom_fields' => array_merge(
@@ -3230,7 +3273,7 @@ class BookingController extends Controller
                 'custom_fields' => null,
                 'tipping_location_id' => null,
                 'tipping_bay_id' => null,
-                'trailer_dropped_at' => null,
+                'in_parking_at' => null,
                 'moved_to_bay_at' => null,
             ]);
 
@@ -3271,7 +3314,7 @@ class BookingController extends Controller
         ])
             ->whereNotNull('booking_id')
             ->whereHas('booking.slot', fn($q) => $q->whereIn('depot_id', $allowedDepotIds))
-            ->whereIn('current_status', ['arrived', 'in_waiting', 'trailer_dropped', 'in_location', 'at_bay', 'unloading', 'empty', 'trailer_collected'])
+            ->whereIn('current_status', ['arrived', 'in_parking', 'in_parking', 'in_parking', 'at_bay', 'unloading', 'empty', 'trailer_collected'])
             ->where(function($query) {
                 // For regular departures
                 $query->whereNull('actual_departure')
@@ -3289,8 +3332,8 @@ class BookingController extends Controller
                 
                 // Determine if trailer is loaded or empty
                 $isLoaded = !in_array($movement->current_status, ['empty', 'departed']);
-                // Only truly detached if status is 'trailer_dropped' - otherwise still attached
-                $isAttached = $movement->current_status !== 'trailer_dropped';
+                // Only truly detached if status is 'in_parking' - otherwise still attached
+                $isAttached = $movement->current_status !== 'in_parking';
                 
                 // Calculate durations (ensure positive values)
                 $timeOnSite = $arrival ? $arrival->diffInMinutes(now()) : 0;
@@ -3304,8 +3347,8 @@ class BookingController extends Controller
                 $statusStartTime = match($movement->current_status) {
                     'at_bay' => $movement->moved_to_bay_at,
                     'unloading' => $movement->unloading_started_at,
-                    'in_location' => $movement->moved_to_location_at,
-                    'trailer_dropped' => $movement->trailer_dropped_at,
+                    'in_parking' => $movement->moved_to_location_at,
+                    'in_parking' => $movement->in_parking_at,
                     'empty' => $movement->unloading_completed_at,
                     default => $arrival,
                 };
@@ -3319,8 +3362,8 @@ class BookingController extends Controller
                     'unloading' => 1, // Currently tipping - highest priority
                     'at_bay' => 2,    // Ready to start tipping
                     'empty' => 3,     // Need to clear bay/location
-                    'in_location' => 4, // Waiting to move to bay
-                    'trailer_dropped' => 5, // Detached, waiting
+                    'in_parking' => 4, // Waiting to move to bay
+                    'in_parking' => 5, // Detached, waiting
                     'arrived' => 6,   // Just arrived
                     default => 7,
                 };
@@ -3382,23 +3425,23 @@ class BookingController extends Controller
         ])
             ->whereNotNull('booking_id')
             ->whereHas('booking.slot', fn($q) => $q->whereIn('depot_id', $depotIds))
-            ->whereIn('current_status', ['arrived', 'in_waiting', 'in_location', 'at_bay', 'unloading', 'empty', 'trailer_dropped', 'trailer_collected'])
+            ->whereIn('current_status', ['arrived', 'in_parking', 'in_parking', 'at_bay', 'unloading', 'empty', 'in_parking', 'trailer_collected'])
             ->where(function($query) {
                 $query->whereNull('actual_departure')
                       ->whereNull('collection_unit_departed_at');
             })
-            ->orderByRaw("FIELD(current_status, 'unloading', 'at_bay', 'empty', 'in_location', 'trailer_dropped', 'trailer_collected', 'arrived', 'in_waiting')")
+            ->orderByRaw("FIELD(current_status, 'unloading', 'at_bay', 'empty', 'in_parking', 'in_parking', 'trailer_collected', 'arrived', 'in_parking')")
             ->orderBy('created_at', 'asc')
             ->get();
 
         // Calculate summary statistics
         $stats = [
             'on_site' => $activeMovements->count(),
-            'in_drop_zone' => $activeMovements->whereIn('current_status', ['in_location', 'trailer_dropped'])->count(),
+            'in_drop_zone' => $activeMovements->whereIn('current_status', ['in_parking', 'in_parking'])->count(),
             'at_bay' => $activeMovements->where('current_status', 'at_bay')->count(),
             'tipping' => $activeMovements->where('current_status', 'unloading')->count(),
             'empty' => $activeMovements->where('current_status', 'empty')->count(),
-            'awaiting_collection' => $activeMovements->where('current_status', 'trailer_dropped')->count(),
+            'awaiting_collection' => $activeMovements->where('current_status', 'in_parking')->count(),
             'being_collected' => $activeMovements->where('current_status', 'trailer_collected')->count(),
         ];
         
@@ -3522,5 +3565,29 @@ class BookingController extends Controller
         }
 
         return redirect()->route('app.bookings.index')->with('success', 'Vehicle arrived on site - marked as in progress.');
+    }
+
+    /**
+     * Get the tipping status for a factory booking based on its movements
+     */
+    private function getFactoryBookingTippingStatus($factoryBooking)
+    {
+        $movement = $factoryBooking->movements()->first();
+        
+        if (!$movement) {
+            return $factoryBooking->completed_at ? 'completed' : 'processing';
+        }
+        
+        // Map movement status to tipping status
+        return match ($movement->current_status) {
+            'scheduled', 'en_route' => 'scheduled',
+            'arrived' => 'arrived',
+            'in_parking' => 'waiting',
+            'at_bay' => 'at_bay',
+            'unloading' => 'tipping_in_progress',
+            'empty' => 'tipping_completed',
+            'ready_to_depart', 'departed' => 'departed',
+            default => $factoryBooking->completed_at ? 'completed' : 'processing'
+        };
     }
 }

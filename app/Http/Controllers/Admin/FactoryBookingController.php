@@ -102,6 +102,12 @@ class FactoryBookingController extends Controller
             'delivery_notes' => 'nullable|string|max:1000',
             'priority' => 'nullable|integer|min:0|max:100',
             'gate_notes' => 'nullable|string|max:1000',
+            'po_numbers' => 'required|array|min:1',
+            'po_numbers.*.po_number' => 'required|string|max:100',
+            'po_numbers.*.lines' => 'required|array|min:1',
+            'po_numbers.*.lines.*.expected_cases' => 'required|integer|min:0',
+            'po_numbers.*.lines.*.expected_pallets' => 'required|integer|min:0',
+            'po_numbers.*.lines.*.line_number' => 'required|integer|min:1',
         ]);
 
         // Verify user has access to selected depot
@@ -122,7 +128,7 @@ class FactoryBookingController extends Controller
             }
 
             $factoryBooking = FactoryBooking::create([
-                ...$validated,
+                ...collect($validated)->except(['po_numbers', 'carrier_name'])->toArray(),
                 'carrier_id' => $carrierId,
                 'registered_by' => $user->id,
                 'priority' => $validated['priority'] ?? 50,
@@ -133,10 +139,23 @@ class FactoryBookingController extends Controller
             // Create initial movement record
             $factoryBooking->getOrCreateMovement();
             
-            // Create initial PO number using the factory booking reference
-            $factoryBooking->poNumbers()->create([
-                'po_number' => $factoryBooking->reference,
-            ]);
+            // Create PO numbers and lines from form data
+            foreach ($validated['po_numbers'] as $poData) {
+                $poNumber = $factoryBooking->poNumbers()->create([
+                    'po_number' => $poData['po_number'],
+                ]);
+
+                // Create lines for this PO
+                if (!empty($poData['lines'])) {
+                    foreach ($poData['lines'] as $lineData) {
+                        $poNumber->lines()->create([
+                            'line_number' => $lineData['line_number'],
+                            'expected_cases' => $lineData['expected_cases'],
+                            'expected_pallets' => $lineData['expected_pallets'],
+                        ]);
+                    }
+                }
+            }
             
             return $factoryBooking;
         });
@@ -166,20 +185,82 @@ class FactoryBookingController extends Controller
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'carrier_id' => 'nullable|exists:carriers,id',
+            'carrier_name' => 'required|string|max:255',
             'trailer_type_id' => 'nullable|exists:trailer_types,id',
             'vehicle_registration' => 'required|string|max:50',
             'trailer_registration' => 'nullable|string|max:50',
-            'driver_name' => 'nullable|string|max:100',
-            'driver_phone' => 'nullable|string|max:20',
             'delivery_notes' => 'nullable|string|max:1000',
             'priority' => 'nullable|integer|min:0|max:100',
             'gate_notes' => 'nullable|string|max:1000',
+            'po_numbers' => 'nullable|array',
+            'po_numbers.*.po_number' => 'required_with:po_numbers.*|string|max:100',
+            'po_numbers.*.lines' => 'nullable|array',
+            'po_numbers.*.lines.*.line_number' => 'nullable|integer|min:1',
+            'po_numbers.*.lines.*.expected_cases' => 'nullable|integer|min:0',
+            'po_numbers.*.lines.*.expected_pallets' => 'nullable|integer|min:0',
+            'po_numbers.*.lines.*.expected_pallet_type_id' => 'nullable|exists:pallet_types,id',
+            'po_numbers.*.lines.*.actual_cases' => 'nullable|integer|min:0',
+            'po_numbers.*.lines.*.actual_pallets' => 'nullable|integer|min:0',
+            'po_numbers.*.lines.*.actual_pallet_type_id' => 'nullable|exists:pallet_types,id',
+            'po_numbers.*.lines.*.pallet_entries' => 'nullable|array',
         ]);
 
-        $factoryBooking->update($validated);
+        DB::transaction(function () use ($request, $factoryBooking, $validated) {
+            // Handle carrier creation/selection
+            $carrierId = $validated['carrier_id'];
+            if (!$carrierId && !empty($validated['carrier_name'])) {
+                // Create new carrier if name provided but no ID
+                $carrier = Carrier::firstOrCreate(
+                    ['name' => trim($validated['carrier_name'])],
+                    ['is_active' => true]
+                );
+                $carrierId = $carrier->id;
+            }
 
-        return redirect()->route('admin.factory-bookings.show', $factoryBooking)
-            ->with('success', 'Factory booking updated successfully.');
+            // Update factory booking basic info
+            $updateData = collect($validated)->except(['po_numbers', 'carrier_name'])->toArray();
+            $updateData['carrier_id'] = $carrierId;
+            $factoryBooking->update($updateData);
+
+            // Clear existing PO numbers and lines
+            $factoryBooking->poNumbers()->delete();
+
+            // Handle PO numbers from component format
+            if (!empty($validated['po_numbers'])) {
+                foreach ($validated['po_numbers'] as $poData) {
+                    if (empty($poData['po_number'])) continue;
+                    
+                    // Create PO number
+                    $poNumber = $factoryBooking->poNumbers()->create([
+                        'po_number' => $poData['po_number']
+                    ]);
+
+                    // Handle lines for this PO
+                    if (!empty($poData['lines'])) {
+                        foreach ($poData['lines'] as $lineData) {
+                            // Skip empty lines
+                            if (empty($lineData['expected_cases']) && empty($lineData['expected_pallets']) && 
+                                empty($lineData['actual_cases']) && empty($lineData['actual_pallets'])) {
+                                continue;
+                            }
+
+                            $poNumber->lines()->create([
+                                'line_number' => $lineData['line_number'] ?: 1,
+                                'expected_cases' => $lineData['expected_cases'] ?: 0,
+                                'expected_pallets' => $lineData['expected_pallets'] ?: 0,
+                                'expected_pallet_type_id' => $lineData['expected_pallet_type_id'] ?: null,
+                                'actual_cases' => $lineData['actual_cases'] ?: null,
+                                'actual_pallets' => $lineData['actual_pallets'] ?: null,
+                                'actual_pallet_type_id' => $lineData['actual_pallet_type_id'] ?: null,
+                            ]);
+                        }
+                    }
+                }
+            }
+        });
+
+        return redirect()->route('app.factory-bookings.show', $factoryBooking)
+            ->with('success', 'Factory booking and PO details updated successfully.');
     }
 
     public function destroy(FactoryBooking $factoryBooking)
@@ -235,5 +316,32 @@ class FactoryBookingController extends Controller
         ]);
 
         return back()->with('success', 'Factory booking departure recorded.');
+    }
+
+    public function addPoNumbers(Request $request, FactoryBooking $factoryBooking)
+    {
+        $request->validate([
+            'po_numbers' => 'required|array|min:1',
+            'po_numbers.*' => 'required|string|max:255',
+        ]);
+
+        DB::transaction(function () use ($request, $factoryBooking) {
+            foreach ($request->po_numbers as $poNumber) {
+                $poNumber = trim($poNumber);
+                if (empty($poNumber)) {
+                    continue;
+                }
+
+                // Check if PO number already exists for this factory booking
+                $existingPo = $factoryBooking->poNumbers()->where('po_number', $poNumber)->first();
+                if (!$existingPo) {
+                    $factoryBooking->poNumbers()->create([
+                        'po_number' => $poNumber,
+                    ]);
+                }
+            }
+        });
+
+        return back()->with('success', 'PO numbers added successfully. You can now add expected cases/pallets to each PO.');
     }
 }

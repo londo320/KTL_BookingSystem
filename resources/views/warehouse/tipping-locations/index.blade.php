@@ -128,14 +128,10 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         @php
                                             $typeColors = [
-                                                'drop_zone' => 'bg-blue-100 text-blue-800',
-                                                'collection_zone' => 'bg-green-100 text-green-800',
-                                                'general' => 'bg-gray-100 text-gray-800'
+                                                'parking' => 'bg-blue-100 text-blue-800'
                                             ];
                                             $typeLabels = [
-                                                'drop_zone' => 'Drop Zone',
-                                                'collection_zone' => 'Collection Zone',
-                                                'general' => 'General'
+                                                'parking' => 'Parking Area'
                                             ];
                                         @endphp
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $typeColors[$location->location_type] ?? $typeColors['general'] }}">

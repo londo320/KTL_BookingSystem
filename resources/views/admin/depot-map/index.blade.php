@@ -425,7 +425,7 @@
                         @if($locations->count() > 0)
                             @if($bays->count() > 0)
                                 <hr class="my-4 border-gray-200">
-                                <h5 class="text-sm font-medium text-gray-600 mb-2">📦 Drop/Collection Zones</h5>
+                                <h5 class="text-sm font-medium text-gray-600 mb-2">📦 Drop/Parking Areas</h5>
                             @endif
                             <div class="space-y-2 text-sm">
                                 @foreach($locations as $location)

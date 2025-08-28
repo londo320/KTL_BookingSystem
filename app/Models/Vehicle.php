@@ -56,7 +56,7 @@ class Vehicle extends Model
     public function isOnSite(): bool
     {
         return $this->movements()
-            ->whereIn('current_status', ['arrived', 'in_waiting', 'at_bay', 'unloading', 'loading', 'loaded'])
+            ->whereIn('current_status', ['arrived', 'in_parking', 'at_bay', 'unloading', 'loading', 'loaded'])
             ->exists();
     }
 }

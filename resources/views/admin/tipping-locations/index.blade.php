@@ -128,13 +128,13 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         @php
                                             $typeColors = [
-                                                'drop_zone' => 'bg-blue-100 text-blue-800',
-                                                'collection_zone' => 'bg-green-100 text-green-800',
+                                                'parking' => 'bg-blue-100 text-blue-800',
+                                                'parking' => 'bg-green-100 text-green-800',
                                                 'general' => 'bg-gray-100 text-gray-800'
                                             ];
                                             $typeLabels = [
-                                                'drop_zone' => 'Drop Zone',
-                                                'collection_zone' => 'Collection Zone',
+                                                'parking' => 'Parking Area',
+                                                'parking' => 'Parking Area',
                                                 'general' => 'General'
                                             ];
                                         @endphp

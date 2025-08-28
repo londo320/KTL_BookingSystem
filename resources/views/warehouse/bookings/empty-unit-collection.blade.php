@@ -19,7 +19,7 @@
         <div>
           <h3 class="text-lg font-medium text-gray-900">Record Unit Collection</h3>
           <p class="text-sm text-gray-600">
-            Use this form when a vehicle arrives to collect a trailer from either collection zones or tipping bays (no booking reference required).
+            Use this form when a vehicle arrives to collect a trailer from either parking areas or tipping bays (no booking reference required).
           </p>
         </div>
       </div>
@@ -94,7 +94,7 @@
                   @foreach($availableTrailers as $booking)
                     <option value="{{ $booking->id }}" {{ old('collected_from_booking_id') == $booking->id ? 'selected' : '' }}>
                       {{ $booking->trailer_display_number }}
-                      - {{ $booking->current_location }}
+                      - {{ $booking->location_display }}
                       - @if($booking->movement_status === 'empty') Empty @elseif($booking->movement_status === 'trailer_dropped') Full @else {{ ucwords(str_replace('_', ' ', $booking->movement_status)) }} @endif
                     </option>
                   @endforeach
@@ -176,7 +176,7 @@
                 @endif
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                {{ $booking->current_location ?? 'Unknown' }}
+                {{ $booking->location_display ?? 'Unknown' }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 py-1 text-xs rounded-full
@@ -248,7 +248,7 @@
                 booking_reference: '{{ $booking->booking_reference }}',
                 trailer_number: '{{ $booking->trailer_display_number }}',
                 carrier_name: '{{ addslashes($booking->carrier_company ?? '') }}',
-                current_location: '{{ addslashes($booking->current_location ?? '') }}',
+                current_location: '{{ addslashes($booking->location_display ?? '') }}',
                 customer_name: '{{ addslashes($booking->customer_name ?? '') }}',
                 status: '@if($booking->movement_status === "empty") Empty - Ready @elseif($booking->movement_status === "trailer_dropped") Full - Dropped @else {{ ucwords(str_replace("_", " ", $booking->movement_status)) }} @endif',
                 depot_name: '{{ addslashes($booking->depot_name ?? '') }}'

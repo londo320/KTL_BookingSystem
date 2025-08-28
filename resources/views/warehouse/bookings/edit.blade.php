@@ -77,14 +77,14 @@
                   <div><strong>Container:</strong> {{ $booking->container_number }}</div>
                 @endif
                 @if($booking->waiting_area_location)
-                  <div><strong>Waiting Area:</strong> {{ $booking->waiting_area_location }}</div>
+                  <div><strong>Parking Area:</strong> {{ $booking->waiting_area_location }}</div>
                 @endif
                 <div><strong>Arrived:</strong> {{ $booking->arrived_at->format('d M Y, H:i') }}</div>
               </div>
             </div>
             <div class="mt-4 flex items-center justify-between">
               <div class="text-sm text-yellow-700">
-                <strong>Warning:</strong> This action cannot be undone and will free up any assigned drop zones or bays.
+                <strong>Warning:</strong> This action cannot be undone and will free up any assigned parking areas or bays.
               </div>
               <form method="POST" action="{{ 
                 request()->route()->getPrefix() === 'depot-admin' 
@@ -93,7 +93,7 @@
               }}" class="inline">
                 @csrf
                 <button type="submit" 
-                        onclick="return confirm('⚠️ CONFIRM UNBOOK VEHICLE ⚠️\n\nThis will:\n• Clear all arrival details\n• Reset booking to scheduled status\n• Free up assigned drop zones/bays\n• Remove vehicle registration and carrier info\n\nAre you absolutely sure you want to unbook this vehicle?')"
+                        onclick="return confirm('⚠️ CONFIRM UNBOOK VEHICLE ⚠️\n\nThis will:\n• Clear all arrival details\n• Reset booking to scheduled status\n• Free up assigned parking areas/bays\n• Remove vehicle registration and carrier info\n\nAre you absolutely sure you want to unbook this vehicle?')"
                         class="px-6 py-2 bg-orange-600 text-white font-medium rounded hover:bg-orange-700 border-2 border-orange-700">
                   🔄 Unbook Vehicle
                 </button>

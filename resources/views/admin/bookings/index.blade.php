@@ -551,7 +551,7 @@
               <div class="text-xs text-gray-600">📦 {{ $booking->container_number }}</div>
             @endif
             
-            {{-- Show waiting area status and bay assignment button --}}
+            {{-- Show parking area status and bay assignment button --}}
             @if($booking->current_location === 'waiting_area' && $booking->waiting_area_location)
               <div class="text-xs text-blue-600 mt-1">🅿️ Waiting: {{ $booking->waiting_area_location }}</div>
               @if(!$booking->tipping_bay_id)
@@ -622,21 +622,21 @@
                     if ($isEmptyTrailer) {
                       // EMPTY TRAILER OPTIONS:
                       
-                      // 1. Collection Zone (awaiting pickup)
+                      // 1. Parking Area (awaiting pickup)
                       if ($movement->current_status === 'awaiting_collection' && $movement->tippingLocation) {
                         $currentLocation = 'COLLECTION_' . $movement->tippingLocation->id;
-                        $currentLocationName = '📦 ' . $movement->tippingLocation->name . ' (Collection Zone)';
+                        $currentLocationName = '📦 ' . $movement->tippingLocation->name . ' (Parking Area)';
                       }
                       // 2. Still in Tipping Bay (needs to be moved)
                       elseif ($movement->tippingBay) {
                         $currentLocation = 'BAY_' . $movement->tippingBay->id;
                         $currentLocationName = '🚛 ' . $movement->tippingBay->name . ' (Empty - Ready to Move)';
                       }
-                      // 3. Waiting Area
+                      // 3. Parking Area
                       elseif ($movement->custom_fields && isset($movement->custom_fields['waiting_area_location'])) {
                         $waitingArea = $movement->custom_fields['waiting_area_location'];
                         $currentLocation = 'WAITING_' . $waitingArea;
-                        $currentLocationName = '⏳ Waiting Area ' . $waitingArea . ' (Empty)';
+                        $currentLocationName = '⏳ Parking Area ' . $waitingArea . ' (Empty)';
                       }
                       // 4. General drop location
                       elseif ($movement->tippingLocation) {
@@ -655,16 +655,16 @@
                         $currentLocation = 'BAY_' . $movement->tippingBay->id;
                         $currentLocationName = '🏗️ ' . $movement->tippingBay->name . ' (Tipping)';
                       }
-                      // 2. In Drop Zone (awaiting tipping)
+                      // 2. In Parking Area (awaiting tipping)
                       elseif ($movement->tippingLocation) {
                         $currentLocation = 'DROP_' . $movement->tippingLocation->id;
                         $currentLocationName = '📍 ' . $movement->tippingLocation->name . ' (Full - Awaiting)';
                       }
-                      // 3. Waiting Area
+                      // 3. Parking Area
                       elseif ($movement->custom_fields && isset($movement->custom_fields['waiting_area_location'])) {
                         $waitingArea = $movement->custom_fields['waiting_area_location'];
                         $currentLocation = 'WAITING_' . $waitingArea;
-                        $currentLocationName = '⏳ Waiting Area ' . $waitingArea . ' (Full)';
+                        $currentLocationName = '⏳ Parking Area ' . $waitingArea . ' (Full)';
                       }
                       else {
                         $currentLocation = 'ONSITE_FULL';
@@ -723,7 +723,7 @@
                   @if($isEmptyTrailer)
                     {{-- EMPTY TRAILER LOCATIONS --}}
                     @if($movement->current_status === 'awaiting_collection' && $movement->tippingLocation)
-                      <div class="text-green-700">📦 {{ $movement->tippingLocation->name }} (Collection Zone)</div>
+                      <div class="text-green-700">📦 {{ $movement->tippingLocation->name }} (Parking Area)</div>
                     @elseif($movement->tippingBay)
                       <div class="text-yellow-700">🚛 {{ $movement->tippingBay->name }} (Empty - Ready to Move)</div>
                     @elseif($movement->tippingLocation)
@@ -1126,8 +1126,8 @@
                     <optgroup label="🏷️ Current Location">
                       {{-- Populated dynamically --}}
                     </optgroup>
-                    {{-- Available Drop Zones --}}
-                    <optgroup label="📦 Drop Zones">
+                    {{-- Available Parking Areas --}}
+                    <optgroup label="📦 Parking Areas">
                       @foreach($tippingLocations as $location)
                         <option value="DROP_{{ $location->id }}" data-type="location" data-name="{{ $location->name }}">
                           {{ $location->name }} ({{ $location->getAvailableCapacity() }}/{{ $location->capacity }} available)
@@ -1157,7 +1157,7 @@
                       <strong>⚠️ Tipping In Progress:</strong><br>
                       <span class="text-yellow-700">• Trailer can remain at current bay until tipping completes</span><br>
                       <span class="text-yellow-700">• Moving to other bays is restricted during active tipping</span><br>
-                      <span class="text-yellow-700">• Drop zones and collection zones are still available</span>
+                      <span class="text-yellow-700">• parking areas and parking areas are still available</span>
                     </div>
                   </div>
                 </div>
@@ -1202,7 +1202,7 @@
   <div id="bayAssignmentModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
       <div class="mt-3">
-        <h3 class="text-lg font-bold text-gray-900 mb-4">🏗️ Assign Bay from Waiting Area</h3>
+        <h3 class="text-lg font-bold text-gray-900 mb-4">🏗️ Assign Bay from Parking Area</h3>
         
         <form id="bayAssignmentForm" method="POST">
           @csrf
@@ -1713,7 +1713,7 @@
         if (currentLocation === 'ONSITE_GENERAL') {
           currentLocationInfo.innerHTML = `
             <strong>📍 Current Location:</strong> ${currentLocationName}<br>
-            <span class="text-orange-700">⚠️ Vehicle is on site but not assigned to specific drop zone - please select location for trailer</span>
+            <span class="text-orange-700">⚠️ Vehicle is on site but not assigned to specific parking area - please select location for trailer</span>
           `;
           currentLocationInfo.className = 'mt-2 p-3 bg-orange-50 border border-orange-200 rounded text-sm';
         } else {
@@ -1727,8 +1727,16 @@
         locationSelect.selectedIndex = 0; // Reset to "Select Location"
       }
 
-      // Update form action
-      document.getElementById('departureForm').action = `/admin/bookings/${bookingId}/departure`;
+      // Update form action - determine correct prefix
+      let routePrefix = '/admin'; // default
+      if (window.location.pathname.includes('/app/')) {
+        routePrefix = '/app';
+      } else if (window.location.pathname.includes('/depot-admin/')) {
+        routePrefix = '/depot-admin';
+      } else if (window.location.pathname.includes('/admin/')) {
+        routePrefix = '/admin';
+      }
+      document.getElementById('departureForm').action = `${routePrefix}/bookings/${bookingId}/departure`;
 
       // Update departure time display
       updateDepartureTime();
