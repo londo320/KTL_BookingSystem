@@ -51,7 +51,9 @@
       "Bash(git pull:*)",
       "Bash(git stash:*)",
       "WebFetch(domain:test.test)",
-      "WebFetch(domain:test.test)"
+      "WebFetch(domain:test.test)",
+      "Bash(./debug-production-500.sh)",
+      "Bash(composer:*)"
     ],
     "deny": []
   }

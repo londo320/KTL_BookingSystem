@@ -13,26 +13,6 @@
         </div>
     @endif
 
-    @if($user->isProtectedSystemOwner())
-        <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div class="flex items-start">
-                <div class="text-blue-600 text-2xl mr-3">🔒</div>
-                <div>
-                    <h3 class="text-blue-900 font-semibold">Protected System Owner Account</h3>
-                    <p class="text-blue-800 mt-1">
-                        This is a protected system account. You have full access to manage your own permissions, roles, and access levels. 
-                        No other users can edit this account, even admins.
-                    </p>
-                    @if(auth()->user()->id === $user->id)
-                        <p class="text-blue-700 text-sm mt-2">
-                            <strong>Note:</strong> You can assign/remove any roles and permissions, including admin access. 
-                            The system will always ensure you maintain access to user management functions.
-                        </p>
-                    @endif
-                </div>
-            </div>
-        </div>
-    @endif
 
     <div class="bg-white rounded-lg shadow-sm border">
         <div class="px-6 py-4 border-b border-gray-200">
@@ -80,18 +60,14 @@
                                         <div class="text-xs text-gray-500">User can log in and access assigned functions</div>
                                     </div>
                                 </label>
-                                <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 {{ $user->isProtectedSystemOwner() ? 'opacity-50' : '' }}">
+                                <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                                     <input type="radio" name="is_active" value="0" class="border-gray-300"
                                            {{ old('is_active', $user->is_active ?? 1) == 0 ? 'checked' : '' }}
-                                           {{ $user->isProtectedSystemOwner() ? 'disabled' : '' }}>
+                                           >
                                     <div class="ml-3">
                                         <span class="text-sm font-medium text-red-700">❌ Disabled</span>
                                         <div class="text-xs text-gray-500">
-                                            @if($user->isProtectedSystemOwner())
-                                                🔒 Protected system owner cannot be disabled
-                                            @else
                                                 User cannot log in or access any functions
-                                            @endif
                                         </div>
                                     </div>
                                 </label>

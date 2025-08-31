@@ -1,0 +1,275 @@
+
+
+<?php if (isset($component)) { $__componentOriginalc9242005886028143da563f7b99f0c87 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalc9242005886028143da563f7b99f0c87 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.warehouse-layout','data' => []] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('warehouse-layout'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
+<div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">🚛 <?php echo e($trailerType->name); ?></h1>
+                <p class="mt-2 text-gray-600">Trailer type details and usage statistics</p>
+            </div>
+            <div class="flex gap-3">
+                <?php if(!$trailerType->trashed()): ?>
+                    <a href="<?php echo e(route('app.trailer-types.edit', $trailerType)); ?>" 
+                       class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                        ✏️ Edit
+                    </a>
+                <?php endif; ?>
+                <a href="<?php echo e(route('app.trailer-types.index')); ?>" 
+                   class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                    ← Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Alerts -->
+    <?php if($trailerType->trashed()): ?>
+    <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <div class="ml-3 flex-1">
+                <p class="text-sm text-red-800">
+                    🗑️ <strong>Deleted:</strong> This trailer type has been deleted and is no longer available for new bookings.
+                </p>
+            </div>
+            <div class="ml-3">
+                <form action="<?php echo e(route('app.trailer-types.restore', $trailerType->id)); ?>" method="POST" class="inline">
+                    <?php echo csrf_field(); ?>
+                    <button type="submit" 
+                            class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+                        ♻️ Restore
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <?php elseif(!$trailerType->is_active): ?>
+    <div class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <div class="ml-3 flex-1">
+                <p class="text-sm text-amber-800">
+                    ⏸️ <strong>Inactive:</strong> This trailer type is inactive and won't appear in booking forms.
+                </p>
+            </div>
+            <div class="ml-3">
+                <form action="<?php echo e(route('app.trailer-types.toggle', $trailerType->id)); ?>" method="POST" class="inline">
+                    <?php echo csrf_field(); ?>
+                    <button type="submit" 
+                            class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+                        ▶️ Activate
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Details Panel -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow-sm border">
+                <div class="p-6 border-b">
+                    <h3 class="text-lg font-medium text-gray-900">Details</h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Name</label>
+                        <p class="mt-1 text-lg text-gray-900"><?php echo e($trailerType->name); ?></p>
+                    </div>
+                    
+                    <?php if($trailerType->description): ?>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Description</label>
+                        <p class="mt-1 text-gray-900"><?php echo e($trailerType->description); ?></p>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Status</label>
+                        <div class="mt-1">
+                            <?php if($trailerType->trashed()): ?>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                    🗑️ Deleted
+                                </span>
+                            <?php elseif($trailerType->is_active): ?>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    ✅ Active
+                                </span>
+                            <?php else: ?>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                    ❌ Inactive
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Total Bookings</label>
+                        <p class="mt-1 text-2xl font-bold text-blue-600"><?php echo e($trailerType->bookings_count); ?></p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Created</label>
+                        <p class="mt-1 text-gray-900"><?php echo e($trailerType->created_at->format('M j, Y g:i A')); ?></p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Last Updated</label>
+                        <p class="mt-1 text-gray-900"><?php echo e($trailerType->updated_at->format('M j, Y g:i A')); ?></p>
+                    </div>
+                    
+                    <?php if($trailerType->deleted_at): ?>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Deleted</label>
+                        <p class="mt-1 text-gray-900"><?php echo e($trailerType->deleted_at->format('M j, Y g:i A')); ?></p>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Actions Panel -->
+            <?php if(!$trailerType->trashed()): ?>
+            <div class="mt-6 bg-white rounded-lg shadow-sm border">
+                <div class="p-6 border-b">
+                    <h3 class="text-lg font-medium text-gray-900">Actions</h3>
+                </div>
+                <div class="p-6 space-y-3">
+                    <form action="<?php echo e(route('app.trailer-types.toggle', $trailerType->id)); ?>" method="POST">
+                        <?php echo csrf_field(); ?>
+                        <button type="submit" 
+                                class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white <?php echo e($trailerType->is_active ? 'bg-amber-600 hover:bg-amber-700' : 'bg-green-600 hover:bg-green-700'); ?> focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
+                            <?php if($trailerType->is_active): ?>
+                                ⏸️ Deactivate
+                            <?php else: ?>
+                                ▶️ Activate
+                            <?php endif; ?>
+                        </button>
+                    </form>
+                    
+                    <?php if($trailerType->canBeDeleted()): ?>
+                        <form action="<?php echo e(route('app.trailer-types.destroy', $trailerType)); ?>" method="POST"
+                              onsubmit="return confirm('Are you sure you want to delete this trailer type? This action cannot be undone.')">
+                            <?php echo csrf_field(); ?>
+                            <?php echo method_field('DELETE'); ?>
+                            <button type="submit" 
+                                    class="w-full inline-flex items-center justify-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                🗑️ Delete
+                            </button>
+                        </form>
+                    <?php else: ?>
+                        <div class="text-center p-4 bg-gray-50 rounded-md">
+                            <span class="text-sm text-gray-500">
+                                🔒 Cannot delete: has <?php echo e($trailerType->bookings_count); ?> associated bookings
+                            </span>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Bookings Panel -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow-sm border">
+                <div class="p-6 border-b">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-medium text-gray-900">Recent Bookings</h3>
+                        <span class="text-sm text-gray-500"><?php echo e($trailerType->bookings_count); ?> total</span>
+                    </div>
+                </div>
+                
+                <?php if($recentBookings->count() > 0): ?>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Depot</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <?php $__currentLoopData = $recentBookings; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $booking): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    #<?php echo e($booking->id); ?>
+
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <?php echo e($booking->customer->name ?? 'N/A'); ?>
+
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <?php echo e($booking->slot->depot->name ?? 'N/A'); ?>
+
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <?php echo e($booking->created_at->format('M j, Y')); ?>
+
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <a href="<?php echo e(route('app.bookings.show', $booking)); ?>" 
+                                       class="text-blue-600 hover:text-blue-900">
+                                        View
+                                    </a>
+                                </td>
+                            </tr>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <?php if($trailerType->bookings_count > 10): ?>
+                <div class="p-4 border-t bg-gray-50 text-center">
+                    <a href="<?php echo e(route('app.bookings.index', ['trailer_type_id' => $trailerType->id])); ?>" 
+                       class="text-blue-600 hover:text-blue-900 text-sm font-medium">
+                        View all <?php echo e($trailerType->bookings_count); ?> bookings →
+                    </a>
+                </div>
+                <?php endif; ?>
+                
+                <?php else: ?>
+                <div class="p-12 text-center">
+                    <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <p class="text-gray-500 text-lg font-medium mb-2">No bookings yet</p>
+                    <p class="text-gray-400">This trailer type hasn't been used in any bookings.</p>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+ <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalc9242005886028143da563f7b99f0c87)): ?>
+<?php $attributes = $__attributesOriginalc9242005886028143da563f7b99f0c87; ?>
+<?php unset($__attributesOriginalc9242005886028143da563f7b99f0c87); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalc9242005886028143da563f7b99f0c87)): ?>
+<?php $component = $__componentOriginalc9242005886028143da563f7b99f0c87; ?>
+<?php unset($__componentOriginalc9242005886028143da563f7b99f0c87); ?>
+<?php endif; ?><?php /**PATH /Users/londo/Herd/test/resources/views/warehouse/trailer-types/show.blade.php ENDPATH**/ ?>

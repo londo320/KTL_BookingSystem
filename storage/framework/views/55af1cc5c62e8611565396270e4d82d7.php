@@ -796,7 +796,7 @@
 
         
         <td class="px-4 py-2 align-top">
-          <?php if($booking->arrived_at && !$booking->departed_at): ?>
+          <?php if($booking->arrived_at && (!$booking->departed_at || $isFactory)): ?>
             <?php $movement = $booking->movements->first(); ?>
             <div class="space-y-1">
               

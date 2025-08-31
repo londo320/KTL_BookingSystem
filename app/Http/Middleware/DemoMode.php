@@ -18,6 +18,18 @@ class DemoMode
         if ($request->isMethod('GET')) {
             return $next($request);
         }
+        
+        // Debug logging
+        \Log::info('DemoMode middleware triggered', [
+            'method' => $request->method(),
+            'url' => $request->url(),
+            'user' => Auth::user()?->email ?? 'not authenticated'
+        ]);
+        
+        // Add visible debug for testing
+        if (app()->environment('local')) {
+            session()->flash('debug', 'DemoMode middleware executed for: ' . (Auth::user()?->email ?? 'guest'));
+        }
 
         // Check if this is an action targeting Paul Carr's profile
         $isPaulCarrTargeted = $this->isActionTargetingPaulCarr($request);
