@@ -112,7 +112,7 @@ Route::middleware('auth')->group(function () {
      * ───── Main Application Routes (Unified Function-Based Access) ─────
      * All users access the application through these routes with function-based permissions
      */
-    Route::prefix('app')->as('app.')->middleware(['auth', 'function-access'])->group(function () {
+    Route::prefix('app')->as('app.')->middleware(['auth', 'function-access', 'demo'])->group(function () {
         
         // ──── Core Application Routes (Always Available) ────
         Route::get('/dashboard', [WarehouseController::class, 'dashboard'])->name('dashboard');
