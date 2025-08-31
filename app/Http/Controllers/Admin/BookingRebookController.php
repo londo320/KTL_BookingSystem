@@ -370,9 +370,17 @@ class BookingRebookController extends Controller
             $history = collect($history->values());
         }
 
+        // Get max rebooks setting
+        $maxRebooksPerBooking = \App\Models\CustomerBehaviorSetting::getCustomerSetting(
+            $booking->customer_id,
+            'max_rebooks_per_booking',
+            3
+        );
+
         return view('warehouse.bookings.history', compact('booking', 'history'))->with([
             'sortOrder' => $sortOrder,
             'actualRebookCount' => $actualRebookCount,
+            'maxRebooksPerBooking' => $maxRebooksPerBooking,
         ]);
     }
 
@@ -451,7 +459,7 @@ class BookingRebookController extends Controller
             ->selectRaw('
                 COUNT(*) as total_actions,
                 SUM(CASE WHEN action = "rebooked" THEN 1 ELSE 0 END) as total_rebooks_30days,
-                SUM(CASE WHEN action = "cancelled" THEN 1 ELSE 0 END) as total_cancellations_30days,
+                COUNT(DISTINCT CASE WHEN action = "cancelled" AND reason NOT LIKE "%Rebooked%" THEN booking_id END) as total_cancellations_30days,
                 SUM(CASE WHEN action IN ("rebooked", "cancelled") AND is_last_minute = 1 THEN 1 ELSE 0 END) as last_minute_rebooks_30days,
                 AVG(CASE WHEN action IN ("rebooked", "cancelled") THEN hours_before_slot END) as avg_hours_notice
             ')

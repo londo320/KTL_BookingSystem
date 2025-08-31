@@ -1,64 +1,74 @@
-<x-warehouse-layout>
-  <x-slot name="header">
+<?php if (isset($component)) { $__componentOriginalc9242005886028143da563f7b99f0c87 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalc9242005886028143da563f7b99f0c87 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.warehouse-layout','data' => []] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('warehouse-layout'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
+   <?php $__env->slot('header', null, []); ?> 
     <div class="flex items-center justify-between">
       <h2 class="font-semibold text-xl">📍 Trailer Location Report</h2>
       <div class="flex items-center space-x-4">
-        {{-- Depot Filter --}}
+        
         <form method="GET" class="flex items-center space-x-2">
           <label for="depot_id" class="text-sm font-medium text-gray-700">View:</label>
           <select name="depot_id" onchange="this.form.submit()" class="px-3 py-1 border border-gray-300 rounded-md text-sm">
-            <option value="" {{ !$currentDepotId ? 'selected' : '' }}>All Depots (View Only)</option>
-            @foreach($allDepots as $depot)
-              <option value="{{ $depot->id }}" {{ $currentDepotId == $depot->id ? 'selected' : '' }}>
-                {{ $depot->name }} {{ $depot->id == $defaultDepotId ? '(Default - Actions Enabled)' : '(View Only)' }}
+            <option value="" <?php echo e(!$currentDepotId ? 'selected' : ''); ?>>All Depots (View Only)</option>
+            <?php $__currentLoopData = $allDepots; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $depot): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+              <option value="<?php echo e($depot->id); ?>" <?php echo e($currentDepotId == $depot->id ? 'selected' : ''); ?>>
+                <?php echo e($depot->name); ?> <?php echo e($depot->id == $defaultDepotId ? '(Default - Actions Enabled)' : '(View Only)'); ?>
+
               </option>
-            @endforeach
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
           </select>
         </form>
-        {{-- Action Buttons --}}
+        
         <div class="flex space-x-3">
-          <a href="{{ route('app.empty-unit-collection') }}"
+          <a href="<?php echo e(route('app.empty-unit-collection')); ?>"
              class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
             🚛 Empty Collection
           </a>
-          <a href="{{ route('app.bookings.index') }}"
+          <a href="<?php echo e(route('app.bookings.index')); ?>"
              class="px-3 py-1 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-sm">
             ← Back to Bookings
           </a>
         </div>
       </div>
     </div>
-  </x-slot>
+   <?php $__env->endSlot(); ?>
   <div class="py-6 max-w-7xl mx-auto">
     <!-- Summary Stats -->
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
       <div class="bg-white p-4 rounded-lg shadow">
-        <div class="text-2xl font-bold text-blue-600">{{ $stats['total_on_site'] ?? 0 }}</div>
+        <div class="text-2xl font-bold text-blue-600"><?php echo e($stats['total_on_site'] ?? 0); ?></div>
         <div class="text-sm text-gray-600">Total On Site</div>
       </div>
       <div class="bg-white p-4 rounded-lg shadow">
-        <div class="text-2xl font-bold text-orange-600">{{ $stats['awaiting_collection'] ?? 0 }}</div>
+        <div class="text-2xl font-bold text-orange-600"><?php echo e($stats['awaiting_collection'] ?? 0); ?></div>
         <div class="text-sm text-gray-600">Awaiting Collection</div>
       </div>
       <div class="bg-white p-4 rounded-lg shadow">
-        <div class="text-2xl font-bold text-green-600">{{ $stats['empty_available'] ?? 0 }}</div>
+        <div class="text-2xl font-bold text-green-600"><?php echo e($stats['empty_available'] ?? 0); ?></div>
         <div class="text-sm text-gray-600">Empty Available</div>
       </div>
       <div class="bg-white p-4 rounded-lg shadow">
-        <div class="text-2xl font-bold text-purple-600">{{ $stats['being_tipped'] ?? 0 }}</div>
+        <div class="text-2xl font-bold text-purple-600"><?php echo e($stats['being_tipped'] ?? 0); ?></div>
         <div class="text-sm text-gray-600">Being Tipped</div>
       </div>
       <div class="bg-white p-4 rounded-lg shadow">
-        <div class="text-2xl font-bold text-indigo-600">{{ $stats['in_waiting_areas'] ?? 0 }}</div>
+        <div class="text-2xl font-bold text-indigo-600"><?php echo e($stats['in_waiting_areas'] ?? 0); ?></div>
         <div class="text-sm text-gray-600">In Parking Areas</div>
       </div>
       <div class="bg-white p-4 rounded-lg shadow">
-        <div class="text-2xl font-bold text-red-600">{{ $stats['overdue_collections'] ?? 0 }}</div>
+        <div class="text-2xl font-bold text-red-600"><?php echo e($stats['overdue_collections'] ?? 0); ?></div>
         <div class="text-sm text-gray-600">Overdue Collections</div>
       </div>
     </div>
     <!-- Trailers Waiting to Start Tipping -->
-    @if(isset($waitingToTip) && $waitingToTip->count() > 0)
+    <?php if(isset($waitingToTip) && $waitingToTip->count() > 0): ?>
     <div class="bg-white rounded-lg shadow mb-6">
       <div class="px-6 py-4 border-b border-gray-200">
         <h3 class="text-lg font-medium text-gray-900">⏳ Waiting to Start Tipping</h3>
@@ -70,9 +80,9 @@
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-              @if(!$currentDepotId)
+              <?php if(!$currentDepotId): ?>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Depot</th>
-              @endif
+              <?php endif; ?>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -80,58 +90,65 @@
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            @foreach($waitingToTip as $movement)
-            @php $booking = $movement->bookable @endphp
+            <?php $__currentLoopData = $waitingToTip; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $movement): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <?php $booking = $movement->bookable ?>
             <tr class="hover:bg-gray-50">
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                @if($booking && $booking->id)
-                  @if($booking instanceof \App\Models\FactoryBooking)
-                    <a href="{{ route('app.factory-bookings.show', $booking) }}" class="hover:underline">
-                      {{ $booking->reference ?? 'Unknown' }}
+                <?php if($booking && $booking->id): ?>
+                  <?php if($booking instanceof \App\Models\FactoryBooking): ?>
+                    <a href="<?php echo e(route('app.factory-bookings.show', $booking)); ?>" class="hover:underline">
+                      <?php echo e($booking->reference ?? 'Unknown'); ?>
+
                     </a>
-                  @else
-                    <a href="{{ route('app.bookings.show', $booking) }}" class="hover:underline">
-                      {{ $booking->booking_reference ?? 'Unknown' }}
+                  <?php else: ?>
+                    <a href="<?php echo e(route('app.bookings.show', $booking)); ?>" class="hover:underline">
+                      <?php echo e($booking->booking_reference ?? 'Unknown'); ?>
+
                     </a>
-                  @endif
-                @else
+                  <?php endif; ?>
+                <?php else: ?>
                   <span class="text-gray-500">No booking</span>
-                @endif
+                <?php endif; ?>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ $booking && $booking->customer ? $booking->customer->name : 'Unknown' }}
+                <?php echo e($booking && $booking->customer ? $booking->customer->name : 'Unknown'); ?>
+
               </td>
-              @if(!$currentDepotId)
+              <?php if(!$currentDepotId): ?>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  @if($booking instanceof \App\Models\FactoryBooking)
-                    {{ $booking && $booking->depot ? $booking->depot->name : 'Unknown' }}
-                  @else
-                    {{ $booking && $booking->slot && $booking->slot->depot ? $booking->slot->depot->name : 'Unknown' }}
-                  @endif
+                  <?php if($booking instanceof \App\Models\FactoryBooking): ?>
+                    <?php echo e($booking && $booking->depot ? $booking->depot->name : 'Unknown'); ?>
+
+                  <?php else: ?>
+                    <?php echo e($booking && $booking->slot && $booking->slot->depot ? $booking->slot->depot->name : 'Unknown'); ?>
+
+                  <?php endif; ?>
                 </td>
-              @endif
+              <?php endif; ?>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                {{ $booking && $booking->vehicle_registration ? $booking->vehicle_registration : 'Not specified' }}
-                @php
+                <?php echo e($booking && $booking->vehicle_registration ? $booking->vehicle_registration : 'Not specified'); ?>
+
+                <?php
                   $containerNumber = $booking instanceof \App\Models\FactoryBooking 
                     ? $booking->trailer_registration 
                     : $booking->container_number;
-                @endphp
-                @if($booking && $containerNumber)
-                  <br><span class="text-xs text-gray-500">{{ $containerNumber }}</span>
-                @endif
+                ?>
+                <?php if($booking && $containerNumber): ?>
+                  <br><span class="text-xs text-gray-500"><?php echo e($containerNumber); ?></span>
+                <?php endif; ?>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                @if($movement->tippingLocation)
+                <?php if($movement->tippingLocation): ?>
                   <span class="px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-800">
-                    {{ $movement->tippingLocation->name }}
+                    <?php echo e($movement->tippingLocation->name); ?>
+
                   </span>
-                @else
+                <?php else: ?>
                   <span class="text-gray-400">Not assigned</span>
-                @endif
+                <?php endif; ?>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                @php
+                <?php
                   // Check if trailer has completed tipping to show correct status
                   $hasCompletedTipping = $movement->unloading_completed_at !== null;
                   
@@ -155,31 +172,35 @@
                     'empty' => 'bg-green-100 text-green-800',
                     default => 'bg-yellow-100 text-yellow-800'
                   };
-                @endphp
-                <span class="px-2 py-1 text-xs rounded-full {{ $statusClass }}">
-                  {{ $statusDisplay }}
+                ?>
+                <span class="px-2 py-1 text-xs rounded-full <?php echo e($statusClass); ?>">
+                  <?php echo e($statusDisplay); ?>
+
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                @if($movement->current_status === 'trailer_dropped' && $movement->trailer_dropped_at)
-                  {{ $movement->trailer_dropped_at->diffForHumans() }}
-                @elseif($movement->current_status === 'in_location' && $movement->moved_to_location_at)
-                  {{ $movement->moved_to_location_at->diffForHumans() }}
-                @elseif($movement->actual_arrival)
-                  {{ $movement->actual_arrival->diffForHumans() }}
-                @else
+                <?php if($movement->current_status === 'trailer_dropped' && $movement->trailer_dropped_at): ?>
+                  <?php echo e($movement->trailer_dropped_at->diffForHumans()); ?>
+
+                <?php elseif($movement->current_status === 'in_location' && $movement->moved_to_location_at): ?>
+                  <?php echo e($movement->moved_to_location_at->diffForHumans()); ?>
+
+                <?php elseif($movement->actual_arrival): ?>
+                  <?php echo e($movement->actual_arrival->diffForHumans()); ?>
+
+                <?php else: ?>
                   <span class="text-gray-400">Unknown</span>
-                @endif
+                <?php endif; ?>
               </td>
             </tr>
-            @endforeach
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
           </tbody>
         </table>
       </div>
     </div>
-    @endif
+    <?php endif; ?>
     <!-- Currently Being Tipped -->
-    @if(isset($currentlyTipping) && $currentlyTipping->count() > 0)
+    <?php if(isset($currentlyTipping) && $currentlyTipping->count() > 0): ?>
     <div class="bg-white rounded-lg shadow mb-6">
       <div class="px-6 py-4 border-b border-gray-200">
         <h3 class="text-lg font-medium text-gray-900">🏗️ Currently Being Tipped</h3>
@@ -191,9 +212,9 @@
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-              @if(!$currentDepotId)
+              <?php if(!$currentDepotId): ?>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Depot</th>
-              @endif
+              <?php endif; ?>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipping Bay</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -201,84 +222,94 @@
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            @foreach($currentlyTipping as $movement)
-            @php $booking = $movement->bookable @endphp
+            <?php $__currentLoopData = $currentlyTipping; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $movement): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <?php $booking = $movement->bookable ?>
             <tr class="hover:bg-gray-50">
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                @if($booking && $booking->id)
-                  @if($booking instanceof \App\Models\FactoryBooking)
-                    <a href="{{ route('app.factory-bookings.show', $booking) }}" class="hover:underline">
-                      {{ $booking->reference ?? 'Unknown' }}
+                <?php if($booking && $booking->id): ?>
+                  <?php if($booking instanceof \App\Models\FactoryBooking): ?>
+                    <a href="<?php echo e(route('app.factory-bookings.show', $booking)); ?>" class="hover:underline">
+                      <?php echo e($booking->reference ?? 'Unknown'); ?>
+
                     </a>
-                  @else
-                    <a href="{{ route('app.bookings.show', $booking) }}" class="hover:underline">
-                      {{ $booking->booking_reference ?? 'Unknown' }}
+                  <?php else: ?>
+                    <a href="<?php echo e(route('app.bookings.show', $booking)); ?>" class="hover:underline">
+                      <?php echo e($booking->booking_reference ?? 'Unknown'); ?>
+
                     </a>
-                  @endif
-                @else
+                  <?php endif; ?>
+                <?php else: ?>
                   <span class="text-gray-500">No booking</span>
-                @endif
+                <?php endif; ?>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ $booking && $booking->customer ? $booking->customer->name : 'Unknown' }}
+                <?php echo e($booking && $booking->customer ? $booking->customer->name : 'Unknown'); ?>
+
               </td>
-              @if(!$currentDepotId)
+              <?php if(!$currentDepotId): ?>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  @if($booking instanceof \App\Models\FactoryBooking)
-                    {{ $booking && $booking->depot ? $booking->depot->name : 'Unknown' }}
-                  @else
-                    {{ $booking && $booking->slot && $booking->slot->depot ? $booking->slot->depot->name : 'Unknown' }}
-                  @endif
+                  <?php if($booking instanceof \App\Models\FactoryBooking): ?>
+                    <?php echo e($booking && $booking->depot ? $booking->depot->name : 'Unknown'); ?>
+
+                  <?php else: ?>
+                    <?php echo e($booking && $booking->slot && $booking->slot->depot ? $booking->slot->depot->name : 'Unknown'); ?>
+
+                  <?php endif; ?>
                 </td>
-              @endif
+              <?php endif; ?>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                {{ $booking && $booking->vehicle_registration ? $booking->vehicle_registration : 'Not specified' }}
-                @php
+                <?php echo e($booking && $booking->vehicle_registration ? $booking->vehicle_registration : 'Not specified'); ?>
+
+                <?php
                   $containerNumber = $booking instanceof \App\Models\FactoryBooking 
                     ? $booking->trailer_registration 
                     : $booking->container_number;
-                @endphp
-                @if($booking && $containerNumber)
-                  <br><span class="text-xs text-gray-500">{{ $containerNumber }}</span>
-                @endif
+                ?>
+                <?php if($booking && $containerNumber): ?>
+                  <br><span class="text-xs text-gray-500"><?php echo e($containerNumber); ?></span>
+                <?php endif; ?>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                @if($movement->tippingBay)
+                <?php if($movement->tippingBay): ?>
                   <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                    {{ $movement->tippingBay->name }}
+                    <?php echo e($movement->tippingBay->name); ?>
+
                   </span>
-                @else
+                <?php else: ?>
                   <span class="text-gray-400">Not assigned</span>
-                @endif
+                <?php endif; ?>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 py-1 text-xs rounded-full 
-                  @if($movement->current_status === 'unloading') bg-orange-100 text-orange-800 
-                  @else bg-blue-100 text-blue-800 @endif">
-                  @if($movement->current_status === 'unloading') ⚡ Unloading
-                  @else 🚛 At Bay @endif
+                  <?php if($movement->current_status === 'unloading'): ?> bg-orange-100 text-orange-800 
+                  <?php else: ?> bg-blue-100 text-blue-800 <?php endif; ?>">
+                  <?php if($movement->current_status === 'unloading'): ?> ⚡ Unloading
+                  <?php else: ?> 🚛 At Bay <?php endif; ?>
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                @if($movement->moved_to_bay_at)
-                  {{ $movement->moved_to_bay_at->diffForHumans() }}
-                @elseif($movement->unloading_started_at)
-                  {{ $movement->unloading_started_at->diffForHumans() }}
-                @elseif($movement->actual_arrival)
-                  {{ $movement->actual_arrival->diffForHumans() }}
-                @else
+                <?php if($movement->moved_to_bay_at): ?>
+                  <?php echo e($movement->moved_to_bay_at->diffForHumans()); ?>
+
+                <?php elseif($movement->unloading_started_at): ?>
+                  <?php echo e($movement->unloading_started_at->diffForHumans()); ?>
+
+                <?php elseif($movement->actual_arrival): ?>
+                  <?php echo e($movement->actual_arrival->diffForHumans()); ?>
+
+                <?php else: ?>
                   <span class="text-gray-400">Unknown</span>
-                @endif
+                <?php endif; ?>
               </td>
             </tr>
-            @endforeach
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
           </tbody>
         </table>
       </div>
     </div>
-    @endif
+    <?php endif; ?>
     <!-- Empty Trailers Ready for Collection -->
-    @if(isset($emptyTrailers) && $emptyTrailers->count() > 0)
+    <?php if(isset($emptyTrailers) && $emptyTrailers->count() > 0): ?>
     <div class="bg-white rounded-lg shadow mb-6">
       <div class="px-6 py-4 border-b border-gray-200">
         <h3 class="text-lg font-medium text-gray-900">✅ Empty Trailers Ready for Collection</h3>
@@ -290,9 +321,9 @@
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-              @if(!$currentDepotId)
+              <?php if(!$currentDepotId): ?>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Depot</th>
-              @endif
+              <?php endif; ?>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Container/Trailer</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</th>
@@ -301,105 +332,114 @@
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            @foreach($emptyTrailers as $movement)
-            @php $booking = $movement->bookable @endphp
+            <?php $__currentLoopData = $emptyTrailers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $movement): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <?php $booking = $movement->bookable ?>
             <tr class="hover:bg-gray-50">
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                @if($booking && $booking->id)
-                  @if($booking instanceof \App\Models\FactoryBooking)
-                    <a href="{{ route('app.factory-bookings.show', $booking) }}" class="hover:underline">
-                      {{ $booking->reference ?? 'Unknown' }}
+                <?php if($booking && $booking->id): ?>
+                  <?php if($booking instanceof \App\Models\FactoryBooking): ?>
+                    <a href="<?php echo e(route('app.factory-bookings.show', $booking)); ?>" class="hover:underline">
+                      <?php echo e($booking->reference ?? 'Unknown'); ?>
+
                     </a>
-                  @else
-                    <a href="{{ route('app.bookings.show', $booking) }}" class="hover:underline">
-                      {{ $booking->booking_reference ?? 'Unknown' }}
+                  <?php else: ?>
+                    <a href="<?php echo e(route('app.bookings.show', $booking)); ?>" class="hover:underline">
+                      <?php echo e($booking->booking_reference ?? 'Unknown'); ?>
+
                     </a>
-                  @endif
-                @else
+                  <?php endif; ?>
+                <?php else: ?>
                   <span class="text-gray-500">No booking</span>
-                @endif
+                <?php endif; ?>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ $booking && $booking->customer ? $booking->customer->name : 'Unknown' }}
+                <?php echo e($booking && $booking->customer ? $booking->customer->name : 'Unknown'); ?>
+
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                @php
+                <?php
                   $containerNumber = $booking instanceof \App\Models\FactoryBooking 
                     ? ($booking->trailer_registration ?? 'Not specified')
                     : ($booking->container_number ?? 'Not specified');
-                @endphp
-                {{ $containerNumber }}
-                @if($booking && $booking->trailerType)
-                  <br><span class="text-xs text-gray-500">{{ $booking->trailerType->name }}</span>
-                @endif
+                ?>
+                <?php echo e($containerNumber); ?>
+
+                <?php if($booking && $booking->trailerType): ?>
+                  <br><span class="text-xs text-gray-500"><?php echo e($booking->trailerType->name); ?></span>
+                <?php endif; ?>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                @if($movement->tippingBay)
+                <?php if($movement->tippingBay): ?>
                   <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
-                    {{ $movement->tippingBay->name }}
+                    <?php echo e($movement->tippingBay->name); ?>
+
                   </span>
-                @elseif($movement->tippingLocation)
+                <?php elseif($movement->tippingLocation): ?>
                   <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
-                    {{ $movement->tippingLocation->name }}
+                    <?php echo e($movement->tippingLocation->name); ?>
+
                   </span>
-                @else
+                <?php else: ?>
                   <span class="text-gray-400">Unknown</span>
-                @endif
+                <?php endif; ?>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                @if($movement->unloading_completed_at)
-                  {{ $movement->unloading_completed_at->format('d-M H:i') }}
-                  <br><span class="text-xs text-gray-400">{{ $movement->unloading_completed_at->diffForHumans() }}</span>
-                @else
+                <?php if($movement->unloading_completed_at): ?>
+                  <?php echo e($movement->unloading_completed_at->format('d-M H:i')); ?>
+
+                  <br><span class="text-xs text-gray-400"><?php echo e($movement->unloading_completed_at->diffForHumans()); ?></span>
+                <?php else: ?>
                   <span class="text-gray-400">Unknown</span>
-                @endif
+                <?php endif; ?>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
-                @if($booking instanceof \App\Models\FactoryBooking)
+                <?php if($booking instanceof \App\Models\FactoryBooking): ?>
                   <span class="text-gray-400">N/A - Factory Delivery</span>
-                @elseif($booking && $booking->trailer_collection_scheduled)
-                  @if($booking->trailer_collection_scheduled->isPast())
+                <?php elseif($booking && $booking->trailer_collection_scheduled): ?>
+                  <?php if($booking->trailer_collection_scheduled->isPast()): ?>
                     <span class="text-red-600 font-medium">
-                      {{ $booking->trailer_collection_scheduled->format('d-M-Y H:i') }}
+                      <?php echo e($booking->trailer_collection_scheduled->format('d-M-Y H:i')); ?>
+
                       <br><span class="text-xs">⚠️ OVERDUE</span>
                     </span>
-                  @else
+                  <?php else: ?>
                     <span class="text-gray-600">
-                      {{ $booking->trailer_collection_scheduled->format('d-M-Y H:i') }}
+                      <?php echo e($booking->trailer_collection_scheduled->format('d-M-Y H:i')); ?>
+
                     </span>
-                  @endif
-                @else
+                  <?php endif; ?>
+                <?php else: ?>
                   <span class="text-gray-400">Not scheduled</span>
-                @endif
+                <?php endif; ?>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
-                @if($movement->tippingBay)
-                  {{-- If trailer is in bay, offer to clear it --}}
-                  @if($booking instanceof \App\Models\FactoryBooking)
+                <?php if($movement->tippingBay): ?>
+                  
+                  <?php if($booking instanceof \App\Models\FactoryBooking): ?>
                     <span class="text-xs text-gray-500">Factory Delivery - Use Workflow</span>
-                  @else
-                    <form method="POST" action="{{ route('app.bookings.clear-bay', $booking) }}" class="inline">
-                      @csrf
+                  <?php else: ?>
+                    <form method="POST" action="<?php echo e(route('app.bookings.clear-bay', $booking)); ?>" class="inline">
+                      <?php echo csrf_field(); ?>
                       <button type="submit" class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
                               title="Clear bay for next vehicle">
                         🔄 Clear Bay
                       </button>
                     </form>
-                  @endif
-                @else
-                  {{-- If trailer is in parking area, show location --}}
+                  <?php endif; ?>
+                <?php else: ?>
+                  
                   <span class="text-xs text-gray-500">In parking area</span>
-                @endif
+                <?php endif; ?>
               </td>
             </tr>
-            @endforeach
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
           </tbody>
         </table>
       </div>
     </div>
-    @endif
+    <?php endif; ?>
     <!-- No Trailers Message (if none in any category) -->
-    @if($movementsOnSite->count() === 0)
+    <?php if($movementsOnSite->count() === 0): ?>
     <div class="bg-white rounded-lg shadow">
       <div class="px-6 py-4 border-b border-gray-200">
         <h3 class="text-lg font-medium text-gray-900">📦 Trailers on Site</h3>
@@ -410,7 +450,7 @@
         <p class="text-gray-600">All trailers have been collected or are currently with vehicles.</p>
       </div>
     </div>
-    @endif
+    <?php endif; ?>
     <!-- Legend -->
     <div class="mt-6 bg-gray-50 p-4 rounded-lg">
       <h4 class="text-sm font-medium text-gray-800 mb-2">Status Legend:</h4>
@@ -442,4 +482,13 @@
       </div>
     </div>
   </div>
-</x-warehouse-layout>
+ <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalc9242005886028143da563f7b99f0c87)): ?>
+<?php $attributes = $__attributesOriginalc9242005886028143da563f7b99f0c87; ?>
+<?php unset($__attributesOriginalc9242005886028143da563f7b99f0c87); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalc9242005886028143da563f7b99f0c87)): ?>
+<?php $component = $__componentOriginalc9242005886028143da563f7b99f0c87; ?>
+<?php unset($__componentOriginalc9242005886028143da563f7b99f0c87); ?>
+<?php endif; ?><?php /**PATH /Users/londo/Herd/test/resources/views/warehouse/bookings/trailer-location-report.blade.php ENDPATH**/ ?>

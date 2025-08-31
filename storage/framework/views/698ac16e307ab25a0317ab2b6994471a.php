@@ -128,6 +128,10 @@
                 <?php $__currentLoopData = $tippingQueue->take(15); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $movement): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <?php 
                   $booking = $movement->booking;
+                  $factoryBooking = $movement->factoryBooking;
+                  $isFactory = $factoryBooking !== null;
+                  $activeBooking = $isFactory ? $factoryBooking : $booking;
+                  
                   $waitMinutes = 0;
                   if ($movement->current_status === 'trailer_dropped' && $movement->trailer_dropped_at) {
                       $waitMinutes = round($movement->trailer_dropped_at->diffInMinutes(now()));
@@ -147,22 +151,50 @@
                     </div>
                   </td>
                   <td class="px-4 py-4 whitespace-nowrap">
-                    <div class="font-medium text-blue-600"><?php echo e($booking->booking_reference); ?></div>
-                    <div class="text-xs text-gray-500"><?php echo e($booking->vehicle_registration); ?></div>
+                    <?php if($activeBooking): ?>
+                      <div class="font-medium text-blue-600">
+                        <?php echo e($isFactory ? $activeBooking->reference : $activeBooking->booking_reference); ?>
+
+                        <?php if($isFactory): ?>
+                          <span class="ml-1 text-xs bg-green-100 text-green-800 px-1 rounded">FAC</span>
+                        <?php endif; ?>
+                      </div>
+                      <div class="text-xs text-gray-500"><?php echo e($activeBooking->vehicle_registration ?? 'No vehicle'); ?></div>
+                    <?php else: ?>
+                      <div class="text-red-500 text-sm">No booking data</div>
+                    <?php endif; ?>
                   </td>
                   <td class="px-4 py-4 whitespace-nowrap">
-                    <div class="font-medium text-gray-900"><?php echo e($booking->container_number ?: 'Not specified'); ?></div>
-                    <div class="text-xs text-gray-500">Container/Trailer #</div>
+                    <?php if($activeBooking): ?>
+                      <div class="font-medium text-gray-900">
+                        <?php echo e($isFactory ? ($activeBooking->trailer_registration ?: 'Not specified') : ($activeBooking->container_number ?: 'Not specified')); ?>
+
+                      </div>
+                      <div class="text-xs text-gray-500">Container/Trailer #</div>
+                    <?php else: ?>
+                      <div class="text-gray-400">Not specified</div>
+                    <?php endif; ?>
                   </td>
                   <td class="px-4 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900"><?php echo e($booking->customer->name ?? 'Unknown'); ?></div>
-                    <?php if($booking->poNumbers && $booking->poNumbers->count() > 0): ?>
-                      <div class="text-xs text-blue-600">📦 <?php echo e($booking->poNumbers->count()); ?> PO(s)</div>
+                    <?php if($activeBooking): ?>
+                      <div class="text-sm text-gray-900"><?php echo e($activeBooking?->customer?->name ?? 'Unknown'); ?></div>
+                      <?php if($activeBooking?->poNumbers && $activeBooking->poNumbers->count() > 0): ?>
+                        <div class="text-xs text-blue-600">📦 <?php echo e($activeBooking->poNumbers->count()); ?> PO(s)</div>
+                      <?php endif; ?>
+                    <?php else: ?>
+                      <div class="text-gray-400">Unknown</div>
                     <?php endif; ?>
                   </td>
                   <?php if(!$currentDepotId): ?>
                     <td class="px-4 py-4 whitespace-nowrap">
-                      <div class="text-sm text-gray-900"><?php echo e($booking->slot->depot->name ?? 'Unknown'); ?></div>
+                      <?php if($activeBooking): ?>
+                        <div class="text-sm text-gray-900">
+                          <?php echo e($isFactory ? ($activeBooking?->depot?->name ?? 'Unknown') : ($activeBooking?->slot?->depot?->name ?? 'Unknown')); ?>
+
+                        </div>
+                      <?php else: ?>
+                        <div class="text-gray-400">Unknown</div>
+                      <?php endif; ?>
                     </td>
                   <?php endif; ?>
                   <td class="px-4 py-4 whitespace-nowrap">
@@ -173,38 +205,46 @@
                     <?php endif; ?>
                   </td>
                   <td class="px-4 py-4 whitespace-nowrap">
-                    <?php
-                      $tippingType = $booking->tipping_type;
-                      $typeConfig = [
-                        'live_tip' => ['icon' => '🚛📦', 'label' => 'Live Tip', 'color' => 'bg-blue-100 text-blue-800', 'priority' => '🏆'],
-                        'drop' => ['icon' => '📦', 'label' => 'Drop', 'color' => 'bg-green-100 text-green-800', 'priority' => '⏳'],
-                        null => ['icon' => '❓', 'label' => 'Not Set', 'color' => 'bg-yellow-100 text-yellow-800', 'priority' => '❓']
-                      ];
-                      $config = $typeConfig[$tippingType] ?? $typeConfig[null];
-                    ?>
-                    <?php if($tippingType): ?>
-                      <div class="flex flex-col items-center">
-                        <div class="flex items-center space-x-1 mb-1">
-                          <span class="text-lg"><?php echo e($config['icon']); ?></span>
-                          <span class="text-xs"><?php echo e($config['priority']); ?></span>
-                        </div>
-                        <span class="px-2 py-1 text-xs rounded-full <?php echo e($config['color']); ?>">
-                          <?php echo e($config['label']); ?>
+                    <?php if($activeBooking): ?>
+                      <?php
+                        $tippingType = $activeBooking->tipping_type;
+                        $typeConfig = [
+                          'live_tip' => ['icon' => '🚛📦', 'label' => 'Live Tip', 'color' => 'bg-blue-100 text-blue-800', 'priority' => '🏆'],
+                          'drop' => ['icon' => '📦', 'label' => 'Drop', 'color' => 'bg-green-100 text-green-800', 'priority' => '⏳'],
+                          null => ['icon' => '❓', 'label' => 'Not Set', 'color' => 'bg-yellow-100 text-yellow-800', 'priority' => '❓']
+                        ];
+                        $config = $typeConfig[$tippingType] ?? $typeConfig[null];
+                      ?>
+                      <?php if($tippingType): ?>
+                        <div class="flex flex-col items-center">
+                          <div class="flex items-center space-x-1 mb-1">
+                            <span class="text-lg"><?php echo e($config['icon']); ?></span>
+                            <span class="text-xs"><?php echo e($config['priority']); ?></span>
+                          </div>
+                          <span class="px-2 py-1 text-xs rounded-full <?php echo e($config['color']); ?>">
+                            <?php echo e($config['label']); ?>
 
-                        </span>
-                        <?php if($tippingType === 'live_tip'): ?>
-                          <div class="text-xs text-blue-600 mt-1 font-medium">Priority</div>
-                        <?php elseif($tippingType === 'drop'): ?>
-                          <div class="text-xs text-green-600 mt-1">By Slot Time</div>
+                          </span>
+                          <?php if($tippingType === 'live_tip'): ?>
+                            <div class="text-xs text-blue-600 mt-1 font-medium">Priority</div>
+                          <?php elseif($tippingType === 'drop'): ?>
+                            <div class="text-xs text-green-600 mt-1">By Slot Time</div>
+                          <?php endif; ?>
+                        </div>
+                      <?php else: ?>
+                        <?php if(!$isFactory): ?>
+                          <select onchange="setTippingType(<?php echo e($activeBooking->id); ?>, this.value)" 
+                                  class="px-2 py-1 text-xs border border-gray-300 rounded">
+                            <option value="">Select Type</option>
+                            <option value="live_tip">🚛📦 Live Tip</option>
+                            <option value="drop">📦 Drop</option>
+                          </select>
+                        <?php else: ?>
+                          <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">Not Set</span>
                         <?php endif; ?>
-                      </div>
+                      <?php endif; ?>
                     <?php else: ?>
-                      <select onchange="setTippingType(<?php echo e($booking->id); ?>, this.value)" 
-                              class="px-2 py-1 text-xs border border-gray-300 rounded">
-                        <option value="">Select Type</option>
-                        <option value="live_tip">🚛📦 Live Tip</option>
-                        <option value="drop">📦 Drop</option>
-                      </select>
+                      <div class="text-gray-400">No data</div>
                     <?php endif; ?>
                   </td>
                   <td class="px-4 py-4 whitespace-nowrap">
@@ -230,38 +270,48 @@
                     </div>
                   </td>
                   <td class="px-4 py-4 whitespace-nowrap">
-                    <div class="flex flex-col space-y-1">
-                      <?php
-                        $tippingType = $booking->tipping_type;
-                        $isLiveTip = $tippingType === 'live_tip';
-                        $isDrop = $tippingType === 'drop';
-                      ?>
-                      <?php if($isLiveTip): ?>
+                    <?php if($activeBooking): ?>
+                      <div class="flex flex-col space-y-1">
+                        <?php
+                          $tippingType = $activeBooking->tipping_type;
+                          $isLiveTip = $tippingType === 'live_tip';
+                          $isDrop = $tippingType === 'drop';
+                          $bookingId = $isFactory ? $activeBooking->id : $activeBooking->id;
+                          $actionPrefix = $isFactory ? 'factory' : 'booking';
+                        ?>
+                        <?php if($isLiveTip): ?>
+                          
+                          <button onclick="shuntToBay(<?php echo e($bookingId); ?>, '<?php echo e($actionPrefix); ?>')" 
+                                  class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
+                            🚛📦 Move to Bay
+                          </button>
+                        <?php elseif($isDrop): ?>
+                          
+                          <button onclick="startTipping(<?php echo e($bookingId); ?>, '<?php echo e($actionPrefix); ?>')" 
+                                  class="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">
+                            📦 Start Tipping
+                          </button>
+                        <?php else: ?>
+                          
+                          <div class="text-xs text-yellow-600 mb-1">Set Tip Type First</div>
+                        <?php endif; ?>
                         
-                        <button onclick="shuntToBay(<?php echo e($booking->id); ?>)" 
-                                class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
-                          🚛📦 Move to Bay
-                        </button>
-                      <?php elseif($isDrop): ?>
-                        
-                        <button onclick="startTipping(<?php echo e($booking->id); ?>)" 
-                                class="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">
-                          📦 Start Tipping
-                        </button>
-                      <?php else: ?>
-                        
-                        <div class="text-xs text-yellow-600 mb-1">Set Tip Type First</div>
-                      <?php endif; ?>
-                      
-                      <select onchange="quickPriorityBoost(<?php echo e($booking->id); ?>, this.value)" 
-                              class="px-1 py-1 text-xs border border-gray-300 rounded">
-                        <option value="0" <?php echo e(($booking->manual_priority_boost ?? 0) == 0 ? 'selected' : ''); ?>>Normal</option>
-                        <option value="50" <?php echo e(($booking->manual_priority_boost ?? 0) == 50 ? 'selected' : ''); ?>>+50 High</option>
-                        <option value="100" <?php echo e(($booking->manual_priority_boost ?? 0) == 100 ? 'selected' : ''); ?>>+100 Urgent</option>
-                        <option value="200" <?php echo e(($booking->manual_priority_boost ?? 0) == 200 ? 'selected' : ''); ?>>+200 Emergency</option>
-                        <option value="-25" <?php echo e(($booking->manual_priority_boost ?? 0) == -25 ? 'selected' : ''); ?>>-25 Delay</option>
-                      </select>
-                    </div>
+                        <?php if(!$isFactory): ?>
+                          <select onchange="quickPriorityBoost(<?php echo e($bookingId); ?>, this.value)" 
+                                  class="px-1 py-1 text-xs border border-gray-300 rounded">
+                            <option value="0" <?php echo e(($activeBooking->manual_priority_boost ?? 0) == 0 ? 'selected' : ''); ?>>Normal</option>
+                            <option value="50" <?php echo e(($activeBooking->manual_priority_boost ?? 0) == 50 ? 'selected' : ''); ?>>+50 High</option>
+                            <option value="100" <?php echo e(($activeBooking->manual_priority_boost ?? 0) == 100 ? 'selected' : ''); ?>>+100 Urgent</option>
+                            <option value="200" <?php echo e(($activeBooking->manual_priority_boost ?? 0) == 200 ? 'selected' : ''); ?>>+200 Emergency</option>
+                            <option value="-25" <?php echo e(($activeBooking->manual_priority_boost ?? 0) == -25 ? 'selected' : ''); ?>>-25 Delay</option>
+                          </select>
+                        <?php else: ?>
+                          <div class="text-xs text-gray-500">Factory booking</div>
+                        <?php endif; ?>
+                      </div>
+                    <?php else: ?>
+                      <div class="text-xs text-gray-400">No actions</div>
+                    <?php endif; ?>
                   </td>
                 </tr>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
@@ -350,6 +400,11 @@
           <div class="p-4 space-y-2">
             <?php $__currentLoopData = $collectionUrgency->take(5); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $movement): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
             <?php 
+              $booking = $movement->booking;
+              $factoryBooking = $movement->factoryBooking;
+              $isFactory = $factoryBooking !== null;
+              $activeBooking = $isFactory ? $factoryBooking : $booking;
+              
               $urgencyColors = [
                 'critical' => 'bg-red-100 text-red-800',
                 'high' => 'bg-orange-100 text-orange-800',
@@ -359,12 +414,22 @@
             ?>
             <div class="border border-gray-200 rounded p-2">
               <div class="flex items-center justify-between">
-                <div class="text-sm font-medium"><?php echo e($movement->booking->booking_reference); ?></div>
+                <div class="text-sm font-medium">
+                  <?php if($activeBooking): ?>
+                    <?php echo e($isFactory ? $activeBooking->reference : $activeBooking->booking_reference); ?>
+
+                    <?php if($isFactory): ?>
+                      <span class="ml-1 text-xs bg-green-100 text-green-800 px-1 rounded">FAC</span>
+                    <?php endif; ?>
+                  <?php else: ?>
+                    No booking data
+                  <?php endif; ?>
+                </div>
                 <span class="px-2 py-1 text-xs rounded <?php echo e($urgencyColors[$movement->collection_urgency]); ?>">
                   <?php echo e(round($movement->hours_waiting_collection, 1)); ?>h
                 </span>
               </div>
-              <div class="text-xs text-gray-500"><?php echo e($movement->booking->customer->name ?? 'Unknown'); ?></div>
+              <div class="text-xs text-gray-500"><?php echo e($activeBooking?->customer?->name ?? 'Unknown'); ?></div>
             </div>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             <?php if($collectionUrgency->count() == 0): ?>
@@ -380,17 +445,35 @@
         <div class="bg-white rounded-lg shadow">
           <div class="px-6 py-4 border-b border-gray-200 bg-green-50">
             <h3 class="text-lg font-medium text-green-800">🚐 NEW ARRIVALS</h3>
-            <p class="text-sm text-green-600 mt-1">Need drop zone assignment</p>
+            <p class="text-sm text-green-600 mt-1">Need parking area assignment</p>
           </div>
           <div class="p-4 space-y-2">
             <?php $__currentLoopData = $newArrivals->take(3); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $movement): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <?php 
+              $booking = $movement->booking;
+              $factoryBooking = $movement->factoryBooking;
+              $isFactory = $factoryBooking !== null;
+              $activeBooking = $isFactory ? $factoryBooking : $booking;
+            ?>
             <div class="border border-gray-200 rounded p-2">
-              <div class="text-sm font-medium"><?php echo e($movement->booking->booking_reference); ?></div>
-              <div class="text-xs text-gray-500"><?php echo e($movement->booking->customer->name ?? 'Unknown'); ?></div>
-              <button onclick="assignDropZone(<?php echo e($movement->booking->id); ?>)" 
-                      class="mt-1 px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">
-                📍 Assign Drop Zone
-              </button>
+              <div class="text-sm font-medium">
+                <?php if($activeBooking): ?>
+                  <?php echo e($isFactory ? $activeBooking->reference : $activeBooking->booking_reference); ?>
+
+                  <?php if($isFactory): ?>
+                    <span class="ml-1 text-xs bg-green-100 text-green-800 px-1 rounded">FAC</span>
+                  <?php endif; ?>
+                <?php else: ?>
+                  No booking data
+                <?php endif; ?>
+              </div>
+              <div class="text-xs text-gray-500"><?php echo e($activeBooking?->customer?->name ?? 'Unknown'); ?></div>
+              <?php if($activeBooking): ?>
+                <button onclick="assignDropZone(<?php echo e($activeBooking->id); ?>, '<?php echo e($isFactory ? 'factory' : 'booking'); ?>')" 
+                        class="mt-1 px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">
+                  📍 Assign Parking Area
+                </button>
+              <?php endif; ?>
             </div>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
           </div>
@@ -458,11 +541,11 @@
       </div>
     </div>
   </div>
-  <!-- Drop Zone Modal -->
+  <!-- Parking Area Modal -->
   <div id="zone-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
     <div class="flex items-center justify-center min-h-screen px-4">
       <div class="bg-white rounded-lg max-w-md w-full p-6">
-        <h3 class="text-lg font-medium mb-4">Select Drop Zone</h3>
+        <h3 class="text-lg font-medium mb-4">Select Parking Area</h3>
         <div id="zone-list" class="space-y-2 mb-4">
           <!-- Dynamic zone options will be loaded here -->
         </div>
@@ -514,7 +597,7 @@
     function assignDropZone(bookingId) {
       selectedBookingId = bookingId;
       selectedZoneId = null;
-      // Load available drop zones
+      // Load available parking areas
       fetch('/admin/operations/available-locations?type=drop')
         .then(response => response.json())
         .then(zones => {

@@ -813,11 +813,18 @@ class CustomerBookingController extends Controller
         //         ->with('error', 'Cannot rebook a cancelled booking.');
         // }
 
+        // Get max rebooks setting
+        $maxRebooksPerBooking = \App\Models\CustomerBehaviorSetting::getCustomerSetting(
+            $booking->customer_id,
+            'max_rebooks_per_booking',
+            3
+        );
+
         // Check if this booking chain has reached max rebooks (skip if column doesn't exist)
         try {
-            if (isset($booking->rebook_count) && $booking->rebook_count >= 3) {
+            if (isset($booking->rebook_count) && $booking->rebook_count >= $maxRebooksPerBooking) {
                 return redirect()->route('customer.bookings.show', $booking)
-                    ->with('error', 'Maximum number of rebooks (3) reached for this booking chain.');
+                    ->with('error', "Maximum number of rebooks ({$maxRebooksPerBooking}) reached for this booking chain.");
             }
         } catch (\Exception $e) {
             // Column doesn't exist yet, continue
@@ -851,6 +858,7 @@ class CustomerBookingController extends Controller
             'booking' => $booking,
             'availableSlots' => $availableSlots,
             'customerBehaviorData' => $customerBehaviorData,
+            'maxRebooksPerBooking' => $maxRebooksPerBooking,
         ]);
     }
 
@@ -1205,11 +1213,19 @@ class CustomerBookingController extends Controller
             $history = collect($history->values());
         }
 
+        // Get max rebooks setting
+        $maxRebooksPerBooking = \App\Models\CustomerBehaviorSetting::getCustomerSetting(
+            $booking->customer_id,
+            'max_rebooks_per_booking',
+            3
+        );
+
         return view('customer.bookings.history', [
             'booking' => $booking,
             'history' => $history,
             'sortOrder' => $sortOrder,
             'actualRebookCount' => $actualRebookCount,
+            'maxRebooksPerBooking' => $maxRebooksPerBooking,
         ]);
     }
 
@@ -1266,8 +1282,10 @@ class CustomerBookingController extends Controller
                 ->count(),
             'recent_cancellations' => BookingHistory::where('customer_id', $customerId)
                 ->where('action', 'cancelled')
+                ->where('reason', 'NOT LIKE', '%Rebooked%')
                 ->where('created_at', '>=', $thirtyDaysAgo)
-                ->count(),
+                ->distinct('booking_id')
+                ->count('booking_id'),
             'last_minute_actions' => BookingHistory::where('customer_id', $customerId)
                 ->whereIn('action', ['rebooked', 'cancelled'])
                 ->where('is_last_minute', true)

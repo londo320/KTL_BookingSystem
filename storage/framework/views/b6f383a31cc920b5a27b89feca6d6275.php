@@ -57,29 +57,55 @@
     <div class="py-6 max-w-full mx-auto px-4">
         <!-- Status Summary Cards -->
         <div class="mb-6 grid grid-cols-2 md:grid-cols-6 gap-4">
-            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
-                <div class="text-sm text-gray-600">Available</div>
-                <div class="text-2xl font-bold text-green-600" id="available-count"><?php echo e($activitySummary['available_locations']); ?></div>
+            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
+                <div class="text-sm text-gray-600">On Site Totals</div>
+                <div class="text-lg font-bold text-blue-600">Units & Pallets</div>
+                <div class="text-xs text-gray-500 mt-1 space-y-1">
+                    <div>Expected Units: <?php echo e(number_format($activitySummary['expected_units'])); ?></div>
+                    <div>Actual Units: <?php echo e(number_format($activitySummary['actual_units'])); ?></div>
+                    <div>Expected Pallets: <?php echo e(number_format($activitySummary['expected_pallets'])); ?></div>
+                    <div>Actual Pallets: <?php echo e(number_format($activitySummary['actual_pallets'])); ?></div>
+                </div>
             </div>
-            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-red-500">
-                <div class="text-sm text-gray-600">Active Tipping</div>
-                <div class="text-2xl font-bold text-red-600" id="active-count"><?php echo e($activitySummary['active_bookings']); ?></div>
+            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-teal-500">
+                <div class="text-sm text-gray-600">Today's Processing</div>
+                <div class="text-lg font-bold text-teal-600">Completed</div>
+                <div class="text-xs text-gray-500 mt-1 space-y-1">
+                    <div>Units: <?php echo e(number_format($activitySummary['today_processed_units'])); ?></div>
+                    <div>Pallets: <?php echo e(number_format($activitySummary['today_processed_pallets'])); ?></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
+                <div class="text-sm text-gray-600">Capacity</div>
+                <div class="text-2xl font-bold text-green-600" id="available-count"><?php echo e($activitySummary['available_capacity']); ?></div>
+                <div class="text-xs text-gray-500 mt-1">
+                    Total: <?php echo e($activitySummary['total_capacity']); ?> | In Use: <?php echo e($activitySummary['in_use_capacity']); ?> | Available: <?php echo e($activitySummary['available_capacity']); ?>
+
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-yellow-500">
+                <div class="text-sm text-gray-600">Full Trailers</div>
+                <div class="text-2xl font-bold text-yellow-600" id="full-count"><?php echo e($activitySummary['total_full_trailers']); ?></div>
+                <div class="text-xs text-gray-500 mt-1">
+                    Parking Zone: <?php echo e($activitySummary['full_in_parking']); ?> | Tipping: <?php echo e($activitySummary['full_currently_tipping']); ?>
+
+                </div>
             </div>
             <div class="bg-white rounded-lg shadow p-4 border-l-4 border-orange-500">
                 <div class="text-sm text-gray-600">Awaiting Collection</div>
                 <div class="text-2xl font-bold text-orange-600" id="waiting-count"><?php echo e($activitySummary['awaiting_collection']); ?></div>
+                <div class="text-xs text-gray-500 mt-1">
+                    Parking Area: <?php echo e($activitySummary['awaiting_in_parking']); ?> | At Bay: <?php echo e($activitySummary['awaiting_in_bays']); ?>
+
+                </div>
             </div>
             <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
                 <div class="text-sm text-gray-600">Today's Arrivals</div>
                 <div class="text-2xl font-bold text-blue-600" id="arrivals-count"><?php echo e($activitySummary['todays_arrivals']); ?></div>
-            </div>
-            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500">
-                <div class="text-sm text-gray-600">Pending Arrivals</div>
-                <div class="text-2xl font-bold text-purple-600" id="pending-count"><?php echo e($activitySummary['pending_arrivals']); ?></div>
-            </div>
-            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-gray-500">
-                <div class="text-sm text-gray-600">Total Locations</div>
-                <div class="text-2xl font-bold text-gray-600" id="total-count"><?php echo e($activitySummary['total_locations']); ?></div>
+                <div class="text-xs text-gray-500 mt-1">
+                    Arrived: <?php echo e($activitySummary['todays_arrivals']); ?> | Pending: <?php echo e($activitySummary['pending_arrivals']); ?>
+
+                </div>
             </div>
         </div>
         <!-- Main Map and Activity Panel -->
@@ -111,7 +137,7 @@
                                     </div>
                                     <div class="flex items-center space-x-1">
                                         <div class="w-3 h-3 bg-gray-500 rounded"></div>
-                                        <span>Offline</span>
+                                        <span>Locked</span>
                                     </div>
                                 </div>
                             </div>
@@ -122,9 +148,9 @@
                         <div class="relative bg-gray-100 rounded-lg border-2 border-gray-300 overflow-hidden" style="min-height: 700px;">
                             <!-- Depot Map Image with Overlays -->
                             <div class="absolute inset-0 flex items-center justify-center p-4">
-                                <?php if($depot->map_file && file_exists(public_path('storage/depot-maps/' . $depot->map_file))): ?>
+                                <?php if($depot->map_file && file_exists(public_path('images/depot-maps/' . $depot->map_file))): ?>
                                     <div class="relative max-w-full max-h-full" id="map-image-container">
-                                        <img src="<?php echo e(asset('storage/depot-maps/' . $depot->map_file)); ?>" 
+                                        <img src="<?php echo e(asset('images/depot-maps/' . $depot->map_file)); ?>" 
                                              alt="<?php echo e($depot->name); ?> Layout" 
                                              class="max-w-full max-h-full object-contain rounded-lg"
                                              id="depot-map-image"
@@ -381,26 +407,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Quick Actions -->
-                <div class="bg-white rounded-lg shadow">
-                    <div class="p-4 border-b border-gray-200">
-                        <h4 class="font-semibold text-gray-800">⚡ Quick Actions</h4>
-                    </div>
-                    <div class="p-4 space-y-3">
-                        <button onclick="showAllBookings()" class="w-full px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
-                            📋 View All Bookings
-                        </button>
-                        <button onclick="openTrailerCollection()" class="w-full px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700">
-                            🚛 Record Collection
-                        </button>
-                        <button onclick="openTippingWorkflow()" class="w-full px-3 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700">
-                            🏗️ Tipping Workflow
-                        </button>
-                        <a href="<?php echo e(route('app.trailer-location-report')); ?>" class="block w-full px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 text-center">
-                            📍 Location Report
-                        </a>
-                    </div>
-                </div>
                 <!-- Location List -->
                 <div class="bg-white rounded-lg shadow">
                     <div class="p-4 border-b border-gray-200">
@@ -439,7 +445,7 @@
                         <?php if($locations->count() > 0): ?>
                             <?php if($bays->count() > 0): ?>
                                 <hr class="my-4 border-gray-200">
-                                <h5 class="text-sm font-medium text-gray-600 mb-2">📦 Drop/Collection Zones</h5>
+                                <h5 class="text-sm font-medium text-gray-600 mb-2">📦 Drop/Parking Areas</h5>
                             <?php endif; ?>
                             <div class="space-y-2 text-sm">
                                 <?php $__currentLoopData = $locations; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $location): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
@@ -484,24 +490,16 @@
         </div>
     </div>
     <!-- Location Details Modal -->
-    <div id="location-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 max-w-lg w-full mx-4 shadow-xl">
-            <div class="flex justify-between items-center mb-4">
+    <div id="location-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50 p-8">
+        <div class="bg-white rounded-lg max-w-4xl w-full shadow-xl h-[50vh] flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b border-gray-200">
                 <h3 id="modal-title" class="text-lg font-semibold">Location Details</h3>
                 <button onclick="closeLocationModal()" class="text-gray-400 hover:text-gray-600">
                     ✕
                 </button>
             </div>
-            <div id="modal-content" class="space-y-3">
+            <div id="modal-content" class="flex-1 overflow-y-scroll p-4 min-h-0" style="scrollbar-width: thick; scrollbar-color: #374151 #f3f4f6;">
                 <!-- Content will be populated by JavaScript -->
-            </div>
-            <div class="mt-6 flex justify-end space-x-3">
-                <button onclick="closeLocationModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
-                    Close
-                </button>
-                <button id="modal-action-btn" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                    View Bookings
-                </button>
             </div>
         </div>
     </div>
@@ -583,11 +581,20 @@
         }
         // Show location details in modal
         async function showLocationDetails(locationId) {
+            console.log('Warehouse showLocationDetails called with locationId:', locationId);
             try {
-                const response = await fetch(`<?php echo e(url('admin/depot-map/location')); ?>/${locationId}`);
+                const url = `<?php echo e(url('app/depot-map/location')); ?>/${locationId}?v=${Date.now()}`;
+                console.log('Fetching URL:', url);
+                const response = await fetch(url);
+                console.log('Response status:', response.status);
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('Response data:', data);
                     displayLocationModal(data);
+                } else {
+                    console.error('API response not ok:', response.status, response.statusText);
+                    const errorText = await response.text();
+                    console.error('Error response:', errorText);
                 }
             } catch (error) {
                 console.error('Failed to fetch location details:', error);
@@ -595,32 +602,44 @@
         }
         // Display bay modal with data
         function displayBayModal(data) {
-            document.getElementById('modal-title').textContent = `${data.bay_name} (Bay)`;
+            const booking = data.current_booking;
+            const statusBadge = booking?.trailer_status === 'Full' ? 'bg-red-100 text-red-800' : 
+                               booking?.trailer_status === 'Empty' ? 'bg-green-100 text-green-800' : 
+                               'bg-gray-100 text-gray-800';
+            
+            document.getElementById('modal-title').textContent = `${data.bay_name} - ${booking?.trailer_status || 'Available'} (Bay)`;
             let content = `
                 <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div class="grid grid-cols-2 gap-4 text-sm bg-gray-50 p-3 rounded">
                         <div><strong>Status:</strong> <span class="px-2 py-1 rounded text-xs bg-${getStatusColor(data.status)}-100 text-${getStatusColor(data.status)}-800">${data.status.charAt(0).toUpperCase() + data.status.slice(1)}</span></div>
                         <div><strong>Bay Code:</strong> ${data.bay_code || 'N/A'}</div>
-                        <div><strong>Active:</strong> ${data.is_active ? 'Yes' : 'No'}</div>
-                        <div><strong>Occupied:</strong> ${data.is_occupied ? 'Yes' : 'No'}</div>
                     </div>
             `;
             if (data.current_booking) {
-                const booking = data.current_booking;
+                const overdueBg = booking.is_overdue ? 'bg-red-50 border-red-200' : 'bg-blue-50';
+                const overdueText = booking.is_overdue ? 'text-red-800' : '';
                 content += `
-                    <hr class="border-gray-200">
                     <div>
-                        <h4 class="font-semibold mb-3">Current Booking Details</h4>
-                        <div class="bg-blue-50 p-4 rounded-lg space-y-3">
+                        <h4 class="font-semibold mb-3 flex items-center">
+                            <span class="mr-2">🚛</span>
+                            Trailer Details
+                            <span class="ml-2 px-2 py-1 text-xs rounded-full ${statusBadge}">${booking.trailer_status}</span>
+                        </h4>
+                        <div class="${overdueBg} p-4 rounded-lg space-y-3 ${overdueText}">
                             <div class="grid grid-cols-2 gap-4 text-sm">
                                 <div><strong>Reference:</strong> ${booking.booking_reference}</div>
                                 <div><strong>Customer:</strong> ${booking.customer_name}</div>
                                 <div><strong>Vehicle:</strong> ${booking.vehicle_registration || 'N/A'}</div>
-                                <div><strong>Driver:</strong> ${booking.driver_name || 'N/A'}</div>
                                 <div><strong>Container:</strong> ${booking.container_number || 'N/A'}</div>
-                                <div><strong>Waste Type:</strong> ${booking.waste_type || 'N/A'}</div>
-                                <div><strong>Scheduled:</strong> ${booking.scheduled_at || 'N/A'}</div>
+                                <div><strong>Expected Units:</strong> ${booking.expected_cases || 0}</div>
+                                <div><strong>Expected Pallets:</strong> ${booking.expected_pallets || 0}</div>
+                                <div><strong>Scheduled Slot:</strong> ${booking.scheduled_at || 'Not scheduled'}</div>
                                 <div><strong>Arrived:</strong> ${booking.arrived_at || 'Not arrived'}</div>
+                                <div><strong>Duration on Site:</strong> <span class="font-medium">${booking.duration_on_site || 'Unknown'}</span></div>
+                                <div><strong>Time in Bay:</strong> <span class="font-medium text-orange-600">${booking.time_in_bay || 'Just arrived'}</span></div>
+                                <div><strong>Time Remaining:</strong> <span class="font-medium ${booking.is_overdue ? 'text-red-600' : 'text-green-600'}">${booking.time_remaining || 'Unknown'}</span></div>
+                                ${booking.unloading_completed ? `<div><strong>Tipping Completed:</strong> <span class="font-medium">${booking.unloading_completed}</span></div>` : ''}
+                                ${booking.tipping_performance ? `<div><strong>Tipping Performance:</strong> <span class="font-medium ${booking.tipping_performance.class}">${booking.tipping_performance.text}</span></div>` : ''}
                             </div>
                             ${booking.customer_phone ? `<div class="text-sm"><strong>Phone:</strong> <a href="tel:${booking.customer_phone}" class="text-blue-600">${booking.customer_phone}</a></div>` : ''}
                             <div class="flex space-x-2 mt-4">
@@ -721,47 +740,99 @@
         }
         // Display location modal with data
         function displayLocationModal(data) {
-            document.getElementById('modal-title').textContent = data.location_name;
+            console.log('Warehouse displayLocationModal called with data:', data);
+            
+            // Calculate full/empty counts
+            let fullCount = 0;
+            let emptyCount = 0;
+            if (data.current_bookings) {
+                data.current_bookings.forEach(booking => {
+                    const trailerStatus = booking.trailer_status || booking.status || 'Unknown';
+                    if (trailerStatus === 'in_parking' || trailerStatus.includes('Full')) {
+                        fullCount++;
+                    } else if (trailerStatus === 'empty' || trailerStatus.includes('Empty')) {
+                        emptyCount++;
+                    }
+                });
+            }
+            
+            document.getElementById('modal-title').textContent = `${data.location_name || 'Location'} - ${data.current_occupancy || 0}/${data.capacity || 0} Trailers (${fullCount} Full, ${emptyCount} Empty)`;
             let content = `
                 <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4 text-sm">
-                        <div><strong>Status:</strong> ${data.status.charAt(0).toUpperCase() + data.status.slice(1)}</div>
-                        <div><strong>Type:</strong> ${data.location_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
-                        <div><strong>Capacity:</strong> ${data.current_occupancy}/${data.capacity}</div>
-                        <div><strong>Available:</strong> ${data.available_capacity}</div>
+                    <div class="grid grid-cols-3 gap-4 text-sm bg-gray-50 p-3 rounded">
+                        <div><strong>Status:</strong> ${data.status ? data.status.charAt(0).toUpperCase() + data.status.slice(1) : 'Unknown'}</div>
+                        <div><strong>Occupancy:</strong> ${data.current_occupancy || 0}/${data.capacity || 0}</div>
+                        <div><strong>Available:</strong> ${data.available_capacity || 0}</div>
                     </div>
             `;
             if (data.current_bookings && data.current_bookings.length > 0) {
                 content += `
                     <div>
-                        <strong>Current Bookings:</strong>
-                        <div class="mt-2 space-y-2">
+                        <h4 class="font-medium text-gray-800 mb-3 flex items-center">
+                            <span class="mr-2">🚛</span>
+                            Trailers in Location (${data.current_bookings.length})
+                        </h4>
+                        <div class="border-3 border-gray-600 rounded-lg bg-gray-50 p-3 overflow-y-scroll trailer-scroll-container" style="height: 500px;">
+                            <div class="space-y-2">
                 `;
                 data.current_bookings.forEach(booking => {
+                    const trailerStatus = booking.trailer_status || booking.status || 'Unknown';
+                    const statusDisplay = trailerStatus === 'in_parking' ? 'Full' : 
+                                         trailerStatus === 'empty' ? 'Empty' : 
+                                         trailerStatus.charAt(0).toUpperCase() + trailerStatus.slice(1);
+                    const statusBadge = trailerStatus === 'in_parking' ? 'bg-red-100 text-red-800' :
+                                       trailerStatus.includes('empty') ? 'bg-green-100 text-green-800' :
+                                       trailerStatus.includes('unloading') ? 'bg-orange-100 text-orange-800' :
+                                       trailerStatus.includes('arrived') ? 'bg-blue-100 text-blue-800' :
+                                       'bg-gray-100 text-gray-800';
                     content += `
-                        <div class="bg-gray-50 p-3 rounded text-sm">
-                            <div class="font-medium">${booking.booking_reference}</div>
-                            <div class="text-gray-600">${booking.customer_name}</div>
-                            ${booking.vehicle_registration ? `<div class="text-gray-500">${booking.vehicle_registration}</div>` : ''}
-                            <div class="text-xs text-gray-500">
-                                Status: ${booking.status} 
-                                ${booking.arrived_at ? `• Arrived: ${booking.arrived_at}` : ''}
-                                ${booking.unit_departed ? `• Unit Left: ${booking.unit_departed}` : ''}
+                        <div class="bg-white border rounded-lg p-3 hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center space-x-2">
+                                    <span class="px-2 py-1 text-xs rounded-full ${statusBadge}">${statusDisplay}</span>
+                                    <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700">${booking.type || 'Booking'}</span>
+                                </div>
+                                <a href="${booking.booking_url || '#'}" class="text-blue-600 hover:text-blue-800 text-xs font-medium">
+                                    View Details →
+                                </a>
                             </div>
+                            <div class="grid grid-cols-2 gap-2 text-sm">
+                                <div><strong>Ref:</strong> ${booking.booking_reference || 'N/A'}</div>
+                                <div><strong>Customer:</strong> ${booking.customer_name || 'N/A'}</div>
+                                <div><strong>Vehicle:</strong> ${booking.vehicle_registration || 'Not specified'}</div>
+                                <div><strong>Container:</strong> ${booking.container_number || 'Not specified'}</div>
+                                <div><strong>Arrived:</strong> ${booking.arrived_at || 'Unknown'}</div>
+                                <div><strong>Time on Site:</strong> <span class="font-medium text-blue-600">${booking.time_on_site || booking.duration_on_site || 'Unknown'}</span></div>
+                            </div>
+                            ${booking.tipping_completed ? `
+                                <div class="mt-2 text-xs text-green-600 bg-green-50 p-2 rounded">
+                                    ✅ Tipping completed: ${booking.tipping_completed}
+                                </div>
+                            ` : ''}
                         </div>
                     `;
                 });
-                content += '</div></div>';
+                content += '</div></div></div>';
+            } else {
+                content += `
+                    <div class="text-center py-8 text-gray-500">
+                        <div class="text-4xl mb-4">📭</div>
+                        <h4 class="font-medium text-gray-700 mb-2">No Trailers Currently</h4>
+                        <p class="text-sm">This location is currently empty and available for use.</p>
+                    </div>
+                `;
             }
             content += '</div>';
             document.getElementById('modal-content').innerHTML = content;
             document.getElementById('location-modal').classList.remove('hidden');
             document.getElementById('location-modal').classList.add('flex');
+            document.body.classList.add('modal-open');
         }
         // Close modal
         function closeLocationModal() {
             document.getElementById('location-modal').classList.add('hidden');
             document.getElementById('location-modal').classList.remove('flex');
+            document.body.classList.remove('modal-open');
         }
         // Map zoom controls
         function zoomIn() {
@@ -827,6 +898,56 @@
                 alert('No active tipping operations found');
             }
         }
+
+        // Scale overlay positions based on map image dimensions
+        function updateOverlayPositions() {
+            const mapImage = document.getElementById('depot-map-image');
+            const mapContainer = document.getElementById('map-image-container');
+            const overlays = document.querySelectorAll('.bay-overlay, .location-overlay');
+            
+            if (!mapImage || !mapContainer) return;
+            
+            // Get actual rendered image dimensions
+            const mapRect = mapImage.getBoundingClientRect();
+            const containerRect = mapContainer.getBoundingClientRect();
+            
+            // Calculate scale factors
+            const scaleX = mapRect.width / mapContainer.offsetWidth;
+            const scaleY = mapRect.height / mapContainer.offsetHeight;
+            
+            // Update each overlay position and size
+            overlays.forEach(overlay => {
+                const computedStyle = window.getComputedStyle(overlay);
+                const transform = `scale(${Math.min(scaleX, scaleY)})`;
+                overlay.style.transform = transform;
+            });
+        }
+
+        // Initialize overlay positioning
+        function initializeOverlayPositioning() {
+            const mapImage = document.getElementById('depot-map-image');
+            if (mapImage) {
+                // Update positions when image loads
+                mapImage.addEventListener('load', updateOverlayPositions);
+                
+                // Update positions on window resize
+                window.addEventListener('resize', updateOverlayPositions);
+                
+                // Update positions when entering/exiting fullscreen
+                const fullscreenButton = document.querySelector('[onclick="toggleFullscreen()"]');
+                if (fullscreenButton) {
+                    fullscreenButton.addEventListener('click', () => {
+                        setTimeout(updateOverlayPositions, 100);
+                    });
+                }
+                
+                // Initial positioning
+                setTimeout(updateOverlayPositions, 100);
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializeOverlayPositioning);
     </script>
     <style>
         .location-overlay:hover .location-box {
@@ -838,6 +959,10 @@
         }
         .location-box {
             transition: all 0.2s ease;
+        }
+        .bay-overlay, .location-overlay {
+            transform-origin: center center;
+            transition: transform 0.3s ease;
         }
         /* Full screen mode styles */
         .fullscreen-mode {
@@ -868,6 +993,67 @@
         }
         .fullscreen-container .relative.bg-gray-100.rounded-lg {
             height: calc(100% - 4rem) !important;
+        }
+        /* Always visible scrollbar for modal */
+        #modal-content {
+            scrollbar-width: thick;
+            scrollbar-color: #374151 #e5e7eb;
+            scrollbar-gutter: stable;
+            overflow-y: scroll !important;
+        }
+        #modal-content::-webkit-scrollbar {
+            width: 18px;
+            display: block !important;
+            -webkit-appearance: none;
+        }
+        #modal-content::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 10px;
+            border: 2px solid #d1d5db;
+            box-shadow: inset 0 0 3px rgba(0,0,0,0.1);
+        }
+        #modal-content::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #4b5563 0%, #374151 100%);
+            border-radius: 10px;
+            border: 2px solid #f3f4f6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        #modal-content::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #374151 0%, #1f2937 100%);
+        }
+        #modal-content::-webkit-scrollbar-corner {
+            background: #f3f4f6;
+        }
+        /* Trailer scroll container - always visible prominent scrollbar */
+        .trailer-scroll-container {
+            scrollbar-width: thick;
+            scrollbar-color: #1f2937 #d1d5db;
+            overflow-y: scroll !important;
+        }
+        .trailer-scroll-container::-webkit-scrollbar {
+            width: 20px;
+            display: block !important;
+            -webkit-appearance: none;
+        }
+        .trailer-scroll-container::-webkit-scrollbar-track {
+            background: #d1d5db;
+            border-radius: 12px;
+            border: 3px solid #9ca3af;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+            display: block !important;
+        }
+        .trailer-scroll-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+            border-radius: 12px;
+            border: 3px solid #d1d5db;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+        }
+        .trailer-scroll-container::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #111827 0%, #030712 100%);
+        }
+        /* Prevent background scrolling when modal is open */
+        body.modal-open {
+            overflow: hidden;
         }
     </style>
  <?php echo $__env->renderComponent(); ?>

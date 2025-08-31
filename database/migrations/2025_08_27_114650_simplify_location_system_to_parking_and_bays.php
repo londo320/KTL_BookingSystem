@@ -9,7 +9,34 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Update movement statuses to simplified parking system
+        // Step 1: Expand ENUM to include both old and new movement statuses
+        DB::statement("
+            ALTER TABLE movements MODIFY COLUMN current_status 
+            ENUM(
+                'scheduled', 
+                'en_route', 
+                'arrived', 
+                'in_waiting',          -- Old: will be converted to in_parking
+                'in_location',         -- Old: will be converted to in_parking  
+                'in_parking',          -- New: replaces in_waiting, in_location, trailer_dropped
+                'at_bay', 
+                'unloading', 
+                'empty', 
+                'back_to_parking',     -- New: empty trailer moved back to parking
+                'loading',             -- Old: keep for compatibility
+                'loaded',              -- Old: keep for compatibility
+                'ready_to_depart',     -- Old: keep for compatibility
+                'departed', 
+                'trailer_dropped',     -- Old: will be converted to in_parking
+                'trailer_collected'
+            ) DEFAULT 'scheduled'
+        ");
+
+        // Step 2: Update existing movement records to use simplified statuses
+        DB::update("UPDATE movements SET current_status = 'in_parking' WHERE current_status IN ('in_waiting', 'in_location', 'trailer_dropped')");
+        DB::update("UPDATE movements SET current_status = 'back_to_parking' WHERE current_status = 'empty' AND tipping_location_id IS NOT NULL");
+
+        // Step 3: Remove old ENUM values that are no longer needed
         DB::statement("
             ALTER TABLE movements MODIFY COLUMN current_status 
             ENUM(
@@ -25,10 +52,6 @@ return new class extends Migration
                 'trailer_collected'
             ) DEFAULT 'scheduled'
         ");
-
-        // Update existing movement records to use simplified statuses
-        DB::update("UPDATE movements SET current_status = 'in_parking' WHERE current_status IN ('in_waiting', 'in_location', 'trailer_dropped')");
-        DB::update("UPDATE movements SET current_status = 'back_to_parking' WHERE current_status = 'empty' AND tipping_location_id IS NOT NULL");
 
         // Step 1: Expand ENUM to include both old and new values
         DB::statement("

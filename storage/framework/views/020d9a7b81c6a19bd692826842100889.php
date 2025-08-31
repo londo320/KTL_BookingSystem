@@ -1,10 +1,19 @@
-<x-warehouse-layout>
-  <x-slot name="header">
+<?php if (isset($component)) { $__componentOriginalc9242005886028143da563f7b99f0c87 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalc9242005886028143da563f7b99f0c87 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.warehouse-layout','data' => []] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('warehouse-layout'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
+   <?php $__env->slot('header', null, []); ?> 
     <div class="bg-white border-b border-gray-200 px-6 py-4">
-      {{-- Corporate Header with Logo --}}
+      
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center space-x-4">
-          {{-- Company Logo/Brand --}}
+          
           <div class="flex items-center space-x-3">
             <div class="bg-gradient-to-r from-blue-600 to-blue-700 p-3 rounded-lg shadow-lg">
               <span class="text-white text-xl font-bold">WM</span>
@@ -15,15 +24,15 @@
             </div>
           </div>
         </div>
-        {{-- Booking Status Badge --}}
+        
         <div class="text-right">
           <div class="text-sm text-gray-500">Booking Reference</div>
-          <div class="text-2xl font-bold text-gray-900">#{{ $booking->id }}</div>
+          <div class="text-2xl font-bold text-gray-900">#<?php echo e($booking->id); ?></div>
         </div>
       </div>
-      {{-- Action Buttons - Organized by Category --}}
+      
       <div class="flex flex-wrap gap-3">
-        @php
+        <?php
           $isLocked = $booking->slot->locked_at && $booking->slot->locked_at->isPast();
           $hasArrived = $booking->arrived_at;
           // Action restriction logic
@@ -34,47 +43,47 @@
           }
           $defaultDepotId = $user->depot_id ?? $allowedDepotIds[0] ?? null;
           $canTakeAction = $booking->slot->depot_id == $defaultDepotId;
-        @endphp
-        {{-- Primary Actions Group --}}
+        ?>
+        
         <div class="flex items-center space-x-2 bg-gray-50 p-2 rounded-lg border">
           <span class="text-xs font-medium text-gray-600 uppercase">Documents</span>
-          <a href="{{ route('app.bookings.download-pdf', $booking) }}"
+          <a href="<?php echo e(route('app.bookings.download-pdf', $booking)); ?>"
              class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
             📄 PDF
           </a>
-          <button onclick="emailBookingPDF({{ $booking->id }})"
+          <button onclick="emailBookingPDF(<?php echo e($booking->id); ?>)"
                   class="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors">
             📧 Email
           </button>
         </div>
-        {{-- Operational Actions Group --}}
-        @if($hasArrived && !$booking->cancelled_at)
+        
+        <?php if($hasArrived && !$booking->cancelled_at): ?>
           <div class="flex items-center space-x-2 bg-orange-50 p-2 rounded-lg border border-orange-200">
             <span class="text-xs font-medium text-orange-700 uppercase">Operations</span>
-            @if($canTakeAction)
-              <a href="{{ route('app.tipping-workflow.show', $booking) }}"
+            <?php if($canTakeAction): ?>
+              <a href="<?php echo e(route('app.tipping-workflow.show', $booking)); ?>"
                  class="inline-flex items-center px-2 py-1.5 bg-orange-600 text-white text-xs font-medium rounded-md hover:bg-orange-700 transition-colors">
                 🚛 Workflow
               </a>
-            @else
+            <?php else: ?>
               <span class="inline-flex items-center px-2 py-1.5 bg-gray-300 text-gray-500 text-xs font-medium rounded-md cursor-not-allowed"
                     title="Actions only available for your default depot">
                 🚛 Workflow
               </span>
-            @endif
-            {{-- Comprehensive Trailer Movement Controls --}}
-            @php
+            <?php endif; ?>
+            
+            <?php
               $movement = $booking->movements->last();
               $isOnSite = $movement && !in_array($movement->current_status, ['departed']);
-            @endphp
-            @if($isOnSite && $canTakeAction)
+            ?>
+            <?php if($isOnSite && $canTakeAction): ?>
               <button onclick="showBookingMovementModal()" 
                       class="inline-flex items-center px-2 py-1.5 bg-purple-600 text-white text-xs font-medium rounded-md hover:bg-purple-700 transition-colors">
                 🚚 Move
               </button>
-            @endif
-            {{-- History Button --}}
-            @php
+            <?php endif; ?>
+            
+            <?php
               $hasHistory = true;
               try {
                 if (\Schema::hasTable('booking_history')) {
@@ -86,96 +95,102 @@
               } catch (\Exception $e) {
                 $hasHistory = true;
               }
-            @endphp
-            @if($hasHistory)
-              <a href="{{ route('app.bookings.history', $booking) }}"
+            ?>
+            <?php if($hasHistory): ?>
+              <a href="<?php echo e(route('app.bookings.history', $booking)); ?>"
                  class="inline-flex items-center px-2 py-1.5 bg-yellow-600 text-white text-xs font-medium rounded-md hover:bg-yellow-700 transition-colors">
                 📋 History
               </a>
-            @endif
+            <?php endif; ?>
           </div>
-        @endif
-        {{-- Booking Management Group --}}
+        <?php endif; ?>
+        
         <div class="flex items-center space-x-2 bg-blue-50 p-2 rounded-lg border border-blue-200">
           <span class="text-xs font-medium text-blue-700 uppercase">Management</span>
-          @if($booking->cancelled_at)
+          <?php if($booking->cancelled_at): ?>
             <span class="inline-flex items-center px-3 py-1.5 bg-gray-400 text-white text-sm font-medium rounded-md cursor-not-allowed">
               ❌ Cancelled
             </span>
-          @else
-            @if(!$hasArrived && !$booking->isCancelled())
-              @if($canTakeAction)
-                <a href="{{ route('app.bookings.edit', $booking) }}"
+          <?php else: ?>
+            <?php if(!$hasArrived && !$booking->isCancelled()): ?>
+              <?php if($canTakeAction): ?>
+                <a href="<?php echo e(route('app.bookings.edit', $booking)); ?>"
                    class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
                   ✏️ Edit
                 </a>
-              @else
+              <?php else: ?>
                 <span class="inline-flex items-center px-3 py-1.5 bg-gray-300 text-gray-500 text-sm font-medium rounded-md cursor-not-allowed"
                       title="Actions only available for your default depot">
                   ✏️ Edit
                 </span>
-              @endif
-            @endif
-            @if($canTakeAction)
-              <a href="{{ route('app.bookings.rebook.show', $booking) }}"
+              <?php endif; ?>
+            <?php endif; ?>
+            <?php if($canTakeAction): ?>
+              <a href="<?php echo e(route('app.bookings.rebook.show', $booking)); ?>"
                  class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
-                🔄 {{ $hasArrived ? 'Rebook/Reject' : 'Rebook' }}
+                🔄 <?php echo e($hasArrived ? 'Rebook/Reject' : 'Rebook'); ?>
+
               </a>
               <button onclick="showCancelModal()" 
                       class="inline-flex items-center px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors">
-                ❌ {{ $hasArrived ? 'Cancel/Reject' : 'Cancel' }}
+                ❌ <?php echo e($hasArrived ? 'Cancel/Reject' : 'Cancel'); ?>
+
               </button>
-            @else
+            <?php else: ?>
               <span class="inline-flex items-center px-3 py-1.5 bg-gray-300 text-gray-500 text-sm font-medium rounded-md cursor-not-allowed"
                     title="Actions only available for your default depot">
-                🔄 {{ $hasArrived ? 'Rebook/Reject' : 'Rebook' }}
+                🔄 <?php echo e($hasArrived ? 'Rebook/Reject' : 'Rebook'); ?>
+
               </span>
               <span class="inline-flex items-center px-3 py-1.5 bg-gray-300 text-gray-500 text-sm font-medium rounded-md cursor-not-allowed"
                     title="Actions only available for your default depot">
-                ❌ {{ $hasArrived ? 'Cancel/Reject' : 'Cancel' }}
+                ❌ <?php echo e($hasArrived ? 'Cancel/Reject' : 'Cancel'); ?>
+
               </span>
-            @endif
-          @endif
+            <?php endif; ?>
+          <?php endif; ?>
         </div>
-        {{-- Navigation --}}
+        
         <div class="flex items-center ml-auto">
-          <a href="{{ route('app.bookings.index') }}"
+          <a href="<?php echo e(route('app.bookings.index')); ?>"
              class="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors">
             ← Back to Bookings
           </a>
         </div>
       </div>
     </div>
-  </x-slot>
+   <?php $__env->endSlot(); ?>
   <div class="py-6 max-w-4xl mx-auto">
-    {{-- Success/Info Messages --}}
-    @if(session('success'))
+    
+    <?php if(session('success')): ?>
       <div class="mb-6 p-4 bg-green-100 border border-green-300 rounded-lg">
-        <p class="text-green-800">{{ session('success') }}</p>
+        <p class="text-green-800"><?php echo e(session('success')); ?></p>
       </div>
-    @endif
-    @if(session('info'))
+    <?php endif; ?>
+    <?php if(session('info')): ?>
       <div class="mb-6 p-4 bg-blue-100 border border-blue-300 rounded-lg">
-        <p class="text-blue-800">{{ session('info') }}</p>
+        <p class="text-blue-800"><?php echo e(session('info')); ?></p>
       </div>
-    @endif
-    {{-- Status Banner --}}
-    @if($booking->cancelled_at && (!$booking->cancellation_reason || !str_contains($booking->cancellation_reason, 'Rebooked')))
+    <?php endif; ?>
+    
+    <?php if($booking->cancelled_at && (!$booking->cancellation_reason || !str_contains($booking->cancellation_reason, 'Rebooked'))): ?>
       <div class="mb-6 p-4 bg-black text-white rounded-lg">
         <div class="flex items-center">
           <span class="text-white text-2xl mr-3">❌</span>
           <div>
             <h3 class="text-lg font-semibold text-white">Booking Cancelled</h3>
             <p class="text-white">
-              Cancelled: {{ $booking->cancelled_at->format('d M Y, H:i') }}
-              @if($booking->cancellation_reason)
-                <br>Reason: {{ $booking->cancellation_reason }}
-              @endif
+              Cancelled: <?php echo e($booking->cancelled_at->format('d M Y, H:i')); ?>
+
+              <?php if($booking->cancellation_reason): ?>
+                <br>Reason: <?php echo e($booking->cancellation_reason); ?>
+
+              <?php endif; ?>
             </p>
           </div>
         </div>
       </div>
-    @elseif($hasArrived)
+    <?php elseif($hasArrived): ?>
       <div class="mb-6 p-4 bg-green-100 border border-green-300 rounded-lg">
         <div class="flex items-center justify-between">
           <div class="flex items-center">
@@ -183,66 +198,69 @@
             <div>
               <h3 class="text-lg font-semibold text-green-800">Vehicle Arrived</h3>
               <p class="text-green-700">
-                Arrived: {{ $booking->arrived_at->format('d M Y, H:i') }}
-                @if($booking->departed_at)
-                  | Departed: {{ $booking->departed_at->format('d M Y, H:i') }}
-                @else
-                  @php
+                Arrived: <?php echo e($booking->arrived_at->format('d M Y, H:i')); ?>
+
+                <?php if($booking->departed_at): ?>
+                  | Departed: <?php echo e($booking->departed_at->format('d M Y, H:i')); ?>
+
+                <?php else: ?>
+                  <?php
                     $movement = $booking->movements->first();
                     $collectionCompleted = $movement && ($movement->collection_unit_departed_at || $booking->trailer_collected_at);
                     $unitDeparted = $movement && $movement->unit_departed_at;
-                  @endphp
-                  @if($collectionCompleted)
+                  ?>
+                  <?php if($collectionCompleted): ?>
                     | ✅ Collection Complete
-                  @elseif($unitDeparted)
+                  <?php elseif($unitDeparted): ?>
                     | 🚚 Unit Departed - Trailer on Site
-                  @else
+                  <?php else: ?>
                     | Currently on-site
-                  @endif
-                @endif
+                  <?php endif; ?>
+                <?php endif; ?>
               </p>
             </div>
           </div>
-          {{-- Tipping Status --}}
+          
           <div class="text-right">
             <p class="text-sm text-gray-600 mb-1">Tipping Status:</p>
-            <div class="mb-2">{!! $booking->tipping_status_badge !!}</div>
-            {{-- Location Information --}}
-            @php $movement = $booking->movements->first(); @endphp
-            @if($movement && ($movement->tippingLocation || $movement->tippingBay))
+            <div class="mb-2"><?php echo $booking->tipping_status_badge; ?></div>
+            
+            <?php $movement = $booking->movements->first(); ?>
+            <?php if($movement && ($movement->tippingLocation || $movement->tippingBay)): ?>
               <div class="text-xs text-gray-600 mb-2">
-                @if($movement->tippingLocation)
-                  <div>📍 {{ $movement->tippingLocation->name }}</div>
-                  <div class="text-gray-400">({{ $movement->tippingLocation->depot->name }})</div>
-                @endif
-                @if($movement->tippingBay)
-                  <div>🚛 {{ $movement->tippingBay->name }}</div>
-                @endif
+                <?php if($movement->tippingLocation): ?>
+                  <div>📍 <?php echo e($movement->tippingLocation->name); ?></div>
+                  <div class="text-gray-400">(<?php echo e($movement->tippingLocation->depot->name); ?>)</div>
+                <?php endif; ?>
+                <?php if($movement->tippingBay): ?>
+                  <div>🚛 <?php echo e($movement->tippingBay->name); ?></div>
+                <?php endif; ?>
               </div>
-            @endif
-            {{-- Single Workflow Button --}}
-            @if($booking->tipping_status && $booking->tipping_status !== 'departed')
-              <a href="{{ route('app.tipping-workflow.show', $booking) }}" 
+            <?php endif; ?>
+            
+            <?php if($booking->tipping_status && $booking->tipping_status !== 'departed'): ?>
+              <a href="<?php echo e(route('app.tipping-workflow.show', $booking)); ?>" 
                  class="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
                 🚛 Manage Workflow
               </a>
-            @endif
+            <?php endif; ?>
           </div>
         </div>
       </div>
-    @elseif($isLocked)
+    <?php elseif($isLocked): ?>
       <div class="mb-6 p-4 bg-orange-100 border border-orange-300 rounded-lg">
         <div class="flex items-center">
           <span class="text-orange-600 text-2xl mr-3">🔒</span>
           <div>
             <h3 class="text-lg font-semibold text-orange-800">Booking Locked</h3>
             <p class="text-orange-700">
-              Cut-off time: {{ $booking->slot->locked_at->format('d M Y, H:i') }}
+              Cut-off time: <?php echo e($booking->slot->locked_at->format('d M Y, H:i')); ?>
+
             </p>
           </div>
         </div>
       </div>
-    @else
+    <?php else: ?>
       <div class="mb-6 p-4 bg-blue-100 border border-blue-300 rounded-lg">
         <div class="flex items-center">
           <span class="text-blue-600 text-2xl mr-3">📅</span>
@@ -252,371 +270,378 @@
           </div>
         </div>
       </div>
-    @endif
+    <?php endif; ?>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {{-- Booking Information --}}
+      
       <div class="bg-white p-6 rounded-lg shadow">
         <h3 class="text-xl font-semibold mb-4 text-gray-800">📋 Booking Information</h3>
         <div class="space-y-3">
           <div>
             <label class="text-sm font-medium text-gray-600">Booking ID</label>
-            <p class="text-lg font-mono">#{{ $booking->id }}</p>
+            <p class="text-lg font-mono">#<?php echo e($booking->id); ?></p>
           </div>
           <div>
             <label class="text-sm font-medium text-gray-600">Customer</label>
-            <p class="text-lg">{{ $booking->customer->name ?? 'Not assigned' }}</p>
+            <p class="text-lg"><?php echo e($booking->customer->name ?? 'Not assigned'); ?></p>
           </div>
           <div>
             <label class="text-sm font-medium text-gray-600">Created By</label>
-            <p class="text-lg">{{ $booking->user->name ?? 'Unknown' }}</p>
+            <p class="text-lg"><?php echo e($booking->user->name ?? 'Unknown'); ?></p>
           </div>
           <div>
             <label class="text-sm font-medium text-gray-600">Created At</label>
-            <p class="text-lg">{{ $booking->created_at->format('d M Y, H:i') }}</p>
+            <p class="text-lg"><?php echo e($booking->created_at->format('d M Y, H:i')); ?></p>
           </div>
-          @if($booking->reference)
+          <?php if($booking->reference): ?>
             <div>
               <label class="text-sm font-medium text-gray-600">Reference</label>
-              <p class="text-lg font-mono">{{ $booking->reference }}</p>
+              <p class="text-lg font-mono"><?php echo e($booking->reference); ?></p>
             </div>
-          @endif
+          <?php endif; ?>
         </div>
       </div>
-      {{-- Slot & Location Details --}}
+      
       <div class="bg-white p-6 rounded-lg shadow">
         <h3 class="text-xl font-semibold mb-4 text-gray-800">📍 Slot & Location</h3>
         <div class="space-y-3">
           <div>
             <label class="text-sm font-medium text-gray-600">Depot</label>
-            <p class="text-lg">{{ $booking->slot->depot->name }}</p>
-            @if($booking->slot->depot->location)
-              <p class="text-sm text-gray-500">{{ $booking->slot->depot->location }}</p>
-            @endif
+            <p class="text-lg"><?php echo e($booking->slot->depot->name); ?></p>
+            <?php if($booking->slot->depot->location): ?>
+              <p class="text-sm text-gray-500"><?php echo e($booking->slot->depot->location); ?></p>
+            <?php endif; ?>
           </div>
           <div>
             <label class="text-sm font-medium text-gray-600">Date & Time</label>
             <p class="text-lg">
-              {{ $booking->slot->start_at->format('l, d F Y') }}
+              <?php echo e($booking->slot->start_at->format('l, d F Y')); ?>
+
             </p>
             <p class="text-lg font-semibold text-blue-600">
-              {{ $booking->slot->start_at->format('H:i') }} - {{ $booking->slot->end_at->format('H:i') }}
+              <?php echo e($booking->slot->start_at->format('H:i')); ?> - <?php echo e($booking->slot->end_at->format('H:i')); ?>
+
             </p>
           </div>
           <div>
             <label class="text-sm font-medium text-gray-600">Booking Type</label>
-            <p class="text-lg">{{ $booking->bookingType->name ?? 'Not specified' }}</p>
+            <p class="text-lg"><?php echo e($booking->bookingType->name ?? 'Not specified'); ?></p>
           </div>
           <div>
             <label class="text-sm font-medium text-gray-600">Slot Capacity</label>
-            <p class="text-lg">{{ $booking->slot->capacity ?? 'Unlimited' }}</p>
+            <p class="text-lg"><?php echo e($booking->slot->capacity ?? 'Unlimited'); ?></p>
           </div>
         </div>
       </div>
-      {{-- PO Numbers & Load Details --}}
+      
       <div class="bg-white p-6 rounded-lg shadow col-span-2">
         <h3 class="text-xl font-semibold mb-4 text-gray-800">📦 PO Numbers & Load Details</h3>
-        @if($booking->poNumbers && $booking->poNumbers->count() > 0)
+        <?php if($booking->poNumbers && $booking->poNumbers->count() > 0): ?>
           <div class="space-y-4">
-            @foreach($booking->poNumbers as $poNumber)
+            <?php $__currentLoopData = $booking->poNumbers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $poNumber): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
               <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
                 <div class="flex justify-between items-start mb-3">
-                  <h4 class="font-medium text-lg text-gray-800">PO: {{ $poNumber->po_number }}</h4>
+                  <h4 class="font-medium text-lg text-gray-800">PO: <?php echo e($poNumber->po_number); ?></h4>
                   <div class="flex space-x-2">
-                    @if($poNumber->hasVariance())
+                    <?php if($poNumber->hasVariance()): ?>
                       <span class="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
                         Has Variance
                       </span>
-                    @endif
-                    @if($poNumber->hasTypeVariances())
+                    <?php endif; ?>
+                    <?php if($poNumber->hasTypeVariances()): ?>
                       <span class="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
                         Type Variance
                       </span>
-                    @endif
+                    <?php endif; ?>
                   </div>
                 </div>
-                {{-- PO Summary --}}
+                
                 <div class="mb-4 p-3 bg-white rounded border">
                   <div class="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span class="text-gray-600">Total Expected:</span>
-                      <span class="font-semibold">{{ number_format($poNumber->total_expected_units) }} units, {{ number_format($poNumber->total_expected_pallets) }} pallets</span>
+                      <span class="font-semibold"><?php echo e(number_format($poNumber->total_expected_units)); ?> units, <?php echo e(number_format($poNumber->total_expected_pallets)); ?> pallets</span>
                     </div>
                     <div>
                       <span class="text-gray-600">Total Actual:</span>
-                      <span class="font-semibold">{{ number_format($poNumber->total_actual_units) }} units, {{ number_format($poNumber->total_actual_pallets) }} pallets</span>
+                      <span class="font-semibold"><?php echo e(number_format($poNumber->total_actual_units)); ?> units, <?php echo e(number_format($poNumber->total_actual_pallets)); ?> pallets</span>
                     </div>
                   </div>
                   <div class="mt-2">
                     <span class="text-gray-600">Summary:</span>
-                    <span class="text-sm">{{ $poNumber->expected_summary_text }}</span>
+                    <span class="text-sm"><?php echo e($poNumber->expected_summary_text); ?></span>
                   </div>
                 </div>
-                {{-- PO Lines --}}
-                @if($poNumber->lines->count() > 0)
+                
+                <?php if($poNumber->lines->count() > 0): ?>
                   <div class="space-y-3">
-                    <h5 class="font-medium text-gray-700">Lines ({{ $poNumber->lines->count() }})</h5>
-                    @foreach($poNumber->lines as $line)
+                    <h5 class="font-medium text-gray-700">Lines (<?php echo e($poNumber->lines->count()); ?>)</h5>
+                    <?php $__currentLoopData = $poNumber->lines; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $line): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                       <div class="border border-gray-300 rounded p-3 bg-white">
                         <div class="flex justify-between items-start mb-2">
-                          <span class="font-medium text-sm">Line {{ $line->line_number }}</span>
-                          @if($line->hasVariance())
+                          <span class="font-medium text-sm">Line <?php echo e($line->line_number); ?></span>
+                          <?php if($line->hasVariance()): ?>
                             <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">
                               Variance
                             </span>
-                          @endif
+                          <?php endif; ?>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                          {{-- Cases/Units --}}
+                          
                           <div>
                             <div class="font-medium text-gray-600 mb-1">Units/Cases</div>
                             <div class="flex items-center space-x-2">
                               <span class="text-gray-500">Expected:</span>
-                              <span class="font-semibold">{{ number_format($line->expected_cases) }}</span>
-                              @if($line->actual_cases !== null)
+                              <span class="font-semibold"><?php echo e(number_format($line->expected_cases)); ?></span>
+                              <?php if($line->actual_cases !== null): ?>
                                 <span class="text-gray-400">→</span>
                                 <span class="text-gray-500">Actual:</span>
-                                <span class="font-semibold {{ $line->unit_variance == 0 ? 'text-green-600' : ($line->unit_variance > 0 ? 'text-blue-600' : 'text-red-600') }}">
-                                  {{ number_format($line->actual_cases) }}
+                                <span class="font-semibold <?php echo e($line->unit_variance == 0 ? 'text-green-600' : ($line->unit_variance > 0 ? 'text-blue-600' : 'text-red-600')); ?>">
+                                  <?php echo e(number_format($line->actual_cases)); ?>
+
                                 </span>
-                                @if($line->unit_variance != 0)
-                                  <span class="text-xs {{ $line->unit_variance > 0 ? 'text-blue-600' : 'text-red-600' }}">
-                                    ({{ $line->unit_variance > 0 ? '+' : '' }}{{ number_format($line->unit_variance) }})
+                                <?php if($line->unit_variance != 0): ?>
+                                  <span class="text-xs <?php echo e($line->unit_variance > 0 ? 'text-blue-600' : 'text-red-600'); ?>">
+                                    (<?php echo e($line->unit_variance > 0 ? '+' : ''); ?><?php echo e(number_format($line->unit_variance)); ?>)
                                   </span>
-                                @endif
-                              @elseif($hasArrived)
+                                <?php endif; ?>
+                              <?php elseif($hasArrived): ?>
                                 <span class="text-gray-400">→ Not recorded</span>
-                              @endif
+                              <?php endif; ?>
                             </div>
                           </div>
-                          {{-- Pallets --}}
+                          
                           <div>
                             <div class="font-medium text-gray-600 mb-1">Pallets</div>
                             <div class="flex items-center space-x-2">
                               <span class="text-gray-500">Expected:</span>
-                              <span class="font-semibold">{{ number_format($line->expected_pallets) }}</span>
-                              @if($line->expectedPalletType)
-                                <span class="text-xs text-gray-600">({{ $line->expectedPalletType->name }})</span>
-                              @endif
-                              @if($line->total_actual_pallets > 0)
+                              <span class="font-semibold"><?php echo e(number_format($line->expected_pallets)); ?></span>
+                              <?php if($line->expectedPalletType): ?>
+                                <span class="text-xs text-gray-600">(<?php echo e($line->expectedPalletType->name); ?>)</span>
+                              <?php endif; ?>
+                              <?php if($line->total_actual_pallets > 0): ?>
                                 <span class="text-gray-400">→</span>
                                 <span class="text-gray-500">Actual:</span>
-                                <span class="font-semibold {{ $line->pallet_variance == 0 ? 'text-green-600' : ($line->pallet_variance > 0 ? 'text-blue-600' : 'text-red-600') }}">
-                                  {{ number_format($line->total_actual_pallets) }}
+                                <span class="font-semibold <?php echo e($line->pallet_variance == 0 ? 'text-green-600' : ($line->pallet_variance > 0 ? 'text-blue-600' : 'text-red-600')); ?>">
+                                  <?php echo e(number_format($line->total_actual_pallets)); ?>
+
                                 </span>
-                                @if($line->actualPallets->count() > 0)
+                                <?php if($line->actualPallets->count() > 0): ?>
                                   <span class="text-xs text-gray-600">
-                                    @if($line->hasMultiplePalletTypes())
-                                      ({{ $line->actualPallets->map(fn($p) => $p->quantity . ' ' . $p->palletType->name)->join(', ') }})
-                                    @else
-                                      ({{ $line->actualPallets->first()->palletType->name }})
-                                    @endif
+                                    <?php if($line->hasMultiplePalletTypes()): ?>
+                                      (<?php echo e($line->actualPallets->map(fn($p) => $p->quantity . ' ' . $p->palletType->name)->join(', ')); ?>)
+                                    <?php else: ?>
+                                      (<?php echo e($line->actualPallets->first()->palletType->name); ?>)
+                                    <?php endif; ?>
                                   </span>
-                                @elseif($line->actualPalletType)
-                                  <span class="text-xs text-gray-600">({{ $line->actualPalletType->name }})</span>
-                                @endif
-                                @if($line->pallet_variance != 0)
-                                  <span class="text-xs {{ $line->pallet_variance > 0 ? 'text-blue-600' : 'text-red-600' }}">
-                                    ({{ $line->pallet_variance > 0 ? '+' : '' }}{{ number_format($line->pallet_variance) }})
+                                <?php elseif($line->actualPalletType): ?>
+                                  <span class="text-xs text-gray-600">(<?php echo e($line->actualPalletType->name); ?>)</span>
+                                <?php endif; ?>
+                                <?php if($line->pallet_variance != 0): ?>
+                                  <span class="text-xs <?php echo e($line->pallet_variance > 0 ? 'text-blue-600' : 'text-red-600'); ?>">
+                                    (<?php echo e($line->pallet_variance > 0 ? '+' : ''); ?><?php echo e(number_format($line->pallet_variance)); ?>)
                                   </span>
-                                @endif
-                              @elseif($hasArrived)
+                                <?php endif; ?>
+                              <?php elseif($hasArrived): ?>
                                 <span class="text-gray-400">→ Not recorded</span>
-                              @endif
+                              <?php endif; ?>
                             </div>
-                            {{-- Pallet Type Variance --}}
-                            @if($line->pallet_type_variance)
+                            
+                            <?php if($line->pallet_type_variance): ?>
                               <div class="mt-1 text-xs text-red-600">
-                                <span class="font-medium">Type Change:</span> {{ $line->pallet_type_variance }}
+                                <span class="font-medium">Type Change:</span> <?php echo e($line->pallet_type_variance); ?>
+
                               </div>
-                            @endif
+                            <?php endif; ?>
                           </div>
                         </div>
                       </div>
-                    @endforeach
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                   </div>
-                @endif
+                <?php endif; ?>
               </div>
-            @endforeach
-            {{-- Summary Totals --}}
-            @if($booking->poNumbers->count() > 1)
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            
+            <?php if($booking->poNumbers->count() > 1): ?>
               <div class="border-t pt-4 mt-4">
                 <h5 class="font-medium text-gray-800 mb-3">Summary Totals</h5>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label class="text-sm font-medium text-gray-600">Total Cases</label>
                     <div class="flex items-center space-x-4 mt-1">
-                      @if($booking->total_expected_cases > 0)
+                      <?php if($booking->total_expected_cases > 0): ?>
                         <div>
                           <span class="text-sm text-gray-500">Expected:</span>
-                          <span class="text-xl font-bold">{{ number_format($booking->total_expected_cases) }}</span>
+                          <span class="text-xl font-bold"><?php echo e(number_format($booking->total_expected_cases)); ?></span>
                         </div>
-                      @endif
-                      @if($booking->total_actual_cases > 0)
-                        @if($booking->total_expected_cases > 0)
+                      <?php endif; ?>
+                      <?php if($booking->total_actual_cases > 0): ?>
+                        <?php if($booking->total_expected_cases > 0): ?>
                           <div class="text-gray-400">→</div>
-                        @endif
+                        <?php endif; ?>
                         <div>
                           <span class="text-sm text-gray-500">Actual:</span>
-                          <span class="text-xl font-bold {{ $booking->total_case_variance == 0 ? 'text-green-600' : ($booking->total_case_variance > 0 ? 'text-blue-600' : 'text-red-600') }}">
-                            {{ number_format($booking->total_actual_cases) }}
+                          <span class="text-xl font-bold <?php echo e($booking->total_case_variance == 0 ? 'text-green-600' : ($booking->total_case_variance > 0 ? 'text-blue-600' : 'text-red-600')); ?>">
+                            <?php echo e(number_format($booking->total_actual_cases)); ?>
+
                           </span>
-                          @if($booking->total_expected_cases > 0 && $booking->total_case_variance != 0)
-                            <span class="text-lg {{ $booking->total_case_variance > 0 ? 'text-blue-600' : 'text-red-600' }}">
-                              ({{ $booking->total_case_variance > 0 ? '+' : '' }}{{ number_format($booking->total_case_variance) }})
+                          <?php if($booking->total_expected_cases > 0 && $booking->total_case_variance != 0): ?>
+                            <span class="text-lg <?php echo e($booking->total_case_variance > 0 ? 'text-blue-600' : 'text-red-600'); ?>">
+                              (<?php echo e($booking->total_case_variance > 0 ? '+' : ''); ?><?php echo e(number_format($booking->total_case_variance)); ?>)
                             </span>
-                          @endif
+                          <?php endif; ?>
                         </div>
-                      @endif
+                      <?php endif; ?>
                     </div>
                   </div>
                   <div>
                     <label class="text-sm font-medium text-gray-600">Total Pallets</label>
                     <div class="flex items-center space-x-4 mt-1">
-                      @if($booking->total_expected_pallets > 0)
+                      <?php if($booking->total_expected_pallets > 0): ?>
                         <div>
                           <span class="text-sm text-gray-500">Expected:</span>
-                          <span class="text-xl font-bold">{{ number_format($booking->total_expected_pallets) }}</span>
+                          <span class="text-xl font-bold"><?php echo e(number_format($booking->total_expected_pallets)); ?></span>
                         </div>
-                      @endif
-                      @if($booking->total_actual_pallets > 0)
-                        @if($booking->total_expected_pallets > 0)
+                      <?php endif; ?>
+                      <?php if($booking->total_actual_pallets > 0): ?>
+                        <?php if($booking->total_expected_pallets > 0): ?>
                           <div class="text-gray-400">→</div>
-                        @endif
+                        <?php endif; ?>
                         <div>
                           <span class="text-sm text-gray-500">Actual:</span>
-                          <span class="text-xl font-bold {{ $booking->total_pallet_variance == 0 ? 'text-green-600' : ($booking->total_pallet_variance > 0 ? 'text-blue-600' : 'text-red-600') }}">
-                            {{ number_format($booking->total_actual_pallets) }}
+                          <span class="text-xl font-bold <?php echo e($booking->total_pallet_variance == 0 ? 'text-green-600' : ($booking->total_pallet_variance > 0 ? 'text-blue-600' : 'text-red-600')); ?>">
+                            <?php echo e(number_format($booking->total_actual_pallets)); ?>
+
                           </span>
-                          @if($booking->total_expected_pallets > 0 && $booking->total_pallet_variance != 0)
-                            <span class="text-lg {{ $booking->total_pallet_variance > 0 ? 'text-blue-600' : 'text-red-600' }}">
-                              ({{ $booking->total_pallet_variance > 0 ? '+' : '' }}{{ number_format($booking->total_pallet_variance) }})
+                          <?php if($booking->total_expected_pallets > 0 && $booking->total_pallet_variance != 0): ?>
+                            <span class="text-lg <?php echo e($booking->total_pallet_variance > 0 ? 'text-blue-600' : 'text-red-600'); ?>">
+                              (<?php echo e($booking->total_pallet_variance > 0 ? '+' : ''); ?><?php echo e(number_format($booking->total_pallet_variance)); ?>)
                             </span>
-                          @endif
+                          <?php endif; ?>
                         </div>
-                      @endif
+                      <?php endif; ?>
                     </div>
                   </div>
                 </div>
               </div>
-            @endif
+            <?php endif; ?>
           </div>
-        @else
+        <?php else: ?>
           <div class="text-center py-8 text-gray-500">
             <p>No PO numbers recorded for this booking</p>
           </div>
-        @endif
-        {{-- Additional Load Information --}}
+        <?php endif; ?>
+        
         <div class="border-t pt-4 mt-6 space-y-3">
-          @if($booking->container_size)
+          <?php if($booking->container_size): ?>
             <div>
               <label class="text-sm font-medium text-gray-600">Container Size</label>
-              <p class="text-lg">{{ $booking->container_size }}ft</p>
+              <p class="text-lg"><?php echo e($booking->container_size); ?>ft</p>
             </div>
-          @endif
-          @if($booking->load_type)
+          <?php endif; ?>
+          <?php if($booking->load_type): ?>
             <div>
               <label class="text-sm font-medium text-gray-600">Load Type</label>
-              <p class="text-lg">{{ $booking->load_type }}</p>
+              <p class="text-lg"><?php echo e($booking->load_type); ?></p>
             </div>
-          @endif
-          @if($booking->hazmat)
+          <?php endif; ?>
+          <?php if($booking->hazmat): ?>
             <div>
               <label class="text-sm font-medium text-gray-600">Special Requirements</label>
               <p class="text-lg text-red-600 font-semibold">⚠️ Hazardous Materials (HAZMAT)</p>
             </div>
-          @endif
-          @if($booking->temperature_requirements)
+          <?php endif; ?>
+          <?php if($booking->temperature_requirements): ?>
             <div>
               <label class="text-sm font-medium text-gray-600">Temperature Requirements</label>
-              <p class="text-lg">{{ $booking->temperature_requirements }}</p>
+              <p class="text-lg"><?php echo e($booking->temperature_requirements); ?></p>
             </div>
-          @endif
+          <?php endif; ?>
         </div>
       </div>
-      {{-- Transportation Details --}}
-      @if($booking->vehicle_registration || $booking->container_number || $booking->carrier_company || $booking->trailerType)
+      
+      <?php if($booking->vehicle_registration || $booking->container_number || $booking->carrier_company || $booking->trailerType): ?>
         <div class="bg-white p-6 rounded-lg shadow">
           <h3 class="text-xl font-semibold mb-4 text-gray-800">🚛 Transportation & Vehicle Details</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {{-- Vehicle Information --}}
+            
             <div class="space-y-3">
               <h4 class="font-medium text-gray-800">Vehicle Information</h4>
-              @if($booking->vehicle_registration)
+              <?php if($booking->vehicle_registration): ?>
                 <div>
                   <label class="text-sm font-medium text-gray-600">Vehicle Registration</label>
-                  <p class="text-lg font-mono bg-gray-100 px-2 py-1 rounded">{{ $booking->vehicle_registration }}</p>
+                  <p class="text-lg font-mono bg-gray-100 px-2 py-1 rounded"><?php echo e($booking->vehicle_registration); ?></p>
                 </div>
-              @endif
-              @if($booking->carrier_company)
+              <?php endif; ?>
+              <?php if($booking->carrier_company): ?>
                 <div>
                   <label class="text-sm font-medium text-gray-600">Carrier Company</label>
-                  <p class="text-lg">{{ $booking->carrier_company }}</p>
+                  <p class="text-lg"><?php echo e($booking->carrier_company); ?></p>
                 </div>
-              @endif
-              @if($booking->carrier_contact)
+              <?php endif; ?>
+              <?php if($booking->carrier_contact): ?>
                 <div>
                   <label class="text-sm font-medium text-gray-600">Carrier Contact</label>
-                  <p class="text-lg">{{ $booking->carrier_contact }}</p>
+                  <p class="text-lg"><?php echo e($booking->carrier_contact); ?></p>
                 </div>
-              @endif
+              <?php endif; ?>
             </div>
-            {{-- Container/Trailer Information --}}
+            
             <div class="space-y-3">
               <h4 class="font-medium text-gray-800">Container/Trailer Details</h4>
-              @if($booking->container_number)
+              <?php if($booking->container_number): ?>
                 <div>
                   <label class="text-sm font-medium text-gray-600">Container/Trailer Number</label>
-                  <p class="text-lg font-mono bg-gray-100 px-2 py-1 rounded">{{ $booking->container_number }}</p>
+                  <p class="text-lg font-mono bg-gray-100 px-2 py-1 rounded"><?php echo e($booking->container_number); ?></p>
                 </div>
-              @endif
-              @if($booking->trailerType)
+              <?php endif; ?>
+              <?php if($booking->trailerType): ?>
                 <div>
                   <label class="text-sm font-medium text-gray-600">Trailer Type</label>
-                  <p class="text-lg">{{ $booking->trailerType->name }}</p>
-                  @if($booking->trailerType->description)
-                    <p class="text-sm text-gray-500">{{ $booking->trailerType->description }}</p>
-                  @endif
+                  <p class="text-lg"><?php echo e($booking->trailerType->name); ?></p>
+                  <?php if($booking->trailerType->description): ?>
+                    <p class="text-sm text-gray-500"><?php echo e($booking->trailerType->description); ?></p>
+                  <?php endif; ?>
                 </div>
-              @endif
-              @if($booking->container_size)
+              <?php endif; ?>
+              <?php if($booking->container_size): ?>
                 <div>
                   <label class="text-sm font-medium text-gray-600">Container Size</label>
-                  <p class="text-lg">{{ $booking->container_size }}ft</p>
+                  <p class="text-lg"><?php echo e($booking->container_size); ?>ft</p>
                 </div>
-              @endif
+              <?php endif; ?>
             </div>
           </div>
-          {{-- Additional Transportation Info --}}
+          
           <div class="border-t mt-6 pt-4 space-y-3">
-            @if($booking->gate_number)
+            <?php if($booking->gate_number): ?>
               <div>
                 <label class="text-sm font-medium text-gray-600">Gate Number</label>
-                <p class="text-lg">{{ $booking->gate_number }}</p>
+                <p class="text-lg"><?php echo e($booking->gate_number); ?></p>
               </div>
-            @endif
-            @if($booking->manifest_number)
+            <?php endif; ?>
+            <?php if($booking->manifest_number): ?>
               <div>
                 <label class="text-sm font-medium text-gray-600">Manifest Number</label>
-                <p class="text-lg font-mono">{{ $booking->manifest_number }}</p>
+                <p class="text-lg font-mono"><?php echo e($booking->manifest_number); ?></p>
               </div>
-            @endif
-            @if($booking->estimated_arrival)
+            <?php endif; ?>
+            <?php if($booking->estimated_arrival): ?>
               <div>
                 <label class="text-sm font-medium text-gray-600">Estimated Arrival</label>
-                <p class="text-lg">{{ $booking->estimated_arrival->format('d M Y, H:i') }}</p>
+                <p class="text-lg"><?php echo e($booking->estimated_arrival->format('d M Y, H:i')); ?></p>
               </div>
-            @endif
-            @if($booking->waiting_area_location)
+            <?php endif; ?>
+            <?php if($booking->waiting_area_location): ?>
               <div>
                 <label class="text-sm font-medium text-gray-600">🅿️ Parking Area</label>
-                <p class="text-lg">{{ $booking->waiting_area_location }}</p>
+                <p class="text-lg"><?php echo e($booking->waiting_area_location); ?></p>
               </div>
-            @endif
-            {{-- Tipping Type Information --}}
-            @if($booking->tipping_type)
+            <?php endif; ?>
+            
+            <?php if($booking->tipping_type): ?>
               <div>
                 <label class="text-sm font-medium text-gray-600">Tipping Type</label>
-                @php
+                <?php
                   $movement = $booking->movements->first();
                   // Determine actual tipping type based on what happened
                   $actualTippingType = $booking->tipping_type;
@@ -650,24 +675,25 @@
                       $movement->custom_fields['collection_carrier'] !== $booking->carrier_company) {
                     $actualTippingType = 'drop';
                   }
-                @endphp
+                ?>
                 <p class="text-lg">
-                  @if($actualTippingType === 'live_tip')
+                  <?php if($actualTippingType === 'live_tip'): ?>
                     🚛 Live Tip (Vehicle stays attached)
-                  @elseif($actualTippingType === 'drop')
+                  <?php elseif($actualTippingType === 'drop'): ?>
                     📍 Drop Trailer (Vehicle leaves trailer)
-                    @if($actualTippingType !== $booking->tipping_type)
+                    <?php if($actualTippingType !== $booking->tipping_type): ?>
                       <span class="text-sm text-blue-600 ml-2">(Detected from collection data)</span>
-                    @endif
-                  @else
-                    {{ ucwords(str_replace('_', ' ', $actualTippingType)) }}
-                  @endif
+                    <?php endif; ?>
+                  <?php else: ?>
+                    <?php echo e(ucwords(str_replace('_', ' ', $actualTippingType))); ?>
+
+                  <?php endif; ?>
                 </p>
               </div>
-            @endif
+            <?php endif; ?>
           </div>
-          {{-- Collection Information --}}
-          @php
+          
+          <?php
             $movement = $booking->movements->first();
             $hasCollectionInfo = $movement && ($movement->collection_unit_arrived_at || $movement->collection_unit_registration || $movement->collection_driver_name || $booking->departure_vehicle_registration);
             $isCollected = $movement && in_array($movement->current_status, ['departed', 'trailer_collected']);
@@ -678,13 +704,13 @@
                                    isset($movement->custom_fields['collection_carrier']));
             // Show collection section if we have any collection information OR the trailer was actually collected
             $showCollectionSection = $hasCollectionInfo || $isCollected || $hasCollectionTimes || $hasCustomFieldData;
-          @endphp
-          @if($showCollectionSection)
+          ?>
+          <?php if($showCollectionSection): ?>
             <div class="border-t mt-6 pt-6">
               <h4 class="font-medium text-gray-800 mb-4 flex items-center">
                 <span class="mr-2">🚚</span>
                 Collection Details
-                @php
+                <?php
                   // Determine actual collection status based on data available
                   $actualCollectionStatus = 'recorded'; // Default: just recorded in system
                   $statusBadge = '';
@@ -705,14 +731,15 @@
                       $statusBadge = '<span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">📍 Awaiting Collection</span>';
                     }
                   }
-                @endphp
-                {!! $statusBadge !!}
+                ?>
+                <?php echo $statusBadge; ?>
+
               </h4>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {{-- Collection Vehicle Information --}}
+                
                 <div class="space-y-3">
                   <h5 class="text-sm font-semibold text-gray-700">Collection Vehicle</h5>
-                  @php
+                  <?php
                     $collectionVehicle = null;
                     $collectionCarrier = null;
                     // Check custom_fields first (from empty-unit-collection form)
@@ -728,100 +755,102 @@
                     if (!$collectionVehicle && $booking->departure_vehicle_registration) {
                       $collectionVehicle = $booking->departure_vehicle_registration;
                     }
-                  @endphp
-                  @if($collectionVehicle)
+                  ?>
+                  <?php if($collectionVehicle): ?>
                     <div>
                       <label class="text-sm font-medium text-gray-600">Vehicle Registration</label>
-                      <p class="text-lg font-mono bg-gray-100 px-2 py-1 rounded">{{ $collectionVehicle }}</p>
+                      <p class="text-lg font-mono bg-gray-100 px-2 py-1 rounded"><?php echo e($collectionVehicle); ?></p>
                     </div>
-                  @else
+                  <?php else: ?>
                     <div>
                       <label class="text-sm font-medium text-gray-600">Vehicle Registration</label>
                       <p class="text-lg text-gray-500 italic">Not recorded</p>
                     </div>
-                  @endif
-                  @if($collectionCarrier)
+                  <?php endif; ?>
+                  <?php if($collectionCarrier): ?>
                     <div>
                       <label class="text-sm font-medium text-gray-600">Collection Carrier</label>
-                      <p class="text-lg">{{ $collectionCarrier }}</p>
+                      <p class="text-lg"><?php echo e($collectionCarrier); ?></p>
                     </div>
-                  @elseif($booking->carrier_company)
+                  <?php elseif($booking->carrier_company): ?>
                     <div>
                       <label class="text-sm font-medium text-gray-600">Collection Carrier</label>
-                      <p class="text-lg">{{ $booking->carrier_company }}</p>
+                      <p class="text-lg"><?php echo e($booking->carrier_company); ?></p>
                     </div>
-                  @endif
-                  @if($movement && $movement->collection_driver_name)
+                  <?php endif; ?>
+                  <?php if($movement && $movement->collection_driver_name): ?>
                     <div>
                       <label class="text-sm font-medium text-gray-600">Driver Name</label>
-                      <p class="text-lg">{{ $movement->collection_driver_name }}</p>
+                      <p class="text-lg"><?php echo e($movement->collection_driver_name); ?></p>
                     </div>
-                  @endif
-                  @if($movement && $movement->collection_driver_phone)
+                  <?php endif; ?>
+                  <?php if($movement && $movement->collection_driver_phone): ?>
                     <div>
                       <label class="text-sm font-medium text-gray-600">Driver Phone</label>
-                      <p class="text-lg font-mono">{{ $movement->collection_driver_phone }}</p>
+                      <p class="text-lg font-mono"><?php echo e($movement->collection_driver_phone); ?></p>
                     </div>
-                  @endif
+                  <?php endif; ?>
                 </div>
               </div>
-              {{-- Collection Notes --}}
-              @if(($movement && $movement->collection_notes) || $booking->departure_notes)
+              
+              <?php if(($movement && $movement->collection_notes) || $booking->departure_notes): ?>
                 <div class="mt-4 pt-3 border-t border-gray-100">
                   <label class="text-sm font-medium text-gray-600">Collection Notes</label>
                   <div class="text-sm text-gray-700 mt-1 bg-gray-50 p-3 rounded">
-                    @if($movement && $movement->collection_notes)
-                      {{ $movement->collection_notes }}
-                    @elseif($booking->departure_notes)
-                      {{ $booking->departure_notes }}
-                    @endif
+                    <?php if($movement && $movement->collection_notes): ?>
+                      <?php echo e($movement->collection_notes); ?>
+
+                    <?php elseif($booking->departure_notes): ?>
+                      <?php echo e($booking->departure_notes); ?>
+
+                    <?php endif; ?>
                   </div>
                 </div>
-              @endif
+              <?php endif; ?>
             </div>
-          @endif
+          <?php endif; ?>
         </div>
-      @endif
-      {{-- Additional Information --}}
-      @if($booking->special_instructions || $booking->notes)
+      <?php endif; ?>
+      
+      <?php if($booking->special_instructions || $booking->notes): ?>
         <div class="bg-white p-6 rounded-lg shadow">
           <h3 class="text-xl font-semibold mb-4 text-gray-800">📝 Additional Information</h3>
           <div class="space-y-3">
-            @if($booking->special_instructions)
+            <?php if($booking->special_instructions): ?>
               <div>
                 <label class="text-sm font-medium text-gray-600">Special Instructions</label>
-                <p class="text-base leading-relaxed">{{ $booking->special_instructions }}</p>
+                <p class="text-base leading-relaxed"><?php echo e($booking->special_instructions); ?></p>
               </div>
-            @endif
-            @if($booking->notes)
+            <?php endif; ?>
+            <?php if($booking->notes): ?>
               <div>
                 <label class="text-sm font-medium text-gray-600">Notes</label>
-                <p class="text-base leading-relaxed">{{ $booking->notes }}</p>
+                <p class="text-base leading-relaxed"><?php echo e($booking->notes); ?></p>
               </div>
-            @endif
+            <?php endif; ?>
           </div>
         </div>
-      @endif
-      {{-- Arrival Information (if arrived) --}}
-      @if($hasArrived)
+      <?php endif; ?>
+      
+      <?php if($hasArrived): ?>
         <div class="bg-green-50 p-6 rounded-lg border border-green-200">
           <h3 class="text-xl font-semibold mb-4 text-green-800">✅ Arrival Information</h3>
           <div class="space-y-3">
             <div>
               <label class="text-sm font-medium text-gray-600">Arrived At</label>
-              <p class="text-lg">{{ $booking->arrived_at->format('l, d F Y - H:i') }}</p>
-              <p class="text-sm text-gray-600">Slot: {{ $booking->slot->start_at->format('H:i') }}</p>
+              <p class="text-lg"><?php echo e($booking->arrived_at->format('l, d F Y - H:i')); ?></p>
+              <p class="text-sm text-gray-600">Slot: <?php echo e($booking->slot->start_at->format('H:i')); ?></p>
             </div>
-            @if($booking->departed_at)
+            <?php if($booking->departed_at): ?>
               <div>
                 <label class="text-sm font-medium text-gray-600">Departed At</label>
-                <p class="text-lg">{{ $booking->departed_at->format('l, d F Y - H:i') }}</p>
+                <p class="text-lg"><?php echo e($booking->departed_at->format('l, d F Y - H:i')); ?></p>
               </div>
               <div>
                 <label class="text-sm font-medium text-gray-600">Time On-Site</label>
                 <div class="flex items-center space-x-2">
-                  <p class="text-lg">{{ $booking->arrived_at->diffForHumans($booking->departed_at, true) }}</p>
-                  @php
+                  <p class="text-lg"><?php echo e($booking->arrived_at->diffForHumans($booking->departed_at, true)); ?></p>
+                  <?php
                     $slotStart = $booking->slot->start_at;
                     $arrivalTime = $booking->arrived_at;
                     $isLate = $arrivalTime->gt($slotStart);
@@ -847,88 +876,91 @@
                       }
                       $timingText = trim($timingText);
                     }
-                  @endphp
-                  @if($isLate)
+                  ?>
+                  <?php if($isLate): ?>
                     <span class="text-sm text-red-600 bg-red-50 px-2 py-1 rounded">
-                      🚨 {{ $timingText }} late
+                      🚨 <?php echo e($timingText); ?> late
                     </span>
-                  @elseif($isEarly)
+                  <?php elseif($isEarly): ?>
                     <span class="text-sm text-green-600 bg-green-50 px-2 py-1 rounded">
-                      ✅ {{ $timingText }} early
+                      ✅ <?php echo e($timingText); ?> early
                     </span>
-                  @else
+                  <?php else: ?>
                     <span class="text-sm text-green-600 bg-green-50 px-2 py-1 rounded">
                       ✅ On time
                     </span>
-                  @endif
+                  <?php endif; ?>
                 </div>
               </div>
-            @else
-              @php
+            <?php else: ?>
+              <?php
                 $movement = $booking->movements->first();
                 $collectionCompleted = $movement && ($movement->collection_unit_departed_at || $booking->trailer_collected_at);
                 $unitDeparted = $movement && $movement->unit_departed_at;
-              @endphp
-              @if($collectionCompleted)
+              ?>
+              <?php if($collectionCompleted): ?>
                 <div class="p-3 bg-green-100 rounded border border-green-300">
                   <p class="text-green-800 font-medium">✅ Collection Complete</p>
-                  @if($movement->collection_unit_departed_at)
-                    <p class="text-xs text-green-600">Physically collected: {{ $movement->collection_unit_departed_at->format('H:i') }}</p>
-                  @elseif($booking->trailer_collected_at)
-                    <p class="text-xs text-green-600">Recorded: {{ $booking->trailer_collected_at->format('H:i') }}</p>
-                  @endif
+                  <?php if($movement->collection_unit_departed_at): ?>
+                    <p class="text-xs text-green-600">Physically collected: <?php echo e($movement->collection_unit_departed_at->format('H:i')); ?></p>
+                  <?php elseif($booking->trailer_collected_at): ?>
+                    <p class="text-xs text-green-600">Recorded: <?php echo e($booking->trailer_collected_at->format('H:i')); ?></p>
+                  <?php endif; ?>
                 </div>
-              @elseif($unitDeparted)
+              <?php elseif($unitDeparted): ?>
                 <div class="p-3 bg-purple-100 rounded border border-purple-300">
                   <p class="text-purple-800 font-medium">🚚 Unit Departed</p>
-                  <p class="text-xs text-purple-600">Trailer awaiting collection since {{ $movement->unit_departed_at->format('H:i') }}</p>
+                  <p class="text-xs text-purple-600">Trailer awaiting collection since <?php echo e($movement->unit_departed_at->format('H:i')); ?></p>
                 </div>
-              @else
+              <?php else: ?>
                 <div class="p-3 bg-blue-100 rounded border border-blue-300">
                   <p class="text-blue-800 font-medium">🚛 Currently on-site</p>
                 </div>
-              @endif
-            @endif
+              <?php endif; ?>
+            <?php endif; ?>
           </div>
         </div>
-      @endif
-      {{-- Tipping Progress & Status Summary (if arrived) --}}
-      @if($hasArrived)
+      <?php endif; ?>
+      
+      <?php if($hasArrived): ?>
         <div class="bg-gradient-to-r from-orange-50 to-blue-50 p-6 rounded-lg border border-orange-200 col-span-2">
           <h3 class="text-xl font-semibold mb-4 text-gray-800">🚛 Tipping Status & Progress</h3>
-          {{-- Status Overview Cards --}}
+          
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            {{-- Current Status --}}
+            
             <div class="bg-white p-4 rounded-lg border shadow-sm">
               <div class="text-xs text-gray-500 mb-1">Current Status</div>
-              <div class="text-lg">{!! $booking->tipping_status_badge !!}</div>
+              <div class="text-lg"><?php echo $booking->tipping_status_badge; ?></div>
             </div>
-            {{-- Current Location --}}
+            
             <div class="bg-white p-4 rounded-lg border shadow-sm">
               <div class="text-xs text-gray-500 mb-1">
-                @if($booking->departed_at || $booking->tipping_status === 'departed')
+                <?php if($booking->departed_at || $booking->tipping_status === 'departed'): ?>
                   Last Location
-                @else
+                <?php else: ?>
                   Current Location
-                @endif
+                <?php endif; ?>
               </div>
               <div class="text-sm font-semibold">
-                @if($booking->tippingBay)
-                  🏭 {{ $booking->tippingBay->name }}
-                @elseif($booking->tippingLocation)
-                  📍 {{ $booking->tippingLocation->name }}
-                @else
+                <?php if($booking->tippingBay): ?>
+                  🏭 <?php echo e($booking->tippingBay->name); ?>
+
+                <?php elseif($booking->tippingLocation): ?>
+                  📍 <?php echo e($booking->tippingLocation->name); ?>
+
+                <?php else: ?>
                   <span class="text-gray-400">Not assigned</span>
-                @endif
+                <?php endif; ?>
               </div>
             </div>
-            {{-- Time on Site --}}
+            
             <div class="bg-white p-4 rounded-lg border shadow-sm">
               <div class="text-xs text-gray-500 mb-1">Time on Site</div>
-              <div class="text-sm font-semibold {{ $booking->arrived_at->diffInHours() > 4 ? 'text-orange-600' : 'text-gray-800' }}">
-                {{ $booking->arrived_at->diffForHumans(null, true) }}
+              <div class="text-sm font-semibold <?php echo e($booking->arrived_at->diffInHours() > 4 ? 'text-orange-600' : 'text-gray-800'); ?>">
+                <?php echo e($booking->arrived_at->diffForHumans(null, true)); ?>
+
               </div>
-              @php
+              <?php
                 // Use ArrivalTimeSetting to determine proper timing status
                 $statusDetails = \App\Models\ArrivalTimeSetting::getArrivalStatusDetails(
                   $booking->slot->start_at,
@@ -957,26 +989,26 @@
                   $timingText .= $totalMinutes . 'm';
                 }
                 $timingText = trim($timingText);
-              @endphp
-              @if($status === \App\Models\ArrivalTimeSetting::STATUS_LATE)
+              ?>
+              <?php if($status === \App\Models\ArrivalTimeSetting::STATUS_LATE): ?>
                 <div class="text-xs text-red-600 mt-1">
-                  🚨 {{ $timingText }} late
+                  🚨 <?php echo e($timingText); ?> late
                 </div>
-              @elseif($status === \App\Models\ArrivalTimeSetting::STATUS_EARLY)
+              <?php elseif($status === \App\Models\ArrivalTimeSetting::STATUS_EARLY): ?>
                 <div class="text-xs text-yellow-600 font-bold mt-1">
-                  ✅ {{ $timingText }} early
+                  ✅ <?php echo e($timingText); ?> early
                 </div>
-              @else
+              <?php else: ?>
                 <div class="text-xs text-green-600 mt-1">
                   ✅ On time
                 </div>
-              @endif
+              <?php endif; ?>
             </div>
-            {{-- Tipping Performance --}}
+            
             <div class="bg-white p-4 rounded-lg border shadow-sm">
               <div class="text-xs text-gray-500 mb-1">Tipping Performance</div>
               <div class="text-sm font-semibold">
-                @php
+                <?php
                   // Calculate tipping performance with sophisticated rules
                   $slotStart = $booking->slot->start_at;
                   $slotEnd = $booking->slot->end_at;
@@ -1038,190 +1070,206 @@
                     $performanceText = 'Not started';
                     $performanceClass = 'text-gray-400';
                   }
-                @endphp
-                <span class="{{ $performanceClass ?? 'text-gray-400' }}">
-                  {{ $performanceText ?? 'Not started' }}
+                ?>
+                <span class="<?php echo e($performanceClass ?? 'text-gray-400'); ?>">
+                  <?php echo e($performanceText ?? 'Not started'); ?>
+
                 </span>
-@if($booking->actual_tipping_duration)
+<?php if($booking->actual_tipping_duration): ?>
                   <div class="text-xs text-gray-500 mt-1">
-                    @if($isDroppedTrailer)
-                      Tipping Duration: {{ $booking->actual_tipping_duration }} minutes
-                    @else
-                      Duration: {{ $booking->actual_tipping_duration }} minutes
-                    @endif
+                    <?php if($isDroppedTrailer): ?>
+                      Tipping Duration: <?php echo e($booking->actual_tipping_duration); ?> minutes
+                    <?php else: ?>
+                      Duration: <?php echo e($booking->actual_tipping_duration); ?> minutes
+                    <?php endif; ?>
                   </div>
-                @endif
-                @if(!$isDroppedTrailer && $arrivalTime && $actualTipEnd)
+                <?php endif; ?>
+                <?php if(!$isDroppedTrailer && $arrivalTime && $actualTipEnd): ?>
                   <div class="text-xs text-gray-400 mt-1">
-                    @php
+                    <?php
                       $originalDeadline = $slotEnd;
                       $arrivalDelayMins = $arrivalTime->gt($slotStart) ? $arrivalTime->diffInMinutes($slotStart) : 0;
                       $adjustedDeadline = $slotEnd->copy()->addMinutes($arrivalDelayMins);
-                    @endphp
-                    Slot: {{ $slotStart->format('H:i') }}-{{ $originalDeadline->format('H:i') }}
-                    @if($arrivalDelayMins > 0)
-                      | Arrived: {{ $arrivalTime->format('H:i') }} (+{{ floor($arrivalDelayMins/60) ? floor($arrivalDelayMins/60).'h ' : '' }}{{ $arrivalDelayMins%60 }}m)
-                      | Extended to: {{ $adjustedDeadline->format('H:i') }}
-                    @endif
-                    | Completed: {{ $actualTipEnd->format('H:i') }}
+                    ?>
+                    Slot: <?php echo e($slotStart->format('H:i')); ?>-<?php echo e($originalDeadline->format('H:i')); ?>
+
+                    <?php if($arrivalDelayMins > 0): ?>
+                      | Arrived: <?php echo e($arrivalTime->format('H:i')); ?> (+<?php echo e(floor($arrivalDelayMins/60) ? floor($arrivalDelayMins/60).'h ' : ''); ?><?php echo e($arrivalDelayMins%60); ?>m)
+                      | Extended to: <?php echo e($adjustedDeadline->format('H:i')); ?>
+
+                    <?php endif; ?>
+                    | Completed: <?php echo e($actualTipEnd->format('H:i')); ?>
+
                   </div>
-                @endif
+                <?php endif; ?>
               </div>
             </div>
           </div>
-          {{-- Progress Timeline --}}
+          
           <div class="bg-white p-4 rounded-lg border shadow-sm">
             <h4 class="font-medium text-gray-800 mb-3 flex items-center">
               <span class="mr-2">📋</span>
               Progress Timeline
             </h4>
             <div class="space-y-3">
-              {{-- Arrived --}}
+              
               <div class="flex items-center">
                 <div class="flex items-center justify-center w-8 h-8 bg-green-100 text-green-600 rounded-full text-sm font-semibold mr-4">
                   ✓
                 </div>
                 <div class="flex-1">
                   <div class="text-sm font-medium">Vehicle Arrived</div>
-                  <div class="text-xs text-gray-500">{{ $booking->arrived_at->format('M j, H:i') }}</div>
+                  <div class="text-xs text-gray-500"><?php echo e($booking->arrived_at->format('M j, H:i')); ?></div>
                 </div>
               </div>
-              {{-- Trailer Dropped --}}
-              <div class="flex items-center {{ $booking->trailer_dropped_at ? '' : 'opacity-50' }}">
-                <div class="flex items-center justify-center w-8 h-8 {{ $booking->trailer_dropped_at ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400' }} rounded-full text-sm font-semibold mr-4">
-                  {{ $booking->trailer_dropped_at ? '✓' : '2' }}
+              
+              <div class="flex items-center <?php echo e($booking->trailer_dropped_at ? '' : 'opacity-50'); ?>">
+                <div class="flex items-center justify-center w-8 h-8 <?php echo e($booking->trailer_dropped_at ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'); ?> rounded-full text-sm font-semibold mr-4">
+                  <?php echo e($booking->trailer_dropped_at ? '✓' : '2'); ?>
+
                 </div>
                 <div class="flex-1">
                   <div class="text-sm font-medium">Trailer Dropped</div>
                   <div class="text-xs text-gray-500">
-                    @if($booking->trailer_dropped_at)
-                      {{ $booking->trailer_dropped_at->format('M j, H:i') }}
-                      @if($booking->tippingLocation)
-                        at {{ $booking->tippingLocation->name }}
-                      @endif
-                    @else
+                    <?php if($booking->trailer_dropped_at): ?>
+                      <?php echo e($booking->trailer_dropped_at->format('M j, H:i')); ?>
+
+                      <?php if($booking->tippingLocation): ?>
+                        at <?php echo e($booking->tippingLocation->name); ?>
+
+                      <?php endif; ?>
+                    <?php else: ?>
                       Pending
-                    @endif
+                    <?php endif; ?>
                   </div>
                 </div>
-                @if($booking->tipping_status === 'arrived' && !$booking->trailer_dropped_at)
+                <?php if($booking->tipping_status === 'arrived' && !$booking->trailer_dropped_at): ?>
                   <div class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Next Step</div>
-                @endif
+                <?php endif; ?>
               </div>
-              {{-- Moved to Bay --}}
-              <div class="flex items-center {{ $booking->moved_to_bay_at ? '' : 'opacity-50' }}">
-                <div class="flex items-center justify-center w-8 h-8 {{ $booking->moved_to_bay_at ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-100 text-gray-400' }} rounded-full text-sm font-semibold mr-4">
-                  {{ $booking->moved_to_bay_at ? '✓' : '3' }}
+              
+              <div class="flex items-center <?php echo e($booking->moved_to_bay_at ? '' : 'opacity-50'); ?>">
+                <div class="flex items-center justify-center w-8 h-8 <?php echo e($booking->moved_to_bay_at ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-100 text-gray-400'); ?> rounded-full text-sm font-semibold mr-4">
+                  <?php echo e($booking->moved_to_bay_at ? '✓' : '3'); ?>
+
                 </div>
                 <div class="flex-1">
                   <div class="text-sm font-medium">Moved to Tipping Bay</div>
                   <div class="text-xs text-gray-500">
-                    @if($booking->moved_to_bay_at)
-                      {{ $booking->moved_to_bay_at->format('M j, H:i') }}
-                      @if($booking->tippingBay)
-                        - {{ $booking->tippingBay->name }}
-                      @endif
-                    @else
+                    <?php if($booking->moved_to_bay_at): ?>
+                      <?php echo e($booking->moved_to_bay_at->format('M j, H:i')); ?>
+
+                      <?php if($booking->tippingBay): ?>
+                        - <?php echo e($booking->tippingBay->name); ?>
+
+                      <?php endif; ?>
+                    <?php else: ?>
                       Pending
-                    @endif
+                    <?php endif; ?>
                   </div>
                 </div>
-                @if($booking->tipping_status === 'trailer_dropped')
+                <?php if($booking->tipping_status === 'trailer_dropped'): ?>
                   <div class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Next Step</div>
-                @endif
+                <?php endif; ?>
               </div>
-              {{-- Tipping Started --}}
-              <div class="flex items-center {{ $booking->tipping_started_at ? '' : 'opacity-50' }}">
-                <div class="flex items-center justify-center w-8 h-8 {{ $booking->tipping_started_at ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-400' }} rounded-full text-sm font-semibold mr-4">
-                  {{ $booking->tipping_started_at ? '✓' : '4' }}
+              
+              <div class="flex items-center <?php echo e($booking->tipping_started_at ? '' : 'opacity-50'); ?>">
+                <div class="flex items-center justify-center w-8 h-8 <?php echo e($booking->tipping_started_at ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-400'); ?> rounded-full text-sm font-semibold mr-4">
+                  <?php echo e($booking->tipping_started_at ? '✓' : '4'); ?>
+
                 </div>
                 <div class="flex-1">
                   <div class="text-sm font-medium">Tipping Started</div>
                   <div class="text-xs text-gray-500">
-                    @if($booking->tipping_started_at)
-                      {{ $booking->tipping_started_at->format('M j, H:i') }}
-                    @else
+                    <?php if($booking->tipping_started_at): ?>
+                      <?php echo e($booking->tipping_started_at->format('M j, H:i')); ?>
+
+                    <?php else: ?>
                       Pending
-                    @endif
+                    <?php endif; ?>
                   </div>
                 </div>
-                @if($booking->tipping_status === 'at_bay')
+                <?php if($booking->tipping_status === 'at_bay'): ?>
                   <div class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Next Step</div>
-                @endif
+                <?php endif; ?>
               </div>
-              {{-- Tipping Completed --}}
-              <div class="flex items-center {{ $booking->tipping_completed_at ? '' : 'opacity-50' }}">
-                <div class="flex items-center justify-center w-8 h-8 {{ $booking->tipping_completed_at ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400' }} rounded-full text-sm font-semibold mr-4">
-                  {{ $booking->tipping_completed_at ? '✓' : '5' }}
+              
+              <div class="flex items-center <?php echo e($booking->tipping_completed_at ? '' : 'opacity-50'); ?>">
+                <div class="flex items-center justify-center w-8 h-8 <?php echo e($booking->tipping_completed_at ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400'); ?> rounded-full text-sm font-semibold mr-4">
+                  <?php echo e($booking->tipping_completed_at ? '✓' : '5'); ?>
+
                 </div>
                 <div class="flex-1">
                   <div class="text-sm font-medium">Tipping Completed</div>
                   <div class="text-xs text-gray-500">
-                    @if($booking->tipping_completed_at)
-                      {{ $booking->tipping_completed_at->format('M j, H:i') }}
-                      @if($booking->actual_tipping_duration)
-                        ({{ $booking->actual_tipping_duration }} minutes)
-                      @endif
-                    @else
+                    <?php if($booking->tipping_completed_at): ?>
+                      <?php echo e($booking->tipping_completed_at->format('M j, H:i')); ?>
+
+                      <?php if($booking->actual_tipping_duration): ?>
+                        (<?php echo e($booking->actual_tipping_duration); ?> minutes)
+                      <?php endif; ?>
+                    <?php else: ?>
                       Pending
-                    @endif
+                    <?php endif; ?>
                   </div>
                 </div>
-                @if($booking->tipping_status === 'unloading')
+                <?php if($booking->tipping_status === 'unloading'): ?>
                   <div class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Next Step</div>
-                @endif
+                <?php endif; ?>
               </div>
-              {{-- Ready for Collection / Departed --}}
-              <div class="flex items-center {{ in_array($booking->tipping_status, ['empty', 'departed']) ? '' : 'opacity-50' }}">
-                <div class="flex items-center justify-center w-8 h-8 {{ in_array($booking->tipping_status, ['empty', 'departed']) ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400' }} rounded-full text-sm font-semibold mr-4">
-                  {{ in_array($booking->tipping_status, ['empty', 'departed']) ? '✓' : '6' }}
+              
+              <div class="flex items-center <?php echo e(in_array($booking->tipping_status, ['empty', 'departed']) ? '' : 'opacity-50'); ?>">
+                <div class="flex items-center justify-center w-8 h-8 <?php echo e(in_array($booking->tipping_status, ['empty', 'departed']) ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'); ?> rounded-full text-sm font-semibold mr-4">
+                  <?php echo e(in_array($booking->tipping_status, ['empty', 'departed']) ? '✓' : '6'); ?>
+
                 </div>
                 <div class="flex-1">
                   <div class="text-sm font-medium">
-                    @if($booking->tipping_status === 'departed')
+                    <?php if($booking->tipping_status === 'departed'): ?>
                       Departed from Site
-                    @else
+                    <?php else: ?>
                       Ready for Collection
-                    @endif
+                    <?php endif; ?>
                   </div>
                   <div class="text-xs text-gray-500">
-                    @if($booking->tipping_status === 'departed')
-                      @if($booking->trailer_departed_at)
-                        {{ $booking->trailer_departed_at->format('M j, H:i') }}
-                        @if($booking->trailer_left_on_site)
+                    <?php if($booking->tipping_status === 'departed'): ?>
+                      <?php if($booking->trailer_departed_at): ?>
+                        <?php echo e($booking->trailer_departed_at->format('M j, H:i')); ?>
+
+                        <?php if($booking->trailer_left_on_site): ?>
                           (trailer left on site)
-                        @else
+                        <?php else: ?>
                           (vehicle & trailer departed)
-                        @endif
-                      @else
+                        <?php endif; ?>
+                      <?php else: ?>
                         Departed
-                      @endif
-                    @elseif($booking->tipping_status === 'empty')
+                      <?php endif; ?>
+                    <?php elseif($booking->tipping_status === 'empty'): ?>
                       Empty trailer awaiting collection
-                    @else
+                    <?php else: ?>
                       Pending completion
-                    @endif
+                    <?php endif; ?>
                   </div>
                 </div>
-                @if(in_array($booking->tipping_status, ['empty', 'departed']))
+                <?php if(in_array($booking->tipping_status, ['empty', 'departed'])): ?>
                   <div class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Complete</div>
-                @endif
+                <?php endif; ?>
               </div>
             </div>
           </div>
-          {{-- Quick Actions & Notes --}}
-          @if($booking->tipping_notes || $booking->tipping_status !== 'not_started')
+          
+          <?php if($booking->tipping_notes || $booking->tipping_status !== 'not_started'): ?>
             <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              @if($booking->tipping_notes)
+              <?php if($booking->tipping_notes): ?>
                 <div class="bg-white p-4 rounded-lg border shadow-sm">
                   <h5 class="font-medium text-gray-800 mb-2 flex items-center">
                     <span class="mr-2">📝</span>
                     Tipping Notes
                   </h5>
-                  <div class="text-sm text-gray-700 whitespace-pre-line">{{ $booking->tipping_notes }}</div>
+                  <div class="text-sm text-gray-700 whitespace-pre-line"><?php echo e($booking->tipping_notes); ?></div>
                 </div>
-              @endif
-              @if($booking->tipping_status !== 'departed')
+              <?php endif; ?>
+              <?php if($booking->tipping_status !== 'departed'): ?>
                 <div class="bg-white p-4 rounded-lg border shadow-sm">
                   <h5 class="font-medium text-gray-800 mb-2 flex items-center">
                     <span class="mr-2">🚛</span>
@@ -1230,128 +1278,128 @@
                   <div class="text-sm text-gray-600 mb-3">
                     All tipping operations are managed through the centralized workflow interface.
                   </div>
-                  <a href="{{ route('app.tipping-workflow.show', $booking) }}" 
+                  <a href="<?php echo e(route('app.tipping-workflow.show', $booking)); ?>" 
                      class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
                     🚛 Manage Tipping Workflow
                   </a>
                 </div>
-              @endif
+              <?php endif; ?>
             </div>
-          @endif
-          {{-- Complete Operational Timeline --}}
-          @if($movement)
+          <?php endif; ?>
+          
+          <?php if($movement): ?>
             <div class="mt-6 space-y-4">
               <h4 class="text-lg font-semibold text-green-700">📊 Complete Operational Timeline</h4>
-              {{-- Vehicle Arrival & Duration --}}
-              @if($booking->arrived_at)
+              
+              <?php if($booking->arrived_at): ?>
                 <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
                   <div class="flex justify-between items-start">
                     <div class="flex-1">
                       <label class="text-sm font-medium text-blue-700">🚛 Vehicle Arrival</label>
-                      <p class="text-lg font-mono">{{ $booking->arrived_at->format('l, d F Y - H:i') }}</p>
-                      <p class="text-sm text-blue-600">Scheduled: {{ $booking->slot->start_at->format('H:i') }}</p>
+                      <p class="text-lg font-mono"><?php echo e($booking->arrived_at->format('l, d F Y - H:i')); ?></p>
+                      <p class="text-sm text-blue-600">Scheduled: <?php echo e($booking->slot->start_at->format('H:i')); ?></p>
                     </div>
-                    @if($movement && $movement->unit_departed_at)
+                    <?php if($movement && $movement->unit_departed_at): ?>
                       <div class="text-right">
                         <span class="text-sm text-blue-600">On-site Duration</span>
-                        <p class="font-semibold text-blue-700 text-lg">{{ $booking->arrived_at->diffForHumans($movement->unit_departed_at, true) }}</p>
+                        <p class="font-semibold text-blue-700 text-lg"><?php echo e($booking->arrived_at->diffForHumans($movement->unit_departed_at, true)); ?></p>
                       </div>
-                    @endif
+                    <?php endif; ?>
                   </div>
                 </div>
-              @endif
-              {{-- Tipping Operations --}}
-              @if($movement && $movement->unloading_started_at)
+              <?php endif; ?>
+              
+              <?php if($movement && $movement->unloading_started_at): ?>
                 <div class="bg-orange-50 p-4 rounded-lg border-l-4 border-orange-500">
                   <div class="flex justify-between items-start">
                     <div class="flex-1">
                       <label class="text-sm font-medium text-orange-700">🏗️ Tipping Operations</label>
                       <div class="text-lg">
-                        <div class="font-mono">Start: {{ $movement->unloading_started_at->format('l, d F Y - H:i') }}</div>
-                        @if($movement->unloading_completed_at)
-                          <div class="font-mono">End: {{ $movement->unloading_completed_at->format('l, d F Y - H:i') }}</div>
-                        @else
+                        <div class="font-mono">Start: <?php echo e($movement->unloading_started_at->format('l, d F Y - H:i')); ?></div>
+                        <?php if($movement->unloading_completed_at): ?>
+                          <div class="font-mono">End: <?php echo e($movement->unloading_completed_at->format('l, d F Y - H:i')); ?></div>
+                        <?php else: ?>
                           <div class="text-orange-600">End: In Progress</div>
-                        @endif
+                        <?php endif; ?>
                       </div>
                     </div>
-                    @if($movement && $movement->unloading_started_at && $movement->unloading_completed_at)
+                    <?php if($movement && $movement->unloading_started_at && $movement->unloading_completed_at): ?>
                       <div class="text-right">
                         <span class="text-sm text-orange-600">Tipping Duration</span>
-                        <p class="font-semibold text-orange-700 text-lg">{{ $movement->unloading_started_at->diffForHumans($movement->unloading_completed_at, true) }}</p>
+                        <p class="font-semibold text-orange-700 text-lg"><?php echo e($movement->unloading_started_at->diffForHumans($movement->unloading_completed_at, true)); ?></p>
                       </div>
-                    @endif
+                    <?php endif; ?>
                   </div>
                 </div>
-              @endif
-              {{-- Unit Departure (Drop-off) --}}
-              @if($movement && $movement->unit_departed_at)
+              <?php endif; ?>
+              
+              <?php if($movement && $movement->unit_departed_at): ?>
                 <div class="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-500">
                   <div class="flex justify-between items-start">
                     <div class="flex-1">
                       <label class="text-sm font-medium text-purple-700">🚚 Original Unit Departed</label>
-                      <p class="text-lg font-mono">{{ $movement->unit_departed_at->format('l, d F Y - H:i') }}</p>
+                      <p class="text-lg font-mono"><?php echo e($movement->unit_departed_at->format('l, d F Y - H:i')); ?></p>
                       <p class="text-sm text-purple-600">Trailer dropped on-site</p>
                     </div>
-                    @if($booking->arrived_at)
+                    <?php if($booking->arrived_at): ?>
                       <div class="text-right">
                         <span class="text-sm text-purple-600">Total On-site Time</span>
-                        <p class="font-semibold text-purple-700 text-lg">{{ $booking->arrived_at->diffForHumans($movement->unit_departed_at, true) }}</p>
+                        <p class="font-semibold text-purple-700 text-lg"><?php echo e($booking->arrived_at->diffForHumans($movement->unit_departed_at, true)); ?></p>
                       </div>
-                    @endif
+                    <?php endif; ?>
                   </div>
                 </div>
-              @endif
-              {{-- Collection Information --}}
-              @if($movement && ($movement->collection_unit_arrived_at || $movement->collection_unit_departed_at || $booking->trailer_collected_at))
+              <?php endif; ?>
+              
+              <?php if($movement && ($movement->collection_unit_arrived_at || $movement->collection_unit_departed_at || $booking->trailer_collected_at)): ?>
                 <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
                   <div class="space-y-3">
                     <label class="text-sm font-medium text-green-700">🚛 Collection Operations</label>
-                    @if($movement->collection_unit_arrived_at)
+                    <?php if($movement->collection_unit_arrived_at): ?>
                       <div class="flex justify-between items-center">
                         <p class="text-sm font-medium">Collection Vehicle Arrived:</p>
-                        <p class="font-mono font-semibold">{{ $movement->collection_unit_arrived_at->format('l, d F Y - H:i') }}</p>
+                        <p class="font-mono font-semibold"><?php echo e($movement->collection_unit_arrived_at->format('l, d F Y - H:i')); ?></p>
                       </div>
-                    @endif
-                    @if($movement->collection_unit_departed_at)
+                    <?php endif; ?>
+                    <?php if($movement->collection_unit_departed_at): ?>
                       <div class="flex justify-between items-center">
                         <p class="text-sm font-medium">Collection Completed:</p>
-                        <p class="font-mono font-semibold">{{ $movement->collection_unit_departed_at->format('l, d F Y - H:i') }}</p>
+                        <p class="font-mono font-semibold"><?php echo e($movement->collection_unit_departed_at->format('l, d F Y - H:i')); ?></p>
                       </div>
-                    @elseif($booking->trailer_collected_at)
+                    <?php elseif($booking->trailer_collected_at): ?>
                       <div class="flex justify-between items-center">
                         <p class="text-sm font-medium">📝 Collection Recorded:</p>
                         <div class="text-right">
-                          <p class="font-mono font-semibold">{{ $booking->trailer_collected_at->format('l, d F Y - H:i') }}</p>
+                          <p class="font-mono font-semibold"><?php echo e($booking->trailer_collected_at->format('l, d F Y - H:i')); ?></p>
                           <span class="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">System Entry Only</span>
                         </div>
                       </div>
-                    @endif
-                    {{-- Collection Duration --}}
-                    @if($movement->collection_unit_arrived_at && $movement->collection_unit_departed_at)
+                    <?php endif; ?>
+                    
+                    <?php if($movement->collection_unit_arrived_at && $movement->collection_unit_departed_at): ?>
                       <div class="flex justify-between items-center border-t pt-2 border-green-200">
                         <span class="text-sm text-green-600 font-medium">Collection Duration:</span>
-                        <p class="font-semibold text-green-700 text-lg">{{ $movement->collection_unit_arrived_at->diffForHumans($movement->collection_unit_departed_at, true) }}</p>
+                        <p class="font-semibold text-green-700 text-lg"><?php echo e($movement->collection_unit_arrived_at->diffForHumans($movement->collection_unit_departed_at, true)); ?></p>
                       </div>
-                    @endif
-                    {{-- Time Between Drop and Collection --}}
-                    @if($movement->unit_departed_at && ($movement->collection_unit_departed_at || $booking->trailer_collected_at))
-                      @php
+                    <?php endif; ?>
+                    
+                    <?php if($movement->unit_departed_at && ($movement->collection_unit_departed_at || $booking->trailer_collected_at)): ?>
+                      <?php
                         $collectionTime = $movement->collection_unit_departed_at ?? $booking->trailer_collected_at;
-                      @endphp
+                      ?>
                       <div class="flex justify-between items-center border-t pt-2 border-green-200">
                         <span class="text-sm text-green-600 font-medium">Trailer Sat On-site:</span>
-                        <p class="font-semibold text-green-700 text-lg">{{ $movement->unit_departed_at->diffForHumans($collectionTime, true) }}</p>
+                        <p class="font-semibold text-green-700 text-lg"><?php echo e($movement->unit_departed_at->diffForHumans($collectionTime, true)); ?></p>
                       </div>
-                    @endif
+                    <?php endif; ?>
                   </div>
                 </div>
-              @endif
-              {{-- Summary --}}
-              @if($booking->arrived_at && ($movement->collection_unit_departed_at || $booking->trailer_collected_at))
-                @php
+              <?php endif; ?>
+              
+              <?php if($booking->arrived_at && ($movement->collection_unit_departed_at || $booking->trailer_collected_at)): ?>
+                <?php
                   $finalTime = $movement->collection_unit_departed_at ?? $booking->trailer_collected_at;
-                @endphp
+                ?>
                 <div class="bg-gray-100 p-4 rounded-lg border border-gray-300">
                   <div class="flex justify-between items-center">
                     <div class="flex-1">
@@ -1359,19 +1407,19 @@
                       <p class="text-sm text-gray-600">From initial arrival to final collection</p>
                     </div>
                     <div class="text-right">
-                      <p class="text-2xl font-bold text-gray-800">{{ $booking->arrived_at->diffForHumans($finalTime, true) }}</p>
-                      <p class="text-sm text-gray-500">{{ $booking->arrived_at->format('H:i') }} → {{ $finalTime->format('H:i') }}</p>
+                      <p class="text-2xl font-bold text-gray-800"><?php echo e($booking->arrived_at->diffForHumans($finalTime, true)); ?></p>
+                      <p class="text-sm text-gray-500"><?php echo e($booking->arrived_at->format('H:i')); ?> → <?php echo e($finalTime->format('H:i')); ?></p>
                     </div>
                   </div>
                 </div>
-              @endif
+              <?php endif; ?>
             </div>
-          @endif
+          <?php endif; ?>
         </div>
-      @endif
+      <?php endif; ?>
     </div>
   </div>
-  {{-- Cancel Booking Modal --}}
+  
   <div id="cancelModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
       <h3 class="text-lg font-semibold mb-4 text-red-800">Cancel Booking</h3>
@@ -1395,26 +1443,26 @@
       </form>
     </div>
   </div>
-  {{-- Quick Departure Modal --}}
+  
   <div id="departureModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
       <h3 class="text-lg font-semibold mb-4 text-purple-800">🏁 Record Departure</h3>
       <form id="departureForm" method="POST">
-        @csrf
-        @method('PATCH')
-        {{-- Show tipping type if available --}}
-        @if($booking->tipping_type)
+        <?php echo csrf_field(); ?>
+        <?php echo method_field('PATCH'); ?>
+        
+        <?php if($booking->tipping_type): ?>
           <div class="mb-4 p-3 bg-blue-50 rounded-lg">
             <div class="text-sm font-medium text-blue-800">
               Tipping Type: 
-              @if($booking->tipping_type === 'live_tip')
+              <?php if($booking->tipping_type === 'live_tip'): ?>
                 <span class="inline-flex items-center">🚛📦 Live Tip</span>
-              @else
+              <?php else: ?>
                 <span class="inline-flex items-center">📦 Drop</span>
-              @endif
+              <?php endif; ?>
             </div>
           </div>
-        @endif
+        <?php endif; ?>
         <div class="mb-4">
           <label class="block text-sm font-medium text-gray-700 mb-2">Vehicle Departure *</label>
           <div class="space-y-2">
@@ -1467,7 +1515,7 @@
       </form>
     </div>
   </div>
-  {{-- Email PDF Modal --}}
+  
   <div id="emailModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
       <h3 class="text-lg font-semibold mb-4">Email Booking PDF</h3>
@@ -1503,8 +1551,8 @@
       </form>
     </div>
   </div>
-  {{-- Trailer Movement Modal --}}
-  @if($movement && !in_array($movement->current_status, ['departed']))
+  
+  <?php if($movement && !in_array($movement->current_status, ['departed'])): ?>
     <div id="bookingMovementModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
         <div class="flex justify-between items-center mb-4">
@@ -1517,57 +1565,57 @@
           </button>
         </div>
 
-        @if($movement->tippingLocation || $movement->tippingBay)
+        <?php if($movement->tippingLocation || $movement->tippingBay): ?>
           <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
             <h4 class="font-medium text-blue-800 text-sm">Current Position</h4>
-            @if($movement->tippingLocation)
-              <p class="text-blue-700 text-sm">📍 {{ $movement->tippingLocation->name }}</p>
-            @endif
-            @if($movement->tippingBay)
-              <p class="text-blue-700 text-sm">🚛 {{ $movement->tippingBay->name }}</p>
-            @endif
+            <?php if($movement->tippingLocation): ?>
+              <p class="text-blue-700 text-sm">📍 <?php echo e($movement->tippingLocation->name); ?></p>
+            <?php endif; ?>
+            <?php if($movement->tippingBay): ?>
+              <p class="text-blue-700 text-sm">🚛 <?php echo e($movement->tippingBay->name); ?></p>
+            <?php endif; ?>
           </div>
-        @endif
+        <?php endif; ?>
 
-        <form id="bookingMovementForm" method="POST" action="{{ route('app.tipping-workflow.move-trailer', $booking) }}">
-          @csrf
+        <form id="bookingMovementForm" method="POST" action="<?php echo e(route('app.tipping-workflow.move-trailer', $booking)); ?>">
+          <?php echo csrf_field(); ?>
           <input type="hidden" id="bookingMovementAction" name="action" value="">
           
-          {{-- Location Selection --}}
-          @if($availableLocations->count() > 0)
+          
+          <?php if($availableLocations->count() > 0): ?>
             <div class="mb-4">
               <label class="block text-sm font-medium text-gray-700 mb-2">Move to Location</label>
               <select id="bookingLocationSelect" name="location_id" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
                 <option value="">Select location...</option>
-                @foreach($availableLocations as $location)
-                  <option value="{{ $location->id }}">{{ $location->name }}</option>
-                @endforeach
+                <?php $__currentLoopData = $availableLocations; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $location): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                  <option value="<?php echo e($location->id); ?>"><?php echo e($location->name); ?></option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
               </select>
               <button type="button" onclick="moveBookingTrailer('move_to_location')" 
                       class="w-full mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
                 📍 Move to Location
               </button>
             </div>
-          @endif
+          <?php endif; ?>
 
-          {{-- Bay Selection --}}
-          @if($availableBays->count() > 0)
+          
+          <?php if($availableBays->count() > 0): ?>
             <div class="mb-4">
               <label class="block text-sm font-medium text-gray-700 mb-2">Move to Bay</label>
               <select id="bookingBaySelect" name="bay_id" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
                 <option value="">Select bay...</option>
-                @foreach($availableBays as $bay)
-                  <option value="{{ $bay->id }}">{{ $bay->name }}</option>
-                @endforeach
+                <?php $__currentLoopData = $availableBays; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $bay): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                  <option value="<?php echo e($bay->id); ?>"><?php echo e($bay->name); ?></option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
               </select>
               <button type="button" onclick="moveBookingTrailer('move_to_bay')" 
                       class="w-full mt-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm">
                 🚛 Move to Bay
               </button>
             </div>
-          @endif
+          <?php endif; ?>
 
-          {{-- Collection Zone --}}
+          
           <div class="mb-4">
             <button type="button" onclick="moveBookingTrailer('move_to_collection')" 
                     class="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
@@ -1575,17 +1623,17 @@
             </button>
           </div>
 
-          {{-- Departure --}}
-          @if($movement->current_status === 'empty' || $movement->unloading_completed_at)
+          
+          <?php if($movement->current_status === 'empty' || $movement->unloading_completed_at): ?>
             <div class="mb-4 border-t pt-4">
               <button type="button" onclick="moveBookingTrailer('depart')" 
                       class="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm">
                 🏁 Record Departure (Frees Bay)
               </button>
             </div>
-          @endif
+          <?php endif; ?>
 
-          {{-- Notes --}}
+          
           <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-2">Movement Notes</label>
             <textarea id="bookingMovementNotes" name="notes" rows="2" 
@@ -1602,7 +1650,7 @@
         </div>
       </div>
     </div>
-  @endif
+  <?php endif; ?>
 
   <script>
     // Booking Trailer Movement Functions
@@ -1653,7 +1701,7 @@
       document.getElementById('emailModal').classList.remove('flex');
     }
     function useMyEmail() {
-      document.getElementById('emailAddress').value = '{{ auth()->user()->email }}';
+      document.getElementById('emailAddress').value = '<?php echo e(auth()->user()->email); ?>';
     }
     function showCancelModal() {
       document.getElementById('cancelModal').classList.remove('hidden');
@@ -1668,7 +1716,7 @@
       const email = document.getElementById('emailAddress').value;
       const message = document.getElementById('emailMessage').value;
       // Send request to email endpoint
-      fetch('{{ route("app.bookings.email-pdf", $booking) }}', {
+      fetch('<?php echo e(route("app.bookings.email-pdf", $booking)); ?>', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1697,7 +1745,7 @@
       e.preventDefault();
       const reason = document.getElementById('cancellationReason').value;
       // Send request to cancel endpoint
-      fetch('{{ route("app.bookings.cancel", $booking) }}', {
+      fetch('<?php echo e(route("app.bookings.cancel", $booking)); ?>', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1774,4 +1822,13 @@
       }
     });
   </script>
-</x-warehouse-layout>
+ <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalc9242005886028143da563f7b99f0c87)): ?>
+<?php $attributes = $__attributesOriginalc9242005886028143da563f7b99f0c87; ?>
+<?php unset($__attributesOriginalc9242005886028143da563f7b99f0c87); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalc9242005886028143da563f7b99f0c87)): ?>
+<?php $component = $__componentOriginalc9242005886028143da563f7b99f0c87; ?>
+<?php unset($__componentOriginalc9242005886028143da563f7b99f0c87); ?>
+<?php endif; ?><?php /**PATH /Users/londo/Herd/test/resources/views/warehouse/bookings/show.blade.php ENDPATH**/ ?>

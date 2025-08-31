@@ -60,10 +60,14 @@ class TippingLocation extends Model
             'id', // Local key on tipping_locations table
             'booking_id' // Local key on movements table
         )->whereIn('movements.current_status', [
-            'trailer_dropped',
+            'arrived',
+            'in_parking',
+            'back_to_parking',
+            'empty',
             'at_bay',
             'unloading',
-        ]);
+            'trailer_dropped',
+        ])->whereNull('bookings.departed_at');
     }
 
     public function getCurrentOccupancy(): int

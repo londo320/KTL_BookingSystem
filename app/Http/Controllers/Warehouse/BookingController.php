@@ -909,17 +909,29 @@ class BookingController extends Controller
             abort(403, 'You do not have access to this booking.');
         }
 
+        // Get available locations and bays for trailer movement
+        $availableLocations = TippingLocation::forDepot($booking->slot->depot_id)
+            ->available()
+            ->get();
+            
+        $availableBays = TippingBay::forDepot($booking->slot->depot_id)
+            ->available()
+            ->get();
+            
         return view('warehouse.bookings.show', [
             'booking' => $booking->load([
                 'slot.depot',
                 'bookingType',
                 'customer',
                 'user',
-                'movements',
+                'movements.tippingLocation',
+                'movements.tippingBay',
                 'poNumbers.lines.expectedPalletType',
                 'poNumbers.lines.actualPalletType',
                 'poNumbers.lines.actualPallets.palletType',
             ]),
+            'availableLocations' => $availableLocations,
+            'availableBays' => $availableBays,
         ]);
     }
 
@@ -1008,16 +1020,22 @@ class BookingController extends Controller
 
         $data['user_id'] = auth()->id();
 
-        // Extract vehicle details and store in JSON field
+        // Extract vehicle details and store in JSON field, but keep trailer_type_id in main data
         $vehicleDetails = [];
         $vehicleFields = ['vehicle_registration', 'container_number', 'carrier_company', 
-                         'gate_number', 'trailer_type_id', 'estimated_arrival', 'special_instructions'];
+                         'gate_number', 'estimated_arrival', 'special_instructions'];
         
         foreach ($vehicleFields as $field) {
             if (!empty($data[$field])) {
                 $vehicleDetails[$field] = $data[$field];
             }
             unset($data[$field]); // Remove from main booking data
+        }
+        
+        // Keep trailer_type_id in both places for compatibility
+        if (!empty($data['trailer_type_id'])) {
+            $vehicleDetails['trailer_type_id'] = $data['trailer_type_id'];
+            // Don't unset trailer_type_id from $data - keep it for the main booking record
         }
         
         if (!empty($vehicleDetails)) {
@@ -1228,10 +1246,10 @@ class BookingController extends Controller
             $booking->slot_id = $data['slot_id'];
         }
 
-        // Extract vehicle details and store in JSON field
+        // Extract vehicle details and store in JSON field, but keep trailer_type_id in main data
         $vehicleDetails = $booking->vehicle_details ?? [];
         $vehicleFields = ['vehicle_registration', 'container_number', 'carrier_company', 
-                         'gate_number', 'trailer_type_id', 'estimated_arrival', 'special_instructions'];
+                         'gate_number', 'estimated_arrival', 'special_instructions'];
         
         foreach ($vehicleFields as $field) {
             if (array_key_exists($field, $data)) {
@@ -1241,6 +1259,17 @@ class BookingController extends Controller
                     unset($vehicleDetails[$field]);
                 }
                 unset($data[$field]); // Remove from main booking data
+            }
+        }
+        
+        // Keep trailer_type_id in both places for compatibility
+        if (array_key_exists('trailer_type_id', $data)) {
+            if (!empty($data['trailer_type_id'])) {
+                $vehicleDetails['trailer_type_id'] = $data['trailer_type_id'];
+                // Don't unset trailer_type_id from $data - keep it for the main booking record
+            } else {
+                unset($vehicleDetails['trailer_type_id']);
+                // Keep the unset in $data to clear the field
             }
         }
         

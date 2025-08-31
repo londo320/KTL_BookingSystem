@@ -51,429 +51,416 @@
         </ul>
       </div>
     @endif
-    {{-- Current Status --}}
+    
+    {{-- Factory Booking Information --}}
+    <div class="mb-6 p-6 bg-blue-50 border border-blue-200 rounded-lg">
+      <h3 class="text-lg font-semibold text-blue-800 mb-3">📋 Factory Booking Information</h3>
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div>
+          <p class="text-sm text-gray-600">Factory Reference</p>
+          <p class="font-medium">{{ $factoryBooking->reference }}</p>
+        </div>
+        <div>
+          <p class="text-sm text-gray-600">Customer</p>
+          <p class="font-medium">{{ $factoryBooking->customer->name }}</p>
+        </div>
+        <div>
+          <p class="text-sm text-gray-600">Depot</p>
+          <p class="font-medium">{{ $factoryBooking->depot->name }}</p>
+        </div>
+        <div>
+          <p class="text-sm text-gray-600">Vehicle</p>
+          <p class="font-medium">{{ $factoryBooking->vehicle_registration }}</p>
+        </div>
+        <div>
+          <p class="text-sm text-gray-600">Arrived</p>
+          <p class="font-medium">{{ $factoryBooking->arrived_at->format('D, d M Y - H:i') }}</p>
+        </div>
+      </div>
+    </div>
+    
+    {{-- PO Numbers & Load Details --}}
+    @if($factoryBooking->poNumbers->count() > 0)
+      <div class="mb-6 p-6 bg-gray-50 border border-gray-200 rounded-lg">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3">📦 PO Numbers & Load Details</h3>
+        <div class="space-y-4">
+          @foreach($factoryBooking->poNumbers as $po)
+            <div class="border border-gray-300 rounded-lg p-4 bg-white">
+              <div class="flex justify-between items-start mb-3">
+                <h4 class="font-medium text-lg text-gray-800">PO: {{ $po->po_number }}</h4>
+                <button type="button" onclick="togglePoManagement({{ $po->id }})" class="text-sm text-blue-600 hover:text-blue-800">
+                  <span id="toggleText-{{ $po->id }}">Manage Lines →</span>
+                </button>
+              </div>
+              {{-- PO Summary --}}
+              <div class="mb-3 p-3 bg-gray-50 rounded border">
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span class="text-gray-600">Expected:</span>
+                    <span class="font-semibold">{{ number_format($po->total_expected_cases) }} cases, {{ number_format($po->total_expected_pallets) }} pallets</span>
+                  </div>
+                  <div>
+                    <span class="text-gray-600">Actual:</span>
+                    <span class="font-semibold {{ $po->total_actual_cases > 0 ? 'text-green-600' : 'text-gray-400' }}">
+                      {{ $po->total_actual_cases > 0 ? number_format($po->total_actual_cases) . ' cases' : 'Not recorded' }}, 
+                      {{ $po->total_actual_pallets > 0 ? number_format($po->total_actual_pallets) . ' pallets' : 'Not recorded' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              {{-- PO Lines Summary --}}
+              @if($po->lines->count() > 0)
+                <div class="text-sm text-gray-600 mb-3">
+                  <span class="font-medium">{{ $po->lines->count() }} line(s)</span>
+                  @if($po->lines->where('actual_cases', '>', 0)->count() > 0)
+                    <span class="ml-2 text-green-600">• {{ $po->lines->where('actual_cases', '>', 0)->count() }} recorded</span>
+                  @endif
+                </div>
+              @endif
+
+              <!-- PO Line Management (Hidden by default) -->
+              <div id="po-lines-{{ $po->id }}" class="po-lines-section hidden mt-4 border-t pt-4">
+                <h6 class="font-medium text-gray-700 mb-3">Line Details</h6>
+                
+                @if($po->lines->count() > 0)
+                  <div class="space-y-3 mb-4">
+                    @foreach($po->lines as $line)
+                      <div class="bg-gray-50 p-3 rounded border" data-line-id="{{ $line->id }}">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-3">
+                          <div class="bg-blue-50 p-3 rounded">
+                            <h6 class="text-xs font-semibold text-blue-800 mb-2">Expected (Read-only)</h6>
+                            <div class="space-y-1 text-sm text-blue-700">
+                              <div>Cases: {{ $line->expected_cases }}</div>
+                              <div>Pallets: {{ $line->expected_pallets }}</div>
+                              <div>Type: {{ $line->expectedPalletType->name ?? 'Not set' }}</div>
+                            </div>
+                          </div>
+                          <div class="bg-green-50 p-3 rounded">
+                            <h6 class="text-xs font-semibold text-green-800 mb-2">Actual (Editable)</h6>
+                            <div class="grid grid-cols-2 gap-2">
+                              <div>
+                                <label class="block text-xs font-medium text-gray-700">Cases</label>
+                                <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm actual-cases" 
+                                       value="{{ $line->actual_cases }}" min="0">
+                              </div>
+                              <div>
+                                <label class="block text-xs font-medium text-gray-700">Pallets</label>
+                                <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm actual-pallets" 
+                                       value="{{ $line->actual_pallets }}" min="0">
+                              </div>
+                            </div>
+                            <div class="mt-2">
+                              <label class="block text-xs font-medium text-gray-700">Pallet Type</label>
+                              <select class="mt-1 block w-full border-gray-300 rounded-md text-sm actual-pallet-type">
+                                <option value="">Select Type</option>
+                                @foreach($palletTypes as $palletType)
+                                  <option value="{{ $palletType->id }}" {{ $line->actual_pallet_type_id == $palletType->id ? 'selected' : '' }}>
+                                    {{ $palletType->name }}
+                                  </option>
+                                @endforeach
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="flex justify-end">
+                          <button type="button" onclick="updatePoLine({{ $line->id }})" class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
+                            Update Line
+                          </button>
+                        </div>
+                      </div>
+                    @endforeach
+                  </div>
+                @endif
+
+                <!-- Add New Line Form -->
+                <div class="bg-green-50 p-3 rounded border">
+                  <h6 class="font-medium text-gray-700 mb-2">Add New Line (Actual Quantities Only)</h6>
+                  <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 items-end">
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700">Actual Cases</label>
+                      <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm" 
+                             id="new-actual-cases-{{ $po->id }}" min="0">
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700">Actual Pallets</label>
+                      <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm" 
+                             id="new-actual-pallets-{{ $po->id }}" min="0">
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700">Actual Pallet Type</label>
+                      <select class="mt-1 block w-full border-gray-300 rounded-md text-sm" 
+                              id="new-actual-pallet-type-{{ $po->id }}">
+                        <option value="">Select Type</option>
+                        @foreach($palletTypes as $palletType)
+                          <option value="{{ $palletType->id }}">{{ $palletType->name }}</option>
+                        @endforeach
+                      </select>
+                    </div>
+                  </div>
+                  <div class="mt-2 flex justify-end">
+                    <button type="button" onclick="addPoLine({{ $po->id }})" class="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">
+                      Add Line
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          @endforeach
+        </div>
+      </div>
+    @endif
+
+    {{-- Factory Tipping Progress --}}
     @php
       $movement = $factoryBooking->movements->last();
       $currentStatus = $movement ? $movement->current_status : 'arrived';
       $currentLocation = $movement?->tippingLocation;
       $currentBay = $movement?->tippingBay;
     @endphp
-    <div class="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-      <div class="flex items-center justify-between">
-        <div>
-          <h3 class="text-lg font-semibold text-orange-800">Current Status: {{ ucfirst(str_replace('_', ' ', $currentStatus)) }}</h3>
-          @if($currentLocation)
-            <p class="text-orange-700">📍 Location: {{ $currentLocation->name }}</p>
-          @endif
-          @if($currentBay)
-            <p class="text-orange-700">🚛 Bay: {{ $currentBay->name }}</p>
-          @endif
-          @if($movement && $movement->operation_notes)
-            <p class="text-orange-700 text-sm mt-2">📝 Notes: {{ $movement->operation_notes }}</p>
-          @endif
+    <div class="mb-6 bg-white rounded-lg shadow overflow-hidden">
+      <div class="p-6 border-b border-gray-200">
+        <h3 class="text-xl font-semibold text-gray-800">🚛 Factory Tipping Progress</h3>
+        @php
+          $statusLabels = [
+            'arrived' => ['⚡ Tipping in Progress', 'bg-orange-100 text-orange-800'],
+            'in_location' => ['⚡ Tipping in Progress', 'bg-orange-100 text-orange-800'],
+            'unloading' => ['⚡ Tipping in Progress', 'bg-orange-100 text-orange-800'],
+            'empty' => ['✅ Tipped - Ready for Departure', 'bg-green-100 text-green-800'],
+            'departed' => ['🏁 Departed', 'bg-green-100 text-green-800'],
+          ];
+          $statusConfig = $statusLabels[$currentStatus] ?? ['❓ Unknown Status', 'bg-gray-100 text-gray-800'];
+        @endphp
+        <p class="text-sm text-gray-600 mt-1">
+          Current Status: <span class="px-2 py-1 rounded text-xs font-medium {{ $statusConfig[1] }}">{{ $statusConfig[0] }}</span>
+        </p>
+        @if($currentLocation)
+          <p class="text-sm text-gray-600 mt-1">📍 Location: {{ $currentLocation->name }}</p>
+        @endif
+        @if($currentBay)
+          <p class="text-sm text-gray-600 mt-1">🚛 Bay: {{ $currentBay->name }}</p>
+        @endif
+        @if($movement && $movement->operation_notes)
+          <p class="text-sm text-gray-600 mt-1">📝 Notes: {{ $movement->operation_notes }}</p>
+        @endif
+      </div>
+      
+      {{-- Progress Timeline --}}
+      <div class="p-6 border-b border-gray-200">
+        @php
+          $steps = [
+            1 => ['✓', '⏳ Not Started', $factoryBooking->arrived_at ? 'completed' : 'pending'],
+            2 => ['✓', '🚛 Unit Arrived', $factoryBooking->arrived_at ? 'completed' : 'pending'], 
+            3 => ['3', in_array($currentStatus, ['unloading', 'empty']) ? '⚡ Tipping (Auto-started)' : '⚡ Tipping', 
+                  in_array($currentStatus, ['unloading', 'empty']) ? 'completed' : ($currentBay ? 'current' : 'pending')],
+            4 => ['4', '✅ Tipped - Ready for Departure', $currentStatus === 'empty' ? 'current' : ($movement && $movement->unloading_completed_at ? 'completed' : 'pending')],
+            5 => ['5', '🏁 Departed', $currentStatus === 'departed' ? 'completed' : 'pending'],
+          ];
+        @endphp
+        <div class="flex items-center space-x-2 mb-4">
+          @foreach($steps as $stepNum => $step)
+            @php
+              $status = $step[2];
+              $classes = match($status) {
+                'completed' => 'bg-green-500 text-white',
+                'current' => 'bg-orange-500 text-white',
+                default => 'bg-gray-200 text-gray-600'
+              };
+            @endphp
+            <div class="flex items-center">
+              <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold {{ $classes }}">
+                {{ $step[0] }}
+              </div>
+              @if($stepNum < count($steps))
+                <div class="w-8 h-0.5 {{ $status === 'completed' ? 'bg-green-500' : 'bg-gray-200' }}"></div>
+              @endif
+            </div>
+          @endforeach
         </div>
-        <div class="text-right">
-          <div class="text-sm text-gray-600">{{ $factoryBooking->customer->name }}</div>
-          <div class="text-sm text-gray-600">{{ $factoryBooking->vehicle_registration }}</div>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-2 text-xs">
+          @foreach($steps as $step)
+            <div class="text-center">
+              <p class="{{ $step[2] === 'completed' ? 'text-green-600 font-medium' : ($step[2] === 'current' ? 'text-orange-600 font-medium' : 'text-gray-500') }}">
+                {{ $step[1] }}
+              </p>
+            </div>
+          @endforeach
         </div>
       </div>
     </div>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {{-- Workflow Actions --}}
-      <div class="bg-white rounded-lg shadow-sm border p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">🔄 Workflow Actions</h3>
-        {{-- Vehicle Movement --}}
-        <div class="mb-6">
-          <h4 class="font-medium text-gray-800 mb-3">🚛 Vehicle Movement</h4>
-          {{-- Drop at Location --}}
-          <form method="POST" action="{{ route('app.factory-booking-workflow.drop-trailer', $factoryBooking) }}" class="mb-3">
-            @csrf
-            <div class="flex flex-wrap items-end gap-2">
-              <div class="flex-1 min-w-0">
-                <label class="block text-sm font-medium text-gray-700">Drop at Location</label>
-                <select name="tipping_location_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm">
-                  <option value="">Select location...</option>
-                  @foreach($availableLocations as $location)
-                    <option value="{{ $location->id }}">{{ $location->name }} 
-                      ({{ $location->getCurrentOccupancy() }}/{{ $location->capacity }})
-                    </option>
-                  @endforeach
-                </select>
-              </div>
-              <div class="flex-1 min-w-0">
-                <label class="block text-sm font-medium text-gray-700">Notes</label>
-                <input type="text" name="notes" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm" placeholder="Optional notes">
-              </div>
-              <button type="submit" class="px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
-                Park Vehicle
-              </button>
-            </div>
-          </form>
-          {{-- Move to Bay --}}
-          <form method="POST" action="{{ route('app.factory-booking-workflow.move-to-bay', $factoryBooking) }}" class="mb-3">
-            @csrf
-            <div class="flex flex-wrap items-end gap-2">
-              <div class="flex-1 min-w-0">
-                <label class="block text-sm font-medium text-gray-700">Move to Bay</label>
-                <select name="tipping_bay_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm">
-                  <option value="">Select bay...</option>
-                  @foreach($availableBays as $bay)
-                    <option value="{{ $bay->id }}">{{ $bay->name }}</option>
-                  @endforeach
-                </select>
-              </div>
-              <div class="flex-1 min-w-0">
-                <label class="block text-sm font-medium text-gray-700">Notes</label>
-                <input type="text" name="notes" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm" placeholder="Optional notes">
-              </div>
-              <button type="submit" class="px-3 py-2 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700">
-                Move to Bay
-              </button>
-            </div>
-          </form>
+
+    {{-- Complete Tipping Form (Main Action) --}}
+    @if(!$movement || !$movement->unloading_completed_at)
+      <div class="mb-6 bg-white rounded-lg shadow overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+          <h3 class="text-xl font-semibold text-gray-800">✅ Complete Tipping</h3>
+          <p class="text-sm text-gray-600 mt-1">Complete this form only after tipping has finished to record the actual quantities received.</p>
         </div>
-        {{-- Tipping Operations --}}
-        <div class="mb-6">
-          <h4 class="font-medium text-gray-800 mb-3">⚡ Tipping Operations</h4>
-          @if(!$movement || !$movement->unloading_completed_at)
-            {{-- Start Tipping --}}
-            <form method="POST" action="{{ route('app.factory-booking-workflow.start-tipping', $factoryBooking) }}" class="mb-3">
-              @csrf
-              <div class="flex flex-wrap items-end gap-2">
-                <div class="flex-1">
-                  <label class="block text-sm font-medium text-gray-700">Start Tipping</label>
-                  <input type="text" name="notes" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm" placeholder="Optional notes">
-                </div>
-                <button type="submit" class="px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700">
-                  Start Tipping
-                </button>
-              </div>
-            </form>
-            {{-- Complete Tipping --}}
-            <div class="p-4 bg-gray-50 rounded-lg">
-              <h5 class="font-medium text-gray-800 mb-3">Complete Tipping</h5>
-              <form method="POST" action="{{ route('app.factory-booking-workflow.complete-tipping', $factoryBooking) }}">
-                @csrf
-                {{-- PO Lines Actual Quantities --}}
-                @if($factoryBooking->poNumbers->count() > 0)
-                  <div class="mb-4">
-                    <h6 class="font-medium text-gray-700 mb-2">📦 Record Actual Quantities</h6>
-                    @foreach($factoryBooking->poNumbers as $po)
-                      @if($po->lines->count() > 0)
-                        <div class="mb-4 p-3 border border-gray-200 rounded">
-                          <h7 class="font-medium text-gray-700">PO: {{ $po->po_number }}</h7>
-                          @foreach($po->lines as $line)
-                            <div class="mt-3 p-3 bg-white rounded border">
-                              <div class="flex items-center justify-between mb-2">
-                                <span class="font-medium">{{ $line->expectedPalletType->name ?? 'Unknown Type' }}</span>
-                                <span class="text-sm text-gray-600">Expected: {{ $line->expected_cases }} cases</span>
-                              </div>
-                              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {{-- Actual Cases --}}
-                                <div>
-                                  <label class="block text-sm font-medium text-gray-700">Actual Cases</label>
-                                  <input type="number" 
-                                         name="po_lines[{{ $line->id }}][actual_cases]" 
-                                         value="{{ $line->actual_cases ?: $line->expected_cases }}"
-                                         class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm" 
-                                         min="1" required>
-                                </div>
-                                {{-- Actual Pallets --}}
-                                <div>
-                                  <label class="block text-sm font-medium text-gray-700">Actual Pallets</label>
-                                  <div class="space-y-2">
-                                    @foreach($palletTypes as $palletType)
-                                      <div class="flex items-center space-x-2">
-                                        <span class="text-sm w-20">{{ $palletType->name }}:</span>
-                                        <input type="number" 
-                                               name="po_lines[{{ $line->id }}][actual_pallets][{{ $loop->index }}][quantity]" 
-                                               value="{{ $line->actualPallets->where('pallet_type_id', $palletType->id)->first()?->quantity ?? ($palletType->id == $line->expected_pallet_type_id ? $line->expected_pallets : 0) }}"
-                                               class="flex-1 border-gray-300 rounded-md shadow-sm text-sm" 
-                                               min="0">
-                                        <input type="hidden" 
-                                               name="po_lines[{{ $line->id }}][actual_pallets][{{ $loop->index }}][pallet_type_id]" 
-                                               value="{{ $palletType->id }}">
-                                      </div>
-                                    @endforeach
-                                  </div>
-                                </div>
-                              </div>
+        <div class="p-6">
+          <form method="POST" action="{{ route('app.factory-booking-workflow.complete-tipping', $factoryBooking) }}">
+            @csrf
+            
+            {{-- Record Actual Quantities Section --}}
+            @if($factoryBooking->poNumbers->count() > 0)
+              <div class="mb-6">
+                <h4 class="text-lg font-semibold text-gray-800 mb-4">📦 Record Actual Quantities Received *</h4>
+                @foreach($factoryBooking->poNumbers as $po)
+                  <div class="border rounded-lg p-4 mb-4">
+                    <h5 class="font-medium text-gray-800 mb-3">PO: {{ $po->po_number }}</h5>
+                    @if($po->lines->count() > 0)
+                      @foreach($po->lines as $line)
+                        <div class="bg-gray-50 p-4 rounded border mb-3">
+                          <h6 class="font-medium text-gray-700 mb-2">Line {{ $loop->iteration }}</h6>
+                          <div class="text-sm text-gray-600 mb-3">
+                            Expected: {{ number_format($line->expected_cases) }} cases, {{ number_format($line->expected_pallets) }} pallets
+                          </div>
+                          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <label class="block text-sm font-medium text-gray-700 mb-1">Actual Cases *</label>
+                              <input type="number" name="po_lines[{{ $line->id }}][actual_cases]" 
+                                     class="w-full px-3 py-2 border border-gray-300 rounded-md" 
+                                     value="{{ $line->actual_cases }}" min="0" required>
                             </div>
-                          @endforeach
+                            <div>
+                              <label class="block text-sm font-medium text-gray-700 mb-1">Actual Pallets *</label>
+                              <input type="number" name="po_lines[{{ $line->id }}][actual_pallets]" 
+                                     class="w-full px-3 py-2 border border-gray-300 rounded-md" 
+                                     value="{{ $line->actual_pallets }}" min="0" required>
+                            </div>
+                            <div>
+                              <label class="block text-sm font-medium text-gray-700 mb-1">Pallet Type</label>
+                              <select name="po_lines[{{ $line->id }}][actual_pallet_type_id]" 
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                                <option value="">Select pallet type...</option>
+                                @foreach($palletTypes as $palletType)
+                                  <option value="{{ $palletType->id }}" {{ $line->actual_pallet_type_id == $palletType->id ? 'selected' : '' }}>
+                                    {{ $palletType->name }}
+                                  </option>
+                                @endforeach
+                              </select>
+                            </div>
+                          </div>
                         </div>
-                      @endif
-                    @endforeach
+                      @endforeach
+                    @endif
                   </div>
-                @endif
-                {{-- Completion Notes --}}
-                <div class="mb-4">
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Completion Notes</label>
-                  <textarea name="notes" rows="3" class="block w-full border-gray-300 rounded-md shadow-sm text-sm" placeholder="Any notes about the tipping completion..."></textarea>
-                </div>
-                {{-- Issues --}}
-                <div class="mb-4">
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Issues (if any)</label>
-                  <div class="space-y-2">
-                    <input type="text" name="issues[]" class="block w-full border-gray-300 rounded-md shadow-sm text-sm" placeholder="Describe any issues...">
-                    <input type="text" name="issues[]" class="block w-full border-gray-300 rounded-md shadow-sm text-sm" placeholder="Additional issue...">
-                  </div>
-                </div>
-                <button type="submit" class="w-full px-4 py-2 bg-green-600 text-white font-medium rounded hover:bg-green-700">
-                  Complete Tipping
-                </button>
-              </form>
-            </div>
-          @else
-            <div class="p-4 bg-green-100 rounded-lg">
-              <p class="text-green-800">✅ Tipping completed at {{ $movement->unloading_completed_at->format('d M Y, H:i') }}</p>
-            </div>
-          @endif
-        </div>
-        {{-- Departure --}}
-        <div>
-          <h4 class="font-medium text-gray-800 mb-3">🏁 Departure</h4>
-          <form method="POST" action="{{ route('app.factory-booking-workflow.trailer-depart', $factoryBooking) }}">
-            @csrf
-            <div class="flex flex-wrap items-end gap-2">
-              <div class="flex-1">
-                <label class="block text-sm font-medium text-gray-700">Mark Departure</label>
-                <input type="text" name="notes" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm" placeholder="Optional departure notes">
+                @endforeach
               </div>
-              <button type="submit" class="px-3 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700">
-                Mark Departed
-              </button>
+            @endif
+            
+            {{-- Issues Section --}}
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Issues (if any)</label>
+              <div class="space-y-2">
+                <input type="text" name="issues[]" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Describe any issues...">
+                <button type="button" onclick="addIssueField()" class="text-sm text-blue-600 hover:text-blue-800">+ Add another issue</button>
+              </div>
             </div>
+            
+            {{-- Notes Section --}}
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+              <textarea name="notes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Completion notes..."></textarea>
+            </div>
+            
+            <button type="submit" class="w-full px-4 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700">
+              Complete Tipping
+            </button>
           </form>
         </div>
       </div>
-      {{-- Information Panel --}}
-      <div class="space-y-6">
-        {{-- Factory Booking Details --}}
-        <div class="bg-white rounded-lg shadow-sm border p-6">
-          <h4 class="font-medium text-gray-800 mb-3">📋 Factory Booking Details</h4>
-          <div class="space-y-2 text-sm">
-            <div><strong>Reference:</strong> {{ $factoryBooking->reference }}</div>
-            <div><strong>Customer:</strong> {{ $factoryBooking->customer->name }}</div>
-            <div><strong>Depot:</strong> {{ $factoryBooking->depot->name }}</div>
-            <div><strong>Vehicle:</strong> {{ $factoryBooking->vehicle_registration }}</div>
-            @if($factoryBooking->trailer_registration)
-              <div><strong>Trailer:</strong> {{ $factoryBooking->trailer_registration }}</div>
+    @else
+      <div class="mb-6 p-4 bg-green-100 rounded-lg">
+        <p class="text-green-800">✅ Tipping completed at {{ $movement->unloading_completed_at->format('d M Y, H:i') }}</p>
+      </div>
+    @endif
+
+    {{-- Unit Departure --}}
+    <div class="mb-6 bg-white rounded-lg shadow overflow-hidden">
+      <div class="p-6 border-b border-gray-200">
+        <h3 class="text-xl font-semibold text-gray-800">🚛 Unit Depart (Leave Trailer)</h3>
+        <p class="text-sm text-gray-600 mt-1">Record when the vehicle leaves site while trailer continues tipping process</p>
+      </div>
+      <div class="p-6">
+        <form method="POST" action="{{ route('app.factory-booking-workflow.trailer-depart', $factoryBooking) }}">
+          @csrf
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Departure Notes</label>
+            <textarea name="notes" class="w-full px-3 py-2 border border-gray-300 rounded-md" rows="3" placeholder="Optional notes about unit departure..."></textarea>
+          </div>
+          <button type="submit" class="w-full px-4 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700">
+            🚛 Record Unit Departure
+          </button>
+        </form>
+      </div>
+    </div>
+    
+    {{-- Status Details --}}
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+      <div class="p-6 border-b border-gray-200">
+        <h3 class="text-xl font-semibold text-gray-800">📊 Status Details</h3>
+      </div>
+      <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {{-- Location Info --}}
+          @if($currentLocation)
+            <div>
+              <h4 class="font-medium text-gray-800 mb-2">Drop Location</h4>
+              <p class="text-sm text-gray-600">{{ $currentLocation->name }}</p>
+              @if($movement && $movement->moved_to_location_at)
+                <p class="text-xs text-gray-500">Moved: {{ $movement->moved_to_location_at->format('M j, H:i') }}</p>
+              @endif
+            </div>
+          @endif
+          {{-- Bay Info --}}
+          @if($currentBay)
+            <div>
+              <h4 class="font-medium text-gray-800 mb-2">Tipping Bay</h4>
+              <p class="text-sm text-gray-600">{{ $currentBay->name }}</p>
+              @if($movement && $movement->moved_to_bay_at)
+                <p class="text-xs text-gray-500">Moved: {{ $movement->moved_to_bay_at->format('M j, H:i') }}</p>
+              @endif
+            </div>
+          @endif
+          {{-- Timing Info --}}
+          <div>
+            <h4 class="font-medium text-gray-800 mb-2">Timing</h4>
+            <p class="text-sm text-gray-600">Arrived: {{ $factoryBooking->arrived_at->format('M j, H:i') }}</p>
+            <p class="text-sm text-gray-600">Time on Site: {{ $factoryBooking->getTimeOnSite() }}</p>
+            @if($movement && $movement->unloading_started_at)
+              <p class="text-sm text-gray-600">Tipping Started: {{ $movement->unloading_started_at->format('M j, H:i') }}</p>
             @endif
-            @if($factoryBooking->driver_name)
-              <div><strong>Driver:</strong> {{ $factoryBooking->driver_name }}</div>
+            @if($movement && $movement->unloading_completed_at)
+              <p class="text-sm text-gray-600">Completed: {{ $movement->unloading_completed_at->format('M j, H:i') }}</p>
             @endif
-            <div><strong>Arrived:</strong> {{ $factoryBooking->arrived_at->format('d M Y, H:i') }}</div>
-            <div><strong>Time on Site:</strong> {{ $factoryBooking->getTimeOnSite() }}</div>
           </div>
         </div>
-        {{-- PO Information with Line Management --}}
-        @if($factoryBooking->poNumbers->count() > 0)
-          <div class="bg-white rounded-lg shadow-sm border p-6">
-            <div class="flex justify-between items-center mb-4">
-              <h4 class="font-medium text-gray-800">📦 PO Numbers & Load Details</h4>
-              <button type="button" onclick="togglePoManagement()" class="text-sm text-blue-600 hover:text-blue-800">
-                <span id="toggleText">Manage Lines →</span>
-              </button>
-            </div>
-            
-            <div class="space-y-4">
-              @foreach($factoryBooking->poNumbers as $po)
-                <div class="border rounded-lg p-4">
-                  <div class="flex justify-between items-start mb-3">
-                    <div>
-                      <h5 class="font-medium text-lg">PO: {{ $po->po_number }}</h5>
-                      @if($po->lines->count() > 0)
-                        <div class="text-sm text-gray-600 mt-1">
-                          Expected: {{ $po->total_expected_cases }} cases, {{ $po->total_expected_pallets }} pallets
-                          @if($po->total_actual_cases > 0)
-                            | Actual: {{ $po->total_actual_cases }} cases, {{ $po->total_actual_pallets }} pallets
-                          @endif
-                        </div>
-                      @else
-                        <div class="text-sm text-gray-500">No line details added</div>
-                      @endif
-                    </div>
-                  </div>
-
-                  <!-- PO Line Management (Hidden by default) -->
-                  <div id="po-lines-{{ $po->id }}" class="po-lines-section hidden mt-4 border-t pt-4">
-                    <h6 class="font-medium text-gray-700 mb-3">Line Details</h6>
-                    
-                    @if($po->lines->count() > 0)
-                      <div class="space-y-3 mb-4">
-                        @foreach($po->lines as $line)
-                          <div class="bg-gray-50 p-3 rounded border" data-line-id="{{ $line->id }}">
-                            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 items-end">
-                              <div>
-                                <label class="block text-xs font-medium text-gray-700">Expected Cases</label>
-                                <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm expected-cases" 
-                                       value="{{ $line->expected_cases }}" min="0">
-                              </div>
-                              <div>
-                                <label class="block text-xs font-medium text-gray-700">Expected Pallets</label>
-                                <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm expected-pallets" 
-                                       value="{{ $line->expected_pallets }}" min="0">
-                              </div>
-                              <div>
-                                <label class="block text-xs font-medium text-gray-700">Actual Cases</label>
-                                <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm actual-cases" 
-                                       value="{{ $line->actual_cases }}" min="0">
-                              </div>
-                              <div>
-                                <label class="block text-xs font-medium text-gray-700">Actual Pallets</label>
-                                <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm actual-pallets" 
-                                       value="{{ $line->actual_pallets }}" min="0">
-                              </div>
-                            </div>
-                            <div class="mt-2 flex justify-end">
-                              <button type="button" onclick="updatePoLine({{ $line->id }})" class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
-                                Update Line
-                              </button>
-                            </div>
-                          </div>
-                        @endforeach
-                      </div>
-                    @endif
-
-                    <!-- Add New Line Form -->
-                    <div class="bg-blue-50 p-3 rounded border">
-                      <h6 class="font-medium text-gray-700 mb-2">Add New Line</h6>
-                      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 items-end">
-                        <div>
-                          <label class="block text-xs font-medium text-gray-700">Expected Cases</label>
-                          <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm" 
-                                 id="new-expected-cases-{{ $po->id }}" min="0">
-                        </div>
-                        <div>
-                          <label class="block text-xs font-medium text-gray-700">Expected Pallets</label>
-                          <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm" 
-                                 id="new-expected-pallets-{{ $po->id }}" min="0">
-                        </div>
-                        <div>
-                          <label class="block text-xs font-medium text-gray-700">Actual Cases</label>
-                          <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm" 
-                                 id="new-actual-cases-{{ $po->id }}" min="0">
-                        </div>
-                        <div>
-                          <label class="block text-xs font-medium text-gray-700">Actual Pallets</label>
-                          <input type="number" class="mt-1 block w-full border-gray-300 rounded-md text-sm" 
-                                 id="new-actual-pallets-{{ $po->id }}" min="0">
-                        </div>
-                      </div>
-                      <div class="mt-2 flex justify-end">
-                        <button type="button" onclick="addPoLine({{ $po->id }})" class="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">
-                          Add Line
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              @endforeach
-            </div>
-          </div>
-        @endif
-        {{-- Movement History --}}
-        @if($factoryBooking->movements->count() > 0)
-          <div class="bg-white rounded-lg shadow-sm border p-6">
-            <h4 class="font-medium text-gray-800 mb-3">📊 Movement History</h4>
-            <div class="space-y-2 text-sm">
-              @foreach($factoryBooking->movements as $mov)
-                <div class="flex justify-between">
-                  <span>{{ ucfirst(str_replace('_', ' ', $mov->current_status)) }}</span>
-                  <span class="text-gray-600">{{ $mov->updated_at->format('M j, H:i') }}</span>
-                </div>
-              @endforeach
-            </div>
-          </div>
-        @endif
       </div>
     </div>
   </div>
 
   <script>
-    function togglePoManagement() {
-      const sections = document.querySelectorAll('.po-lines-section');
-      const toggleText = document.getElementById('toggleText');
-      const isHidden = sections[0].classList.contains('hidden');
+    function togglePoManagement(poId) {
+      const section = document.getElementById(`po-lines-${poId}`);
+      const toggleText = document.getElementById(`toggleText-${poId}`);
+      const isHidden = section.classList.contains('hidden');
       
-      sections.forEach(section => {
-        if (isHidden) {
-          section.classList.remove('hidden');
-        } else {
-          section.classList.add('hidden');
-        }
-      });
-      
-      toggleText.textContent = isHidden ? '← Hide Lines' : 'Manage Lines →';
+      if (isHidden) {
+        section.classList.remove('hidden');
+        toggleText.textContent = '← Hide Lines';
+      } else {
+        section.classList.add('hidden');
+        toggleText.textContent = 'Manage Lines →';
+      }
     }
 
-    function updatePoLine(lineId) {
-      const lineDiv = document.querySelector(`[data-line-id="${lineId}"]`);
-      const expectedCases = lineDiv.querySelector('.expected-cases').value;
-      const expectedPallets = lineDiv.querySelector('.expected-pallets').value;
-      const actualCases = lineDiv.querySelector('.actual-cases').value;
-      const actualPallets = lineDiv.querySelector('.actual-pallets').value;
-      
-      fetch(`{{ route('app.factory-booking-workflow.update-po-line', $factoryBooking) }}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: JSON.stringify({
-          line_id: lineId,
-          expected_cases: expectedCases || 0,
-          expected_pallets: expectedPallets || 0,
-          actual_cases: actualCases || 0,
-          actual_pallets: actualPallets || 0
-        })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          location.reload(); // Reload to show updated totals
-        } else {
-          alert('Error updating line: ' + data.message);
-        }
-      })
-      .catch(error => {
-        alert('Error updating line');
-        console.error(error);
-      });
-    }
-
-    function addPoLine(poId) {
-      const expectedCases = document.getElementById(`new-expected-cases-${poId}`).value;
-      const expectedPallets = document.getElementById(`new-expected-pallets-${poId}`).value;
-      const actualCases = document.getElementById(`new-actual-cases-${poId}`).value;
-      const actualPallets = document.getElementById(`new-actual-pallets-${poId}`).value;
-      
-      fetch(`{{ route('app.factory-booking-workflow.add-po-line', $factoryBooking) }}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: JSON.stringify({
-          po_id: poId,
-          expected_cases: expectedCases || 0,
-          expected_pallets: expectedPallets || 0,
-          actual_cases: actualCases || 0,
-          actual_pallets: actualPallets || 0
-        })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          location.reload(); // Reload to show new line
-        } else {
-          alert('Error adding line: ' + data.message);
-        }
-      })
-      .catch(error => {
-        alert('Error adding line');
-        console.error(error);
-      });
+    function addIssueField() {
+      const container = event.target.parentElement;
+      const newInput = document.createElement('input');
+      newInput.type = 'text';
+      newInput.name = 'issues[]';
+      newInput.className = 'w-full px-3 py-2 border border-gray-300 rounded-md';
+      newInput.placeholder = 'Additional issue...';
+      container.insertBefore(newInput, event.target);
     }
   </script>
 </x-app-layout>

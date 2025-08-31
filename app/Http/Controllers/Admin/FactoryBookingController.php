@@ -58,9 +58,18 @@ class FactoryBookingController extends Controller
 
     public function show(FactoryBooking $factoryBooking)
     {
-        $factoryBooking->load(['customer', 'carrier', 'depot', 'registeredBy', 'movements', 'poNumbers']);
+        $factoryBooking->load(['customer', 'carrier', 'depot', 'registeredBy', 'movements.tippingLocation', 'movements.tippingBay', 'poNumbers']);
         
-        return view('warehouse.factory-bookings.show', compact('factoryBooking'));
+        // Get available locations and bays for trailer movement
+        $availableLocations = \App\Models\TippingLocation::forDepot($factoryBooking->depot_id)
+            ->available()
+            ->get();
+            
+        $availableBays = \App\Models\TippingBay::forDepot($factoryBooking->depot_id)
+            ->available()
+            ->get();
+        
+        return view('admin.factory-bookings.show', compact('factoryBooking', 'availableLocations', 'availableBays'));
     }
 
     public function create()
@@ -343,5 +352,111 @@ class FactoryBookingController extends Controller
         });
 
         return back()->with('success', 'PO numbers added successfully. You can now add expected cases/pallets to each PO.');
+    }
+
+    public function history(FactoryBooking $factoryBooking, Request $request)
+    {
+        $factoryBooking->load(['depot', 'customer', 'movements.tippingLocation', 'movements.tippingBay']);
+
+        // Get sorting preference
+        $sortOrder = $request->get('sort', 'desc');
+        
+        // Get all history for this factory booking via movements
+        $history = collect();
+        
+        // Add factory booking creation
+        $history->push((object)[
+            'id' => 'created-' . $factoryBooking->id,
+            'action' => 'created',
+            'reason' => 'Factory booking registered',
+            'created_at' => $factoryBooking->created_at,
+        ]);
+        
+        // Add movement history if available
+        foreach ($factoryBooking->movements as $movement) {
+            if ($movement->actual_arrival) {
+                $history->push((object)[
+                    'id' => 'arrival-' . $movement->id,
+                    'action' => 'arrival',
+                    'reason' => 'Vehicle arrived on site',
+                    'created_at' => $movement->actual_arrival,
+                ]);
+            }
+            
+            if ($movement->moved_to_location_at) {
+                $location = $movement->tippingLocation;
+                $history->push((object)[
+                    'id' => 'location-' . $movement->id,
+                    'action' => 'modified',
+                    'reason' => 'Moved to location: ' . ($location ? $location->name : 'Unknown'),
+                    'created_at' => $movement->moved_to_location_at,
+                ]);
+            }
+            
+            if ($movement->moved_to_bay_at) {
+                $bay = $movement->tippingBay;
+                $history->push((object)[
+                    'id' => 'bay-' . $movement->id,
+                    'action' => 'modified',
+                    'reason' => 'Moved to bay: ' . ($bay ? $bay->name : 'Unknown'),
+                    'created_at' => $movement->moved_to_bay_at,
+                ]);
+            }
+            
+            if ($movement->unloading_started_at) {
+                $history->push((object)[
+                    'id' => 'tipping-start-' . $movement->id,
+                    'action' => 'modified',
+                    'reason' => 'Tipping started',
+                    'created_at' => $movement->unloading_started_at,
+                ]);
+            }
+            
+            if ($movement->unloading_completed_at) {
+                $duration = null;
+                if ($movement->unloading_started_at) {
+                    $durationMinutes = round($movement->unloading_started_at->diffInMinutes($movement->unloading_completed_at));
+                    if ($durationMinutes >= 10080) {
+                        $weeks = floor($durationMinutes / 10080);
+                        $days = floor(($durationMinutes % 10080) / 1440);
+                        $duration = $weeks . 'w' . ($days > 0 ? ' ' . $days . 'd' : '');
+                    } elseif ($durationMinutes >= 1440) {
+                        $days = floor($durationMinutes / 1440);
+                        $hours = floor(($durationMinutes % 1440) / 60);
+                        $mins = $durationMinutes % 60;
+                        $duration = $days . 'd ' . ($hours > 0 ? $hours . 'h ' : '') . ($mins > 0 ? $mins . 'm' : '');
+                    } elseif ($durationMinutes >= 60) {
+                        $hours = floor($durationMinutes / 60);
+                        $mins = $durationMinutes % 60;
+                        $duration = $hours . 'h ' . ($mins > 0 ? $mins . 'm' : '');
+                    } else {
+                        $duration = $durationMinutes . ' min';
+                    }
+                }
+                
+                $history->push((object)[
+                    'id' => 'tipping-complete-' . $movement->id,
+                    'action' => 'modified',
+                    'reason' => 'Tipping completed' . ($duration ? ' in ' . $duration : ''),
+                    'created_at' => $movement->unloading_completed_at,
+                ]);
+            }
+            
+            if ($movement->actual_departure) {
+                $history->push((object)[
+                    'id' => 'departure-' . $movement->id,
+                    'action' => 'completed',
+                    'reason' => 'Vehicle departed from site',
+                    'created_at' => $movement->actual_departure,
+                ]);
+            }
+        }
+        
+        // Sort by timestamp
+        $history = $sortOrder === 'asc' 
+            ? $history->sortBy('created_at')
+            : $history->sortByDesc('created_at');
+
+        return view('admin.factory-bookings.history', compact('factoryBooking', 'history', 'sortOrder'));
     }
 }

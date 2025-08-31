@@ -64,8 +64,14 @@
                     <p class="font-medium">{{ $booking->customer->name }}</p>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-600">Customer Reference</p>
-                    <p class="font-medium">{{ $booking->reference ?: 'Not provided' }}</p>
+                    <p class="text-sm text-gray-600">PO References</p>
+                    <p class="font-medium">
+                        @if($booking->poNumbers && $booking->poNumbers->count() > 0)
+                            {{ $booking->poNumbers->pluck('po_number')->join(', ') }}
+                        @else
+                            Not provided
+                        @endif
+                    </p>
                 </div>
                 <div>
                     <p class="text-sm text-gray-600">Slot Time</p>
@@ -224,6 +230,7 @@
                         'scheduled' => ['🕐 Scheduled', 'bg-gray-100 text-gray-800'],
                         'arrived' => ['✅ Arrived', 'bg-blue-100 text-blue-800'], 
                         'in_parking' => ['🚛 Unit & Trailer in Parking', 'bg-blue-100 text-blue-800'],
+                        'at_bay' => ['🏗️ At Tipping Bay - Full', 'bg-orange-100 text-orange-800'],
                         'unloading' => ['⚡ Tipping in Progress', 'bg-orange-100 text-orange-800'],
                         'empty' => ['✅ Tipped - Ready for Collection', 'bg-green-100 text-green-800'],
                         'back_to_parking' => ['📍 In Parking Area', 'bg-purple-100 text-purple-800'],
@@ -256,6 +263,7 @@
                             $stages = [
                                 'scheduled' => ['label' => '⏳ Not Started', 'icon' => 'text-gray-400'],
                                 'in_parking' => ['label' => '🚛 Unit & Trailer in Parking', 'icon' => 'text-blue-500'],
+                                'at_bay' => ['label' => '⚡ Tipping (Auto-started)', 'icon' => 'text-orange-500'],
                                 'unloading' => ['label' => '⚡ Tipping (Auto-started)', 'icon' => 'text-orange-500'],
                                 'empty' => ['label' => '✅ Tipped - Ready for Collection', 'icon' => 'text-green-500'],
                                 'back_to_parking' => ['label' => '📍 In Parking Area', 'icon' => 'text-purple-500'],
@@ -446,7 +454,7 @@
                     {{-- Tipping automatically starts when trailer is moved to bay --}}
                     {{-- Complete Tipping Action --}}
                     @php
-                        $canCompleteTipping = in_array($currentStatus, ['unloading']) && !$tippingAlreadyCompleted;
+                        $canCompleteTipping = in_array($currentStatus, ['at_bay', 'unloading']) && !$tippingAlreadyCompleted;
                     @endphp
                     @if($canCompleteTipping)
                         <div class="col-span-2 p-4 border border-green-200 rounded-lg bg-green-50">
@@ -607,27 +615,6 @@
                                     🚛 Record Unit Departure
                                 </button>
                             </form>
-                        </div>
-                    @endif
-                    {{-- Quick Bay Management Actions (for empty trailers) --}}
-                    @if($currentStatus === 'empty' && $booking->tippingBay)
-                        <div class="p-4 border border-indigo-200 rounded-lg bg-indigo-50">
-                            <h4 class="font-medium text-indigo-800 mb-3">⚡ Quick Actions</h4>
-                            <div class="space-y-2">
-                                <form action="{{ route('app.bookings.clear-bay', $booking) }}" method="POST" class="inline-block w-full">
-                                    @csrf
-                                    <button type="submit" class="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                                        🔄 Clear Bay (Make Available)
-                                    </button>
-                                </form>
-                                <form action="{{ route('app.bookings.move-to-waiting', $booking) }}" method="POST" class="inline-block w-full">
-                                    @csrf
-                                    <button type="submit" class="w-full px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600">
-                                        📍 Move to Parking Area
-                                    </button>
-                                </form>
-                            </div>
-                            <p class="text-xs text-indigo-700 mt-2">💡 Use these actions to quickly make room for the next vehicle</p>
                         </div>
                     @endif
                     {{-- Post-Tipping Actions - Simplified --}}

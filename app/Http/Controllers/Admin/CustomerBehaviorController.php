@@ -276,7 +276,7 @@ class CustomerBehaviorController extends Controller
                 COUNT(*) as total_actions,
                 SUM(CASE WHEN action = "created" THEN 1 ELSE 0 END) as bookings_created,
                 SUM(CASE WHEN action = "rebooked" THEN 1 ELSE 0 END) as total_rebooks,
-                SUM(CASE WHEN action = "cancelled" THEN 1 ELSE 0 END) as total_cancellations,
+                COUNT(DISTINCT CASE WHEN action = "cancelled" AND reason NOT LIKE "%Rebooked%" THEN booking_id END) as total_cancellations,
                 SUM(CASE WHEN action = "completed" THEN 1 ELSE 0 END) as completed_bookings,
                 SUM(CASE WHEN action = "late_arrival" THEN 1 ELSE 0 END) as late_arrivals,
                 SUM(CASE WHEN action = "early_arrival" THEN 1 ELSE 0 END) as early_arrivals,
@@ -360,7 +360,7 @@ class CustomerBehaviorController extends Controller
             'customers.id',
             'customers.name',
             DB::raw('SUM(CASE WHEN bh.action = "rebooked" THEN 1 ELSE 0 END) as rebook_count'),
-            DB::raw('SUM(CASE WHEN bh.action = "cancelled" THEN 1 ELSE 0 END) as cancellation_count'),
+            DB::raw('COUNT(DISTINCT CASE WHEN bh.action = "cancelled" AND bh.reason NOT LIKE "%Rebooked%" THEN bh.booking_id END) as cancellation_count'),
             DB::raw('SUM(CASE WHEN bh.is_last_minute = 1 AND bh.action IN ("rebooked", "cancelled") THEN 1 ELSE 0 END) as last_minute_count'),
             DB::raw('GROUP_CONCAT(DISTINCT CASE WHEN bh.is_last_minute = 1 AND bh.action IN ("rebooked", "cancelled") THEN DATE(bh.created_at) END) as last_minute_dates'),
         ])
@@ -380,7 +380,7 @@ class CustomerBehaviorController extends Controller
                 COUNT(DISTINCT customer_id) as total_customers,
                 COUNT(*) as total_actions,
                 SUM(CASE WHEN action = "rebooked" THEN 1 ELSE 0 END) as total_rebooks,
-                SUM(CASE WHEN action = "cancelled" THEN 1 ELSE 0 END) as total_cancellations,
+                COUNT(DISTINCT CASE WHEN action = "cancelled" AND reason NOT LIKE "%Rebooked%" THEN booking_id END) as total_cancellations,
                 SUM(CASE WHEN is_last_minute = 1 AND action IN ("rebooked", "cancelled") THEN 1 ELSE 0 END) as total_last_minute,
                 AVG(CASE WHEN action IN ("rebooked", "cancelled") THEN hours_before_slot END) as avg_notice_hours
             ')

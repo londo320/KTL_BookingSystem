@@ -135,7 +135,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('/bookings/{booking}/departure', [BookingController::class, 'markDeparted'])->name('bookings.departure');
         Route::get('/bookings/{booking}/arrival', [BookingController::class, 'arrivalForm'])->name('bookings.arrival.form');
         Route::post('/bookings/{booking}/arrival', [BookingController::class, 'arrival'])->name('bookings.arrival');
-        Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+        Route::post('/bookings/{booking}/cancel', [BookingRebookController::class, 'cancel'])->name('bookings.cancel');
         Route::post('/bookings/{booking}/clear-bay', [BookingController::class, 'clearBay'])->name('bookings.clear-bay');
         Route::get('/bookings/{booking}/transfer-bay', [BookingController::class, 'transferBayForm'])->name('bookings.transfer-bay.form');
         Route::post('/bookings/{booking}/transfer-bay', [BookingController::class, 'transferBay'])->name('bookings.transfer-bay');
@@ -163,6 +163,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/factory-bookings/{factoryBooking}/mark-departed', [FactoryBookingController::class, 'markDeparted'])->name('factory-bookings.mark-departed');
         Route::post('/factory-bookings/{factoryBooking}/add-po-numbers', [FactoryBookingController::class, 'addPoNumbers'])->name('factory-bookings.add-po-numbers');
         Route::get('/factory-bookings/{factoryBooking}/workflow', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'show'])->name('factory-bookings.workflow.show');
+        Route::get('/factory-bookings/{factoryBooking}/history', [\App\Http\Controllers\Admin\FactoryBookingController::class, 'history'])->name('factory-bookings.history');
         
         // ──── Customers ────
         Route::resource('customers', CustomerController::class);
@@ -228,6 +229,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/tipping-workflow/{booking}/collection-arrival', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'collectionArrival'])->name('tipping-workflow.collection-arrival');
         Route::post('/tipping-workflow/{booking}/collection-depart', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'collectionDepart'])->name('tipping-workflow.collection-depart');
         Route::post('/tipping-workflow/{booking}/trailer-depart', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'trailerDepart'])->name('tipping-workflow.trailer-depart');
+        Route::post('/tipping-workflow/{booking}/move-trailer', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'moveTrailer'])->name('tipping-workflow.move-trailer');
         
         // ──── System Management ────
         Route::resource('booking-types', BookingTypeController::class);
@@ -275,11 +277,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/factory-booking-workflow/{factoryBooking}', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'show'])->name('factory-booking-workflow.show');
         Route::post('/factory-booking-workflow/{factoryBooking}/drop-trailer', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'dropTrailer'])->name('factory-booking-workflow.drop-trailer');
         Route::post('/factory-booking-workflow/{factoryBooking}/move-to-bay', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'moveToBay'])->name('factory-booking-workflow.move-to-bay');
-        Route::post('/factory-booking-workflow/{factoryBooking}/start-tipping', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'startTipping'])->name('factory-booking-workflow.start-tipping');
         Route::post('/factory-booking-workflow/{factoryBooking}/complete-tipping', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'completeTipping'])->name('factory-booking-workflow.complete-tipping');
         Route::post('/factory-booking-workflow/{factoryBooking}/trailer-depart', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'trailerDepart'])->name('factory-booking-workflow.trailer-depart');
         Route::post('/factory-booking-workflow/{factoryBooking}/add-po-line', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'addPoLine'])->name('factory-booking-workflow.add-po-line');
         Route::post('/factory-booking-workflow/{factoryBooking}/update-po-line', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'updatePoLine'])->name('factory-booking-workflow.update-po-line');
+        Route::post('/factory-booking-workflow/{factoryBooking}/move-trailer', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'moveTrailer'])->name('factory-booking-workflow.move-trailer');
         }); // End Inbound Module Routes
         
         // ──── General Management Routes (Always Available) ────
@@ -368,6 +370,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/select-map-file/{depot?}', [\App\Http\Controllers\Admin\DepotMapController::class, 'selectMapFile'])->name('select-map-file');
             Route::post('/refresh', [\App\Http\Controllers\Admin\DepotMapController::class, 'refresh'])->name('refresh');
             Route::post('/change-bay', [\App\Http\Controllers\Admin\DepotMapController::class, 'changeBay'])->name('change-bay');
+            Route::get('/location/{location}', [\App\Http\Controllers\Admin\DepotMapController::class, 'getLocationStatus'])->name('location-status');
             Route::post('/update-position', [\App\Http\Controllers\Admin\DepotMapController::class, 'updatePosition'])->name('update-position');
             Route::post('/update-location-position', [\App\Http\Controllers\Admin\DepotMapController::class, 'updateLocationPosition'])->name('update-location-position');
             Route::post('/delete-map-file', [\App\Http\Controllers\Admin\DepotMapController::class, 'deleteMapFile'])->name('delete-map-file');
@@ -429,9 +432,9 @@ Route::middleware('auth')->group(function () {
             Route::post('/{factoryBooking}/move-to-location', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'moveToLocation'])->name('move-to-location');
             Route::post('/{factoryBooking}/drop-trailer-detached', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'dropTrailerDetached'])->name('drop-trailer-detached');
             Route::post('/{factoryBooking}/move-to-bay', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'moveToBay'])->name('move-to-bay');
-            Route::post('/{factoryBooking}/start-tipping', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'startTipping'])->name('start-tipping');
             Route::post('/{factoryBooking}/complete-tipping', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'completeTipping'])->name('complete-tipping');
             Route::post('/{factoryBooking}/trailer-depart', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'trailerDepart'])->name('trailer-depart');
+            Route::post('/{factoryBooking}/move-trailer', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'moveTrailer'])->name('move-trailer');
         });
 
         Route::resources([
@@ -815,6 +818,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/{booking}/collection-arrival', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'collectionArrival'])->name('collection-arrival');
             Route::post('/{booking}/collection-depart', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'collectionDepart'])->name('collection-depart');
             Route::post('/{booking}/trailer-depart', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'trailerDepart'])->name('trailer-depart');
+            Route::post('/{booking}/move-trailer', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'moveTrailer'])->name('move-trailer');
         });
 
         // Arrival/Departure routes

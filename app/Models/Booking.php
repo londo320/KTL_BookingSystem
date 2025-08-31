@@ -329,7 +329,6 @@ class Booking extends Model
             // Clear arrival/departure data for new booking
             $newBooking->arrived_at = null;
             $newBooking->departed_at = null;
-            $newBooking->departure_vehicle_registration = null;
 
             $newBooking->save();
 
@@ -385,6 +384,11 @@ class Booking extends Model
 
     public function cancel(string $reason): bool
     {
+        // Prevent duplicate cancellations
+        if ($this->cancelled_at) {
+            return false; // Already cancelled
+        }
+
         \App\Models\BookingHistory::recordAction($this, 'cancelled', $reason, $this->slot);
 
         return $this->update([
@@ -610,23 +614,21 @@ class Booking extends Model
     {
         $movement = $this->getOrCreateMovement();
 
-        if ($movement->current_status !== 'unloading') {
+        if (!in_array($movement->current_status, ['at_bay', 'unloading'])) {
             return false;
         }
 
         $duration = null;
         if ($movement->unloading_started_at) {
-            $duration = now()->diffInMinutes($movement->unloading_started_at);
+            $duration = round(now()->diffInMinutes($movement->unloading_started_at));
         }
 
-        // Free up current bay if any
-        if ($movement->tippingBay) {
-            $movement->tippingBay->markAvailable($this);
-        }
+        // Don't free up the bay yet - trailer is still physically there
+        // Bay will be freed when trailer is moved out
         
         $movement->update([
             'current_status' => 'empty',
-            'tipping_bay_id' => null, // Clear bay when tipping is completed
+            // Keep tipping_bay_id - trailer still occupies the bay
             'unloading_completed_at' => now(),
             'operation_notes' => $notes ? ($movement->operation_notes ? $movement->operation_notes."\n".$notes : $notes) : $movement->operation_notes,
         ]);

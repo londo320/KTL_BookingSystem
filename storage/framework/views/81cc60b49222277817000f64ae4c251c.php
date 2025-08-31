@@ -286,7 +286,7 @@ $message = $__bag->first($__errorArgs[0]); ?>
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>
-                            <p class="text-xs text-gray-500 mt-1">Optional: Assign vehicle to drop zone</p>
+                            <p class="text-xs text-gray-500 mt-1">Optional: Assign vehicle to parking area</p>
                         </div>
                         <!-- Tipping Bay Assignment -->
                         <div>

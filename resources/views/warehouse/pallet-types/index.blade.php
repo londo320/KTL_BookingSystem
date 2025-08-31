@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between">
       <h2 class="font-semibold text-xl">Pallet Types Management</h2>
       <div class="flex gap-2">
-        <a href="{{ route('app.pallet-types.create') }}"
+        <a href="{{ route('app.settings.pallet-types.create') }}"
            class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
           + Add Pallet Type
         </a>
@@ -39,7 +39,7 @@
       </div>
       <div class="flex space-x-2">
         <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Filter</button>
-        <a href="{{ route('app.pallet-types.index') }}" class="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear</a>
+        <a href="{{ route('app.settings.pallet-types') }}" class="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Clear</a>
       </div>
     </form>
     {{-- Pallet Types Table --}}
@@ -93,11 +93,11 @@
               </td>
               <td class="px-4 py-2">
                 <div class="flex items-center space-x-2">
-                  <a href="{{ route('app.pallet-types.show', $palletType) }}"
+                  <a href="{{ route('app.settings.pallet-types.show', $palletType) }}"
                      class="text-blue-600 hover:text-blue-800 text-sm">View</a>
-                  <a href="{{ route('app.pallet-types.edit', $palletType) }}"
+                  <a href="{{ route('app.settings.pallet-types.edit', $palletType) }}"
                      class="text-green-600 hover:text-green-800 text-sm">Edit</a>
-                  <form method="POST" action="{{ route('app.pallet-types.toggle-active', $palletType) }}" class="inline">
+                  <form method="POST" action="{{ route('app.settings.pallet-types.toggle-active', $palletType) }}" class="inline">
                     @csrf
                     @method('PUT')
                     <button type="submit" 
@@ -106,7 +106,7 @@
                     </button>
                   </form>
                   @if($totalUsage === 0)
-                    <form method="POST" action="{{ route('app.pallet-types.destroy', $palletType) }}" 
+                    <form method="POST" action="{{ route('app.settings.pallet-types.destroy', $palletType) }}" 
                           class="inline" onsubmit="return confirm('Are you sure you want to delete this pallet type?')">
                       @csrf
                       @method('DELETE')

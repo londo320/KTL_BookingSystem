@@ -328,9 +328,9 @@
         </tr>
       </thead>
       <tbody>
-  <?php $__currentLoopData = $bookings->groupBy(fn($b) => $b->slot->depot->name); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $depotName => $group): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+  <?php $__currentLoopData = $bookings->groupBy(fn($b) => $b->slot?->depot?->name ?? 'Unknown Depot'); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $depotName => $group): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
     <tr><td colspan="9" class="bg-gray-200 font-semibold px-4 py-2">Depot: <?php echo e($depotName); ?></td></tr>
-    <?php $__currentLoopData = $group->sortBy(fn($b) => $b->slot->start_at); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $booking): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+    <?php $__currentLoopData = $group->sortBy(fn($b) => $b->slot?->start_at ?? now()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $booking): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
       <?php
         $isFactory = isset($booking->type) && $booking->type === 'factory';
       ?>
@@ -378,15 +378,15 @@
                 
                 <?php
                   $arrivedAt = $booking->arrived_at;
-                  $completedAt = $booking->completed_at;
+                  $completedAt = $booking->status === 'completed' ? ($booking->tipping_completed_at ?? $booking->departed_at) : null;
                   
                   // Check if factory booking is overdue for tipping
                   $isOverdue = false;
                   $minutesOnSite = 0;
                   
-                  if ($arrivedAt && !$completedAt) {
+                  if ($arrivedAt && !$completedAt && $booking->slot && $booking->slot->depot) {
                     $minutesOnSite = $arrivedAt->diffInMinutes(now());
-                    $targetMinutes = $booking->depot->getFactoryTippingTimeTarget($booking->customer_id ?? null);
+                    $targetMinutes = $booking->slot->depot->getFactoryTippingTimeTarget($booking->customer_id ?? null);
                     $isOverdue = $minutesOnSite > $targetMinutes;
                   }
                 ?>
@@ -517,10 +517,10 @@
         
         <td class="px-4 py-2 align-top">
           <?php
-            // Use PO number totals (new structure)
-            $actualCases = $booking->total_actual_cases;
-            $expectedCases = $booking->total_expected_cases;
-            $caseVariance = $booking->total_case_variance;
+            // Use PO number totals (new structure) with safety checks
+            $actualCases = $booking->poNumbers && $booking->poNumbers->count() > 0 ? $booking->total_actual_cases : 0;
+            $expectedCases = $booking->poNumbers && $booking->poNumbers->count() > 0 ? $booking->total_expected_cases : 0;
+            $caseVariance = $booking->poNumbers && $booking->poNumbers->count() > 0 ? $booking->total_case_variance : 0;
           ?>
           
           <div class="text-sm">
@@ -557,10 +557,10 @@
         
         <td class="px-4 py-2 align-top">
           <?php
-            // Use PO number totals (new structure)
-            $actualPallets = $booking->total_actual_pallets;
-            $expectedPallets = $booking->total_expected_pallets;
-            $palletVariance = $booking->total_pallet_variance;
+            // Use PO number totals (new structure) with safety checks
+            $actualPallets = $booking->poNumbers && $booking->poNumbers->count() > 0 ? $booking->total_actual_pallets : 0;
+            $expectedPallets = $booking->poNumbers && $booking->poNumbers->count() > 0 ? $booking->total_expected_pallets : 0;
+            $palletVariance = $booking->poNumbers && $booking->poNumbers->count() > 0 ? $booking->total_pallet_variance : 0;
           ?>
           
           <div class="text-sm">
@@ -708,21 +708,21 @@
                     if ($isEmptyTrailer) {
                       // EMPTY TRAILER OPTIONS:
                       
-                      // 1. Collection Zone (awaiting pickup)
+                      // 1. Parking Area (awaiting pickup)
                       if ($movement->current_status === 'awaiting_collection' && $movement->tippingLocation) {
                         $currentLocation = 'COLLECTION_' . $movement->tippingLocation->id;
-                        $currentLocationName = '📦 ' . $movement->tippingLocation->name . ' (Collection Zone)';
+                        $currentLocationName = '📦 ' . $movement->tippingLocation->name . ' (Parking Area)';
                       }
                       // 2. Still in Tipping Bay (needs to be moved)
                       elseif ($movement->tippingBay) {
                         $currentLocation = 'BAY_' . $movement->tippingBay->id;
                         $currentLocationName = '🚛 ' . $movement->tippingBay->name . ' (Empty - Ready to Move)';
                       }
-                      // 3. Waiting Area
+                      // 3. Parking Area
                       elseif ($movement->custom_fields && isset($movement->custom_fields['waiting_area_location'])) {
                         $waitingArea = $movement->custom_fields['waiting_area_location'];
                         $currentLocation = 'WAITING_' . $waitingArea;
-                        $currentLocationName = '⏳ Waiting Area ' . $waitingArea . ' (Empty)';
+                        $currentLocationName = '⏳ Parking Area ' . $waitingArea . ' (Empty)';
                       }
                       // 4. General drop location
                       elseif ($movement->tippingLocation) {
@@ -741,16 +741,16 @@
                         $currentLocation = 'BAY_' . $movement->tippingBay->id;
                         $currentLocationName = '🏗️ ' . $movement->tippingBay->name . ' (Tipping)';
                       }
-                      // 2. In Drop Zone (awaiting tipping)
+                      // 2. In Parking Area (awaiting tipping)
                       elseif ($movement->tippingLocation) {
                         $currentLocation = 'DROP_' . $movement->tippingLocation->id;
                         $currentLocationName = '📍 ' . $movement->tippingLocation->name . ' (Full - Awaiting)';
                       }
-                      // 3. Waiting Area
+                      // 3. Parking Area
                       elseif ($movement->custom_fields && isset($movement->custom_fields['waiting_area_location'])) {
                         $waitingArea = $movement->custom_fields['waiting_area_location'];
                         $currentLocation = 'WAITING_' . $waitingArea;
-                        $currentLocationName = '⏳ Waiting Area ' . $waitingArea . ' (Full)';
+                        $currentLocationName = '⏳ Parking Area ' . $waitingArea . ' (Full)';
                       }
                       else {
                         $currentLocation = 'ONSITE_FULL';
@@ -811,7 +811,7 @@
                   <?php if($isEmptyTrailer): ?>
                     
                     <?php if($movement->current_status === 'awaiting_collection' && $movement->tippingLocation): ?>
-                      <div class="text-green-700">📦 <?php echo e($movement->tippingLocation->name); ?> (Collection Zone)</div>
+                      <div class="text-green-700">📦 <?php echo e($movement->tippingLocation->name); ?> (Parking Area)</div>
                     <?php elseif($movement->tippingBay): ?>
                       <div class="text-yellow-700">🚛 <?php echo e($movement->tippingBay->name); ?> (Empty - Ready to Move)</div>
                     <?php elseif($movement->tippingLocation): ?>
@@ -833,14 +833,21 @@
               <?php if($booking->tipping_status && $booking->tipping_status !== 'departed'): ?>
                 <?php $canTakeAction = $booking->slot->depot_id == $defaultDepotId; ?>
                 <?php if($canTakeAction): ?>
-                  <a href="<?php echo e(route('app.tipping-workflow.show', $booking)); ?>" 
-                     class="text-xs text-blue-600 hover:text-blue-800 block">
-                    Manage →
-                  </a>
+                  <?php if(isset($booking->type) && $booking->type === 'factory'): ?>
+                    <a href="<?php echo e(route('app.factory-booking-workflow.show', $booking->original_factory_booking)); ?>" 
+                       class="text-xs text-orange-600 hover:text-orange-800 block">
+                      Factory Workflow →
+                    </a>
+                  <?php else: ?>
+                    <a href="<?php echo e(route('app.tipping-workflow.show', $booking)); ?>" 
+                       class="text-xs text-blue-600 hover:text-blue-800 block">
+                      Manage →
+                    </a>
+                  <?php endif; ?>
                 <?php else: ?>
                   <span class="text-xs text-gray-400 cursor-not-allowed block" 
                         title="Actions only available for your default depot">
-                    Manage →
+                    <?php if(isset($booking->type) && $booking->type === 'factory'): ?> Factory Workflow <?php else: ?> Manage <?php endif; ?> →
                   </span>
                 <?php endif; ?>
               <?php endif; ?>
@@ -879,10 +886,17 @@
             <?php endif; ?>
             
             
-            <a href="<?php echo e(route('app.bookings.show', $booking)); ?>"
-               class="inline-block px-2 py-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 text-xs text-center">
-              View
-            </a>
+            <?php if(isset($booking->type) && $booking->type === 'factory'): ?>
+              <a href="<?php echo e(route('app.factory-bookings.show', $booking->original_factory_booking)); ?>"
+                 class="inline-block px-2 py-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 text-xs text-center">
+                View
+              </a>
+            <?php else: ?>
+              <a href="<?php echo e(route('app.bookings.show', $booking)); ?>"
+                 class="inline-block px-2 py-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 text-xs text-center">
+                View
+              </a>
+            <?php endif; ?>
             
             
             <?php
@@ -892,10 +906,17 @@
             <?php if(!$isCancelled): ?>
               <?php $canTakeAction = $booking->slot->depot_id == $defaultDepotId; ?>
               <?php if($canTakeAction): ?>
-                <a href="<?php echo e(route('app.bookings.edit', $booking)); ?>"
-                   class="inline-block px-2 py-1 bg-yellow-500 text-white rounded-full hover:bg-yellow-600 text-xs text-center">
-                  Edit
-                </a>
+                <?php if(isset($booking->type) && $booking->type === 'factory'): ?>
+                  <a href="<?php echo e(route('app.factory-bookings.edit', $booking->original_factory_booking)); ?>"
+                     class="inline-block px-2 py-1 bg-yellow-500 text-white rounded-full hover:bg-yellow-600 text-xs text-center">
+                    Edit
+                  </a>
+                <?php else: ?>
+                  <a href="<?php echo e(route('app.bookings.edit', $booking)); ?>"
+                     class="inline-block px-2 py-1 bg-yellow-500 text-white rounded-full hover:bg-yellow-600 text-xs text-center">
+                    Edit
+                  </a>
+                <?php endif; ?>
               <?php else: ?>
                 <span class="inline-block px-2 py-1 bg-gray-300 text-gray-500 rounded-full text-xs text-center cursor-not-allowed"
                       title="Actions only available for your default depot">
@@ -1132,7 +1153,7 @@
         <!-- Departure Form -->
         <form id="departureForm" method="POST" class="mt-6">
           <?php echo csrf_field(); ?>
-          <?php echo method_field('PUT'); ?>
+          <?php echo method_field('PATCH'); ?>
           
           <div class="grid grid-cols-1 gap-4">
             
@@ -1217,7 +1238,7 @@
                       
                     </optgroup>
                     
-                    <optgroup label="📦 Drop Zones">
+                    <optgroup label="📦 Parking Areas">
                       <?php $__currentLoopData = $tippingLocations; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $location): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                         <option value="DROP_<?php echo e($location->id); ?>" data-type="location" data-name="<?php echo e($location->name); ?>">
                           <?php echo e($location->name); ?> (<?php echo e($location->getAvailableCapacity()); ?>/<?php echo e($location->capacity); ?> available)
@@ -1247,7 +1268,7 @@
                       <strong>⚠️ Tipping In Progress:</strong><br>
                       <span class="text-yellow-700">• Trailer can remain at current bay until tipping completes</span><br>
                       <span class="text-yellow-700">• Moving to other bays is restricted during active tipping</span><br>
-                      <span class="text-yellow-700">• Drop zones and collection zones are still available</span>
+                      <span class="text-yellow-700">• parking areas and parking areas are still available</span>
                     </div>
                   </div>
                 </div>
@@ -1292,7 +1313,7 @@
   <div id="bayAssignmentModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
       <div class="mt-3">
-        <h3 class="text-lg font-bold text-gray-900 mb-4">🏗️ Assign Bay from Waiting Area</h3>
+        <h3 class="text-lg font-bold text-gray-900 mb-4">🏗️ Assign Bay from Parking Area</h3>
         
         <form id="bayAssignmentForm" method="POST">
           <?php echo csrf_field(); ?>
@@ -1803,7 +1824,7 @@
         if (currentLocation === 'ONSITE_GENERAL') {
           currentLocationInfo.innerHTML = `
             <strong>📍 Current Location:</strong> ${currentLocationName}<br>
-            <span class="text-orange-700">⚠️ Vehicle is on site but not assigned to specific drop zone - please select location for trailer</span>
+            <span class="text-orange-700">⚠️ Vehicle is on site but not assigned to specific parking area - please select location for trailer</span>
           `;
           currentLocationInfo.className = 'mt-2 p-3 bg-orange-50 border border-orange-200 rounded text-sm';
         } else {
@@ -1817,8 +1838,16 @@
         locationSelect.selectedIndex = 0; // Reset to "Select Location"
       }
 
-      // Update form action
-      document.getElementById('departureForm').action = `/admin/bookings/${bookingId}/departure`;
+      // Update form action - determine correct prefix
+      let routePrefix = '/admin'; // default
+      if (window.location.pathname.includes('/app/')) {
+        routePrefix = '/app';
+      } else if (window.location.pathname.includes('/depot-admin/')) {
+        routePrefix = '/depot-admin';
+      } else if (window.location.pathname.includes('/admin/')) {
+        routePrefix = '/admin';
+      }
+      document.getElementById('departureForm').action = `${routePrefix}/bookings/${bookingId}/departure`;
 
       // Update departure time display
       updateDepartureTime();

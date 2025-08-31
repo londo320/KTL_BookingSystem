@@ -46,7 +46,7 @@
         <div>
           <p class="text-sm text-gray-600">Rebook Count</p>
           <p class="font-medium">
-            {{ $actualRebookCount ?? $booking->rebook_count ?? 0 }} / 3
+            {{ $actualRebookCount ?? $booking->rebook_count ?? 0 }} / {{ $maxRebooksPerBooking }}
             @if(isset($actualRebookCount) && $actualRebookCount != ($booking->rebook_count ?? 0))
               <span class="text-xs text-orange-600" title="Field: {{ $booking->rebook_count ?? 'null' }}, Calculated: {{ $actualRebookCount }}">
                 (corrected)
@@ -130,7 +130,26 @@
                   <div class="text-sm font-medium text-purple-800">Tipping Complete</div>
                   <div class="text-xs text-gray-600">{{ $booking->tipping_completed_at->format('d M Y, H:i') }}</div>
                   @if($booking->tipping_started_at)
-                    <div class="text-xs text-gray-500">Duration: {{ $booking->tipping_started_at->diffInMinutes($booking->tipping_completed_at) }}min</div>
+                    @php
+                      $durationMinutes = round($booking->tipping_started_at->diffInMinutes($booking->tipping_completed_at));
+                      if ($durationMinutes >= 10080) { // 7+ days (1 week)
+                        $weeks = floor($durationMinutes / 10080);
+                        $days = floor(($durationMinutes % 10080) / 1440);
+                        $formattedDuration = $weeks . 'w' . ($days > 0 ? ' ' . $days . 'd' : '');
+                      } elseif ($durationMinutes >= 1440) { // 24+ hours
+                        $days = floor($durationMinutes / 1440);
+                        $hours = floor(($durationMinutes % 1440) / 60);
+                        $mins = $durationMinutes % 60;
+                        $formattedDuration = $days . 'd ' . ($hours > 0 ? $hours . 'h ' : '') . ($mins > 0 ? $mins . 'm' : '');
+                      } elseif ($durationMinutes >= 60) {
+                        $hours = floor($durationMinutes / 60);
+                        $mins = $durationMinutes % 60;
+                        $formattedDuration = $hours . 'h ' . ($mins > 0 ? $mins . 'm' : '');
+                      } else {
+                        $formattedDuration = $durationMinutes . ' min';
+                      }
+                    @endphp
+                    <div class="text-xs text-gray-500">Duration: {{ $formattedDuration }}</div>
                   @endif
                   @if($booking->bay_number)
                     <div class="text-xs text-green-600">Bay {{ $booking->bay_number }}</div>
@@ -179,7 +198,10 @@
                   <div class="text-sm font-medium text-gray-800">Site Departure</div>
                   <div class="text-xs text-gray-600">{{ $booking->departed_at->format('d M Y, H:i') }}</div>
                   @if($booking->arrived_at)
-                    <div class="text-xs text-gray-500">Total time: {{ $booking->arrived_at->diffInMinutes($booking->departed_at) }}min</div>
+                    @php
+                      $totalMinutes = round($booking->arrived_at->diffInMinutes($booking->departed_at));
+                    @endphp
+                    <div class="text-xs text-gray-500">Total time: {{ $totalMinutes }} min</div>
                   @endif
                 </div>
               @elseif($booking->isCancelled())
@@ -269,12 +291,28 @@
               }
               // Add tipping completion if available
               if($booking->tipping_completed_at) {
-                $duration = $booking->tipping_started_at ? $booking->tipping_started_at->diffInMinutes($booking->tipping_completed_at) : null;
+                $duration = $booking->tipping_started_at ? round($booking->tipping_started_at->diffInMinutes($booking->tipping_completed_at)) : null;
+                if ($duration && $duration >= 10080) { // 7+ days (1 week)
+                  $weeks = floor($duration / 10080);
+                  $days = floor(($duration % 10080) / 1440);
+                  $formattedDuration = $weeks . 'w' . ($days > 0 ? ' ' . $days . 'd' : '');
+                } elseif ($duration && $duration >= 1440) {
+                  $days = floor($duration / 1440);
+                  $hours = floor(($duration % 1440) / 60);
+                  $mins = $duration % 60;
+                  $formattedDuration = $days . 'd ' . ($hours > 0 ? $hours . 'h ' : '') . ($mins > 0 ? $mins . 'm' : '');
+                } elseif ($duration && $duration >= 60) {
+                  $hours = floor($duration / 60);
+                  $mins = $duration % 60;
+                  $formattedDuration = $hours . 'h ' . ($mins > 0 ? $mins . 'm' : '');
+                } else {
+                  $formattedDuration = $duration ? $duration . ' min' : null;
+                }
                 $timeline->push((object)[
                   'timestamp' => $booking->tipping_completed_at,
                   'type' => 'tipping_complete',
                   'title' => 'Tipping Complete',
-                  'description' => 'Unloading finished' . ($duration ? ' (' . $duration . ' minutes)' : ''),
+                  'description' => 'Unloading finished' . ($formattedDuration ? ' (' . $formattedDuration . ')' : ''),
                   'icon' => '✅',
                   'color' => 'green'
                 ]);

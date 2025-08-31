@@ -49,7 +49,9 @@
       "Bash(fi)",
       "Bash(git rebase:*)",
       "Bash(git pull:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "WebFetch(domain:test.test)",
+      "WebFetch(domain:test.test)"
     ],
     "deny": []
   }

@@ -38,54 +38,85 @@ class BookingRebookController extends Controller
         // Check rebooking restrictions
         $restrictions = $this->checkRebookingRestrictions($booking);
 
+        // Get max rebooks setting
+        $maxRebooksPerBooking = \App\Models\CustomerBehaviorSetting::getCustomerSetting(
+            $booking->customer_id,
+            'max_rebooks_per_booking',
+            3
+        );
+
         return view('warehouse.bookings.rebook', compact(
             'booking',
             'availableSlots',
             'customerStats',
-            'restrictions'
+            'restrictions',
+            'maxRebooksPerBooking'
         ));
     }
 
     public function store(Request $request, Booking $booking)
     {
+        \Log::info('Warehouse rebook store method called', [
+            'booking_id' => $booking->id,
+            'new_slot_id' => $request->new_slot_id,
+            'reason' => $request->reason,
+            'all_data' => $request->all()
+        ]);
+
         $request->validate([
             'new_slot_id' => 'required|exists:slots,id',
             'reason' => 'required|string|max:500',
         ]);
 
+        \Log::info('Validation passed');
+
         // Validate rebooking restrictions
         $restrictions = $this->checkRebookingRestrictions($booking);
+        \Log::info('Restrictions checked', $restrictions);
+        
         if (! empty($restrictions['blocked'])) {
+            \Log::info('Rebooking blocked', ['reason' => $restrictions['blocked']]);
             return back()->withErrors(['rebook' => $restrictions['blocked']]);
         }
 
         $newSlot = Slot::findOrFail($request->new_slot_id);
+        \Log::info('New slot found', ['slot_id' => $newSlot->id, 'start_at' => $newSlot->start_at]);
 
         // Check slot capacity
         $currentBookings = $newSlot->bookings()->active()->count();
+        \Log::info('Slot capacity check', ['current_bookings' => $currentBookings, 'capacity' => $newSlot->capacity]);
+        
         if ($currentBookings >= $newSlot->capacity) {
+            \Log::info('Slot is full');
             return back()->withErrors(['new_slot_id' => 'Selected slot is fully booked.']);
         }
 
         // Check depot access
         $allowedDepotIds = $this->getAllowedDepotIds();
+        \Log::info('Depot access check', ['allowed_depots' => $allowedDepotIds, 'slot_depot' => $newSlot->depot_id]);
+        
         if (! in_array($newSlot->depot_id, $allowedDepotIds)) {
+            \Log::info('Depot access denied');
             return back()->withErrors(['new_slot_id' => 'You do not have access to this depot.']);
         }
 
         try {
+            \Log::info('Attempting to rebook booking');
             $newBooking = $booking->rebook($newSlot, $request->reason);
+            \Log::info('Rebook successful', ['new_booking_id' => $newBooking->id]);
 
             // Add warning if this is excessive rebooking
             if ($restrictions['warning']) {
                 session()->flash('warning', $restrictions['warning']);
             }
 
+            \Log::info('Redirecting to booking show page');
             return redirect()
-                ->route('admin.bookings.show', $newBooking)
+                ->route('app.bookings.show', $newBooking)
                 ->with('success', 'Booking successfully rebooked to '.$newSlot->start_at->format('M j, Y g:i A'));
 
         } catch (\Exception $e) {
+            \Log::error('Rebook failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return back()->withErrors(['rebook' => 'Failed to rebook: '.$e->getMessage()]);
         }
     }
@@ -370,9 +401,17 @@ class BookingRebookController extends Controller
             $history = collect($history->values());
         }
 
+        // Get max rebooks setting
+        $maxRebooksPerBooking = \App\Models\CustomerBehaviorSetting::getCustomerSetting(
+            $booking->customer_id,
+            'max_rebooks_per_booking',
+            3
+        );
+
         return view('warehouse.bookings.history', compact('booking', 'history'))->with([
             'sortOrder' => $sortOrder,
             'actualRebookCount' => $actualRebookCount,
+            'maxRebooksPerBooking' => $maxRebooksPerBooking,
         ]);
     }
 
@@ -451,7 +490,7 @@ class BookingRebookController extends Controller
             ->selectRaw('
                 COUNT(*) as total_actions,
                 SUM(CASE WHEN action = "rebooked" THEN 1 ELSE 0 END) as total_rebooks_30days,
-                SUM(CASE WHEN action = "cancelled" THEN 1 ELSE 0 END) as total_cancellations_30days,
+                COUNT(DISTINCT CASE WHEN action = "cancelled" AND reason NOT LIKE "%Rebooked%" THEN booking_id END) as total_cancellations_30days,
                 SUM(CASE WHEN action IN ("rebooked", "cancelled") AND is_last_minute = 1 THEN 1 ELSE 0 END) as last_minute_rebooks_30days,
                 AVG(CASE WHEN action IN ("rebooked", "cancelled") THEN hours_before_slot END) as avg_hours_notice
             ')

@@ -3,11 +3,11 @@
     <div class="flex items-center justify-between">
       <h2 class="font-semibold text-xl">Edit Pallet Type: {{ $palletType->name }}</h2>
       <div class="flex gap-2">
-        <a href="{{ route('app.pallet-types.show', $palletType) }}"
+        <a href="{{ route('app.settings.pallet-types.show', $palletType) }}"
            class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
           View Details
         </a>
-        <a href="{{ route('app.pallet-types.index') }}"
+        <a href="{{ route('app.settings.pallet-types') }}"
            class="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">
           Back to List
         </a>
@@ -16,7 +16,7 @@
   </x-slot>
   <div class="py-6 max-w-2xl mx-auto">
     <div class="bg-white p-6 rounded-lg shadow">
-      <form method="POST" action="{{ route('app.pallet-types.update', $palletType) }}">
+      <form method="POST" action="{{ route('app.settings.pallet-types.update', $palletType) }}">
         @csrf
         @method('PUT')
         <div class="grid grid-cols-1 gap-6">
@@ -55,7 +55,7 @@
           </div>
         </div>
         <div class="flex justify-end space-x-3 mt-6">
-          <a href="{{ route('app.pallet-types.index') }}"
+          <a href="{{ route('app.settings.pallet-types') }}"
              class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
             Cancel
           </a>

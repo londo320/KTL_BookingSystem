@@ -51,6 +51,21 @@
                 🚛 Manage Workflow
               </a>
             @endif
+            {{-- Trailer Movement Controls --}}
+            @php
+              $movement = $factoryBooking->movements->last();
+              $isOnSite = $movement && !in_array($movement->current_status, ['departed']);
+            @endphp
+            @if($isOnSite)
+              <button onclick="showMovementModal()" 
+                      class="inline-flex items-center px-3 py-1.5 bg-yellow-600 text-white text-sm font-medium rounded-md hover:bg-yellow-700 transition-colors">
+                🚚 Move Trailer
+              </button>
+            @endif
+            <a href="{{ route('app.factory-bookings.history', $factoryBooking) }}"
+               class="inline-flex items-center px-3 py-1.5 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors">
+              📋 History
+            </a>
             @if(in_array($factoryBooking->status, ['processing', 'arrived']))
               <form method="POST" action="{{ route('app.factory-bookings.complete', $factoryBooking) }}" class="inline">
                 @csrf
@@ -87,6 +102,10 @@
         {{ session('error') }}
       </div>
     @endif
+    
+    @php
+      $movement = $factoryBooking->movements->last();
+    @endphp
     {{-- Status Banner --}}
     <div class="mb-6 p-4 
       @if($factoryBooking->status === 'departed') bg-gray-100 border border-gray-300 
@@ -456,5 +475,146 @@
         hideAddPoModal();
       }
     });
+    // Trailer Movement Modal Functions
+    function showMovementModal() {
+      document.getElementById('movementModal').classList.remove('hidden');
+    }
+
+    function hideMovementModal() {
+      document.getElementById('movementModal').classList.add('hidden');
+    }
+
+    function moveTrailer(action) {
+      const form = document.getElementById('movementForm');
+      const actionInput = document.getElementById('movementAction');
+      const locationSelect = document.getElementById('locationSelect');
+      const baySelect = document.getElementById('baySelect');
+      const notesInput = document.getElementById('movementNotes');
+
+      actionInput.value = action;
+      
+      if (action === 'move_to_location') {
+        if (!locationSelect.value) {
+          alert('Please select a location');
+          return;
+        }
+      } else if (action === 'move_to_bay') {
+        if (!baySelect.value) {
+          alert('Please select a bay');
+          return;
+        }
+      }
+      
+      form.submit();
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('movementModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        hideMovementModal();
+      }
+    });
+  </script>
+
+  {{-- Trailer Movement Modal --}}
+  @if($movement && !in_array($movement->current_status, ['departed']))
+    <div id="movementModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold">🚚 Move Trailer</h3>
+          <button onclick="hideMovementModal()" class="text-gray-400 hover:text-gray-600">
+            <span class="sr-only">Close</span>
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        @if($movement->tippingLocation || $movement->tippingBay)
+          <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
+            <h4 class="font-medium text-blue-800 text-sm">Current Position</h4>
+            @if($movement->tippingLocation)
+              <p class="text-blue-700 text-sm">📍 {{ $movement->tippingLocation->name }}</p>
+            @endif
+            @if($movement->tippingBay)
+              <p class="text-blue-700 text-sm">🚛 {{ $movement->tippingBay->name }}</p>
+            @endif
+          </div>
+        @endif
+
+        <form id="movementForm" method="POST" action="{{ route('app.factory-booking-workflow.move-trailer', $factoryBooking) }}">
+          @csrf
+          <input type="hidden" id="movementAction" name="action" value="">
+          
+          {{-- Location Selection --}}
+          @if($availableLocations->count() > 0)
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Move to Location</label>
+              <select id="locationSelect" name="location_id" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                <option value="">Select location...</option>
+                @foreach($availableLocations as $location)
+                  <option value="{{ $location->id }}">{{ $location->name }}</option>
+                @endforeach
+              </select>
+              <button type="button" onclick="moveTrailer('move_to_location')" 
+                      class="w-full mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                📍 Move to Location
+              </button>
+            </div>
+          @endif
+
+          {{-- Bay Selection --}}
+          @if($availableBays->count() > 0)
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Move to Bay</label>
+              <select id="baySelect" name="bay_id" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                <option value="">Select bay...</option>
+                @foreach($availableBays as $bay)
+                  <option value="{{ $bay->id }}">{{ $bay->name }}</option>
+                @endforeach
+              </select>
+              <button type="button" onclick="moveTrailer('move_to_bay')" 
+                      class="w-full mt-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm">
+                🚛 Move to Bay
+              </button>
+            </div>
+          @endif
+
+          {{-- Collection Zone --}}
+          <div class="mb-4">
+            <button type="button" onclick="moveTrailer('move_to_collection')" 
+                    class="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
+              📦 Move to Collection Zone
+            </button>
+          </div>
+
+          {{-- Departure --}}
+          @if($movement->current_status === 'empty' || $movement->unloading_completed_at)
+            <div class="mb-4 border-t pt-4">
+              <button type="button" onclick="moveTrailer('depart')" 
+                      class="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm">
+                🏁 Record Departure (Frees Bay)
+              </button>
+            </div>
+          @endif
+
+          {{-- Notes --}}
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Movement Notes</label>
+            <textarea id="movementNotes" name="notes" rows="2" 
+                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" 
+                      placeholder="Optional notes about this movement..."></textarea>
+          </div>
+        </form>
+
+        <div class="flex justify-end">
+          <button onclick="hideMovementModal()" 
+                  class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  @endif
   </script>
 </x-app-layout>

@@ -723,17 +723,29 @@ class BookingController extends Controller
             abort(403, 'You do not have access to this booking.');
         }
 
+        // Get available locations and bays for trailer movement
+        $availableLocations = \App\Models\TippingLocation::forDepot($booking->slot->depot_id)
+            ->available()
+            ->get();
+            
+        $availableBays = \App\Models\TippingBay::forDepot($booking->slot->depot_id)
+            ->available()
+            ->get();
+            
         return view('warehouse.bookings.show', [
             'booking' => $booking->load([
                 'slot.depot',
                 'bookingType',
                 'customer',
                 'user',
-                'movements',
+                'movements.tippingLocation',
+                'movements.tippingBay',
                 'poNumbers.lines.expectedPalletType',
                 'poNumbers.lines.actualPalletType',
                 'poNumbers.lines.actualPallets.palletType',
             ]),
+            'availableLocations' => $availableLocations,
+            'availableBays' => $availableBays,
         ]);
     }
 
@@ -1680,15 +1692,15 @@ class BookingController extends Controller
                             ->whereHas('factoryBooking', fn($q) => $q->whereIn('depot_id', $depotIds));
                     });
             })
-            ->whereIn('current_status', ['arrived', 'in_parking', 'in_parking', 'in_parking', 'at_bay', 'unloading', 'empty'])
-            ->orderBy('in_parking_at', 'asc') // Oldest first
+            ->whereIn('current_status', ['arrived', 'in_parking', 'in_location', 'back_to_parking', 'at_bay', 'unloading', 'empty', 'awaiting_collection', 'trailer_dropped'])
+            ->orderBy('actual_arrival', 'asc') // Oldest first
             ->get();
 
         // Enhanced grouping by status
-        $waitingToTip = $movementsOnSite->whereIn('current_status', ['in_parking', 'arrived', 'in_parking']); // Need to start tipping
+        $waitingToTip = $movementsOnSite->whereIn('current_status', ['in_parking', 'arrived', 'in_location', 'back_to_parking', 'trailer_dropped']); // Need to start tipping
         $currentlyTipping = $movementsOnSite->whereIn('current_status', ['at_bay', 'unloading']); // Actively being tipped
-        $emptyTrailers = $movementsOnSite->where('current_status', 'empty'); // Tipped and ready for collection
-        $generalWaiting = $movementsOnSite->where('current_status', 'in_parking'); // In waiting areas
+        $emptyTrailers = $movementsOnSite->whereIn('current_status', ['empty', 'awaiting_collection']); // Tipped and ready for collection
+        $generalWaiting = $movementsOnSite->whereIn('current_status', ['in_parking', 'in_location', 'back_to_parking']); // In waiting areas
         
         // Calculate time on site for all trailers
         $trailersWithTime = $movementsOnSite->map(function ($movement) {

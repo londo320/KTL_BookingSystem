@@ -50,7 +50,7 @@
         <div>
           <p class="text-sm text-gray-600">Rebook Count</p>
           <p class="font-medium">
-            {{ $actualRebookCount ?? $booking->rebook_count ?? 0 }} / 3
+            {{ $actualRebookCount ?? $booking->rebook_count ?? 0 }} / {{ $maxRebooksPerBooking }}
             @if(isset($actualRebookCount) && $actualRebookCount != ($booking->rebook_count ?? 0))
               <span class="text-xs text-orange-600" title="Field: {{ $booking->rebook_count ?? 'null' }}, Calculated: {{ $actualRebookCount }}">
                 (corrected)

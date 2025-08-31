@@ -57,7 +57,6 @@ class DepotMapController extends Controller
         try {
             // Get all tipping bays for this depot that should show on map
             $bays = TippingBay::where('depot_id', $depot->id)
-                ->active()
                 ->where('show_on_map', true)
                 ->whereNotNull('map_x')
                 ->whereNotNull('map_y')
@@ -193,7 +192,6 @@ class DepotMapController extends Controller
 
             // Get all bays for this depot
             $bays = TippingBay::where('depot_id', $depot->id)
-                ->active()
                 ->orderBy('name')
                 ->get();
                 
@@ -236,7 +234,6 @@ class DepotMapController extends Controller
 
             // Get all bays for this depot
             $bays = TippingBay::where('depot_id', $depot->id)
-                ->active()
                 ->orderBy('name')
                 ->get();
                 
@@ -478,6 +475,9 @@ class DepotMapController extends Controller
         $bay = TippingBay::findOrFail($bayId);
         
         $currentBooking = $bay->currentBooking();
+        if ($currentBooking) {
+            $currentBooking->load(['poNumbers.lines', 'products', 'movements']);
+        }
         $status = $this->determineBayStatus($bay, $currentBooking);
         
         // Get available alternative bays for this depot
@@ -491,23 +491,191 @@ class DepotMapController extends Controller
         $bookingData = null;
         if ($currentBooking) {
             $movement = $currentBooking->movements?->first();
+            $isFactory = $currentBooking instanceof \App\Models\FactoryBooking;
+            
+            // Calculate duration on site
+            $durationOnSite = null;
+            $arrivedAt = $currentBooking->arrived_at;
+            if ($arrivedAt) {
+                $minutesOnSite = round($arrivedAt->diffInMinutes(now()));
+                if ($minutesOnSite >= 1440) {
+                    $days = floor($minutesOnSite / 1440);
+                    $hours = floor(($minutesOnSite % 1440) / 60);
+                    $durationOnSite = $days . 'd ' . ($hours > 0 ? $hours . 'h' : '');
+                } elseif ($minutesOnSite >= 60) {
+                    $hours = floor($minutesOnSite / 60);
+                    $mins = $minutesOnSite % 60;
+                    $durationOnSite = $hours . 'h ' . ($mins > 0 ? $mins . 'm' : '');
+                } else {
+                    $durationOnSite = $minutesOnSite . ' min';
+                }
+            }
+            
+            // Calculate time in bay
+            $timeInBay = null;
+            if ($movement && $movement->moved_to_bay_at) {
+                $minutesInBay = round($movement->moved_to_bay_at->diffInMinutes(now()));
+                if ($minutesInBay >= 1440) {
+                    $days = floor($minutesInBay / 1440);
+                    $hours = floor(($minutesInBay % 1440) / 60);
+                    $timeInBay = $days . 'd ' . ($hours > 0 ? $hours . 'h' : '');
+                } elseif ($minutesInBay >= 60) {
+                    $hours = floor($minutesInBay / 60);
+                    $mins = $minutesInBay % 60;
+                    $timeInBay = $hours . 'h ' . ($mins > 0 ? $mins . 'm' : '');
+                } else {
+                    $timeInBay = $minutesInBay . ' min';
+                }
+            }
+            
+            // Calculate tipping performance for empty trailers
+            $tippingPerformance = null;
+            if ($movement && $movement->current_status === 'empty' && $movement->unloading_completed_at) {
+                // Use unloading_started_at if available, otherwise use moved_to_bay_at as start time
+                $startTime = $movement->unloading_started_at ?? $movement->moved_to_bay_at;
+                if ($startTime) {
+                    $actualTippingDuration = round($startTime->diffInMinutes($movement->unloading_completed_at));
+                
+                if ($isFactory) {
+                    // Factory bookings: compare against factory_processing_time_minutes setting
+                    $allocatedTime = \App\Models\Setting::where('key', 'factory_processing_time_minutes')->value('value') ?? 120;
+                    $onTime = $actualTippingDuration <= $allocatedTime;
+                    $text = $onTime 
+                        ? "✅ Tipped Ontime ({$actualTippingDuration}/{$allocatedTime} mins)"
+                        : "🚨 Failed Tipping ({$actualTippingDuration}/{$allocatedTime} mins)";
+                    
+                    $tippingPerformance = [
+                        'status' => $onTime ? 'ontime' : 'late',
+                        'text' => $text,
+                        'class' => $onTime ? 'text-green-600' : 'text-red-600'
+                    ];
+                } elseif ($currentBooking->slot) {
+                    // Regular bookings: compare against slot duration
+                    $slotDuration = round($currentBooking->slot->start_at->diffInMinutes($currentBooking->slot->end_at));
+                    $onTime = $actualTippingDuration <= $slotDuration;
+                    $text = $onTime 
+                        ? "✅ Tipped Ontime ({$actualTippingDuration}/{$slotDuration} mins)"
+                        : "🚨 Failed Tipping ({$actualTippingDuration}/{$slotDuration} mins)";
+                    
+                    $tippingPerformance = [
+                        'status' => $onTime ? 'ontime' : 'late',
+                        'text' => $text,
+                        'class' => $onTime ? 'text-green-600' : 'text-red-600'
+                    ];
+                }
+                }
+            }
+            
+            // Calculate time remaining and check if overdue
+            $timeRemaining = null;
+            $isOverdue = false;
+            if ($isFactory) {
+                // Factory bookings: use factory_processing_time_minutes setting
+                $factoryTimeLimit = \App\Models\Setting::where('key', 'factory_processing_time_minutes')->value('value') ?? 120;
+                if ($movement && $movement->unloading_started_at) {
+                    $minutesUsed = round($movement->unloading_started_at->diffInMinutes(now()));
+                    $minutesRemaining = $factoryTimeLimit - $minutesUsed;
+                    $isOverdue = $minutesRemaining <= 0;
+                    $absMinutes = abs($minutesRemaining);
+                    
+                    // Format time remaining
+                    if ($absMinutes >= 1440) {
+                        $days = floor($absMinutes / 1440);
+                        $hours = floor(($absMinutes % 1440) / 60);
+                        $formattedTime = $days . 'd ' . ($hours > 0 ? $hours . 'h' : '');
+                    } elseif ($absMinutes >= 60) {
+                        $hours = floor($absMinutes / 60);
+                        $mins = $absMinutes % 60;
+                        $formattedTime = $hours . 'h ' . ($mins > 0 ? $mins . 'm' : '');
+                    } else {
+                        $formattedTime = $absMinutes . ' min';
+                    }
+                    
+                    $timeRemaining = $isOverdue ? 'OVERDUE by ' . $formattedTime : $formattedTime . ' left';
+                }
+            } else {
+                // Regular bookings: use slot duration
+                if ($currentBooking->slot) {
+                    $slotEnd = $currentBooking->slot->end_at;
+                    $minutesRemaining = round(now()->diffInMinutes($slotEnd, false));
+                    $isOverdue = $minutesRemaining <= 0;
+                    $absMinutes = abs($minutesRemaining);
+                    
+                    // Format time remaining
+                    if ($absMinutes >= 1440) {
+                        $days = floor($absMinutes / 1440);
+                        $hours = floor(($absMinutes % 1440) / 60);
+                        $formattedTime = $days . 'd ' . ($hours > 0 ? $hours . 'h' : '');
+                    } elseif ($absMinutes >= 60) {
+                        $hours = floor($absMinutes / 60);
+                        $mins = $absMinutes % 60;
+                        $formattedTime = $hours . 'h ' . ($mins > 0 ? $mins . 'm' : '');
+                    } else {
+                        $formattedTime = $absMinutes . ' min';
+                    }
+                    
+                    $timeRemaining = $isOverdue ? 'OVERDUE by ' . $formattedTime : $formattedTime . ' left';
+                }
+            }
+            
+            // Get expected quantities
+            $expectedCases = 0;
+            $expectedPallets = 0;
+            if ($isFactory) {
+                // Load PO numbers with lines for factory bookings
+                $currentBooking->load('poNumbers.lines');
+                $expectedCases = $currentBooking->poNumbers->sum(function($po) {
+                    return $po->lines->sum('expected_cases');
+                });
+                $expectedPallets = $currentBooking->poNumbers->sum(function($po) {
+                    return $po->lines->sum('expected_pallets');
+                });
+            } else {
+                // For regular bookings, check PO numbers first, then products, then booking fields
+                if ($currentBooking->poNumbers && $currentBooking->poNumbers->count() > 0) {
+                    $expectedCases = $currentBooking->poNumbers->sum(function($po) {
+                        return $po->lines->sum('expected_cases');
+                    });
+                    $expectedPallets = $currentBooking->poNumbers->sum(function($po) {
+                        return $po->lines->sum('expected_pallets');
+                    });
+                } else {
+                    $expectedCases = $currentBooking->products->sum('quantity') ?: ($currentBooking->expected_cases ?? $currentBooking->cases ?? 0);
+                    $expectedPallets = $currentBooking->products->sum('expected_pallets') ?: ($currentBooking->expected_pallets ?? $currentBooking->pallets ?? 0);
+                }
+            }
+            
+            // Determine trailer status
+            $trailerStatus = 'Unknown';
+            if ($movement) {
+                $hasCompletedTipping = $movement->unloading_completed_at !== null;
+                $trailerStatus = $hasCompletedTipping ? 'Empty' : 'Full';
+            }
+            
             $bookingData = [
                 'id' => $currentBooking->id,
-                'booking_reference' => $currentBooking->booking_reference ?? $currentBooking->reference_number,
+                'booking_reference' => $currentBooking->booking_reference ?? $currentBooking->reference,
                 'customer_name' => $currentBooking->customer->name ?? 'Unknown',
-                'customer_phone' => $currentBooking->customer->phone ?? null,
                 'vehicle_registration' => $currentBooking->vehicle_registration,
-                'driver_name' => $currentBooking->driver_name ?? null,
-                'container_number' => $currentBooking->container_number ?? null,
-                'waste_type' => $currentBooking->waste_type ?? null,
+                'container_number' => $isFactory ? $currentBooking->trailer_registration : $currentBooking->container_number,
+                'trailer_status' => $trailerStatus,
+                'expected_cases' => number_format($expectedCases),
+                'expected_pallets' => number_format($expectedPallets),
+                'duration_on_site' => $durationOnSite,
+                'time_in_bay' => $timeInBay,
+                'time_remaining' => $timeRemaining,
+                'is_overdue' => $isOverdue,
+                'type' => $isFactory ? 'Factory' : 'Scheduled',
                 'status' => $movement?->current_status ?? 'unknown',
-                'arrived_at' => $currentBooking->arrived_at?->format('d/m/Y H:i'),
-                'scheduled_at' => $currentBooking->slot?->start_at?->format('d/m/Y H:i'),
-                'unit_departed' => $movement?->unit_departed_at?->format('d/m/Y H:i'),
-                'unloading_started' => $movement?->unloading_started_at?->format('d/m/Y H:i'),
-                'unloading_completed' => $movement?->unloading_completed_at?->format('d/m/Y H:i'),
-                'workflow_url' => route('admin.bookings.show', $currentBooking->id),
-                'tipping_workflow_url' => $movement ? route('admin.tipping-workflow.show', $movement->id) : null,
+                'arrived_at' => $currentBooking->arrived_at?->format('d M H:i'),
+                'scheduled_at' => $isFactory ? 'Factory Delivery' : ($currentBooking->slot?->start_at?->format('d M H:i') . ' - ' . $currentBooking->slot?->end_at?->format('H:i')),
+                'unloading_started' => $movement?->unloading_started_at?->format('d M H:i'),
+                'unloading_completed' => $movement?->unloading_completed_at?->format('d M H:i'),
+                'tipping_performance' => $tippingPerformance,
+                'workflow_url' => $isFactory 
+                    ? route('app.factory-bookings.show', $currentBooking)
+                    : route('app.bookings.show', $currentBooking),
+                'tipping_workflow_url' => route('app.tipping-workflow.show', $currentBooking),
             ];
         }
 
@@ -520,7 +688,7 @@ class DepotMapController extends Controller
             'is_occupied' => $bay->is_occupied,
             'current_booking' => $bookingData,
             'alternative_bays' => $alternativeBays,
-            'can_change_bay' => $currentBooking && in_array($status, ['arrived', 'in_location', 'at_bay'])
+            'can_change_bay' => $currentBooking && in_array($status, ['arrived', 'in_parking', 'at_bay'])
         ]);
     }
     
@@ -592,12 +760,22 @@ class DepotMapController extends Controller
         $location = TippingLocation::findOrFail($locationId);
         
         // Get current bookings at this location
-        $currentBookings = Booking::whereHas('movements', function($query) use ($locationId) {
+        // Get both regular and factory bookings at this location
+        $regularBookings = Booking::whereHas('movements', function($query) use ($locationId) {
             $query->where('tipping_location_id', $locationId)
-                  ->whereIn('current_status', ['arrived', 'in_location', 'at_bay', 'unloading', 'trailer_dropped']);
+                  ->whereIn('current_status', ['arrived', 'in_parking', 'back_to_parking', 'empty', 'at_bay', 'unloading']);
         })->with(['movements' => function($query) use ($locationId) {
             $query->where('tipping_location_id', $locationId);
         }, 'customer'])->get();
+        
+        $factoryBookings = \App\Models\FactoryBooking::whereHas('movements', function($query) use ($locationId) {
+            $query->where('tipping_location_id', $locationId)
+                  ->whereIn('current_status', ['arrived', 'in_parking', 'back_to_parking', 'empty', 'at_bay', 'unloading']);
+        })->with(['movements' => function($query) use ($locationId) {
+            $query->where('tipping_location_id', $locationId);
+        }, 'customer'])->get();
+        
+        $currentBookings = $regularBookings->merge($factoryBookings);
 
         $status = $this->determineLocationStatus($location, $currentBookings);
 
@@ -610,17 +788,72 @@ class DepotMapController extends Controller
             'available_capacity' => max(0, $location->capacity - $currentBookings->count()),
             'current_bookings' => $currentBookings->map(function($booking) {
                 $movement = $booking->movements->first();
+                $isFactory = $booking instanceof \App\Models\FactoryBooking;
+                $arrivedAt = $isFactory ? $booking->arrived_at : $booking->arrived_at;
+                
+                // Calculate time on site with proper formatting
+                $timeOnSite = null;
+                if ($arrivedAt) {
+                    $minutesOnSite = round($arrivedAt->diffInMinutes(now()));
+                    if ($minutesOnSite >= 10080) {
+                        $weeks = floor($minutesOnSite / 10080);
+                        $days = floor(($minutesOnSite % 10080) / 1440);
+                        $timeOnSite = $weeks . 'w' . ($days > 0 ? ' ' . $days . 'd' : '');
+                    } elseif ($minutesOnSite >= 1440) {
+                        $days = floor($minutesOnSite / 1440);
+                        $hours = floor(($minutesOnSite % 1440) / 60);
+                        $mins = $minutesOnSite % 60;
+                        $timeOnSite = $days . 'd ' . ($hours > 0 ? $hours . 'h ' : '') . ($mins > 0 ? $mins . 'm' : '');
+                    } elseif ($minutesOnSite >= 60) {
+                        $hours = floor($minutesOnSite / 60);
+                        $mins = $minutesOnSite % 60;
+                        $timeOnSite = $hours . 'h ' . ($mins > 0 ? $mins . 'm' : '');
+                    } else {
+                        $timeOnSite = $minutesOnSite . ' min';
+                    }
+                }
+                
+                // Determine trailer status
+                $trailerStatus = 'Unknown';
+                if ($movement) {
+                    $hasCompletedTipping = $movement->unloading_completed_at !== null;
+                    $trailerStatus = match($movement->current_status) {
+                        'arrived' => '🚐 Just Arrived',
+                        'in_parking' => $hasCompletedTipping ? '✅ Empty - Awaiting Collection' : '🚛 Full - Waiting to Tip',
+                        'back_to_parking' => '✅ Empty - Awaiting Collection',
+                        'empty' => '✅ Empty - Ready for Collection',
+                        'at_bay' => '🏗️ At Tipping Bay',
+                        'unloading' => '⚡ Currently Tipping',
+                        default => '⏳ ' . ucwords(str_replace('_', ' ', $movement->current_status))
+                    };
+                }
+                
                 return [
                     'id' => $booking->id,
-                    'booking_reference' => $booking->booking_reference,
+                    'type' => $isFactory ? 'Factory' : 'Scheduled',
+                    'booking_reference' => $isFactory ? $booking->reference : $booking->booking_reference,
                     'customer_name' => $booking->customer->name ?? 'Unknown',
                     'vehicle_registration' => $booking->vehicle_registration,
-                    'container_number' => $booking->container_number,
+                    'container_number' => $isFactory ? $booking->trailer_registration : $booking->container_number,
                     'status' => $movement->current_status ?? 'unknown',
-                    'arrived_at' => $booking->arrived_at?->format('H:i'),
-                    'unit_departed' => $movement->unit_departed_at?->format('H:i'),
+                    'trailer_status' => $trailerStatus,
+                    'arrived_at' => $arrivedAt?->format('d M H:i'),
+                    'time_on_site' => $timeOnSite,
+                    'tipping_completed' => $movement && $movement->unloading_completed_at ? $movement->unloading_completed_at->format('d M H:i') : null,
+                    'booking_url' => $isFactory 
+                        ? route('app.factory-bookings.show', $booking)
+                        : route('app.bookings.show', $booking),
+                    'arrived_timestamp' => $arrivedAt ? $arrivedAt->timestamp : 0,
+                    'is_full' => $movement && in_array($movement->current_status, ['in_parking']) && !$movement->unloading_completed_at,
                 ];
-            })
+            })->sortBy(function($booking) {
+                // Sort priority: Full trailers first (longest waiting), then empty trailers
+                if ($booking['is_full']) {
+                    return $booking['arrived_timestamp']; // Earlier arrivals first for full trailers
+                } else {
+                    return 999999999 + $booking['arrived_timestamp']; // Empty trailers go after full ones
+                }
+            })->values()
         ]);
     }
 
@@ -639,7 +872,7 @@ class DepotMapController extends Controller
                 'occupancy' => $currentBooking ? 1 : 0,
                 'capacity' => 1, // Bays typically have capacity of 1
                 'bookings' => $currentBooking ? 1 : 0,
-                'available' => $bay->isAvailable(),
+                'available' => $status === 'available',
                 'booking' => $currentBooking
             ];
         }
@@ -665,10 +898,10 @@ class DepotMapController extends Controller
                 if (in_array($movement->current_status, ['at_bay', 'unloading'])) {
                     return 'active';
                 }
-                if ($movement->current_status === 'trailer_dropped' && $movement->unit_departed_at) {
+                if (in_array($movement->current_status, ['empty', 'back_to_parking']) && $movement->unloading_completed_at) {
                     return 'waiting_collection';
                 }
-                if (in_array($movement->current_status, ['arrived', 'in_location'])) {
+                if (in_array($movement->current_status, ['arrived', 'in_parking'])) {
                     return 'occupied';
                 }
             }
@@ -683,10 +916,18 @@ class DepotMapController extends Controller
         
         foreach ($locations as $location) {
             // Get current bookings at this location
-            $currentBookings = Booking::whereHas('movements', function($query) use ($location) {
+            // Get current bookings (both regular and factory) at this location
+            $regularBookings = Booking::whereHas('movements', function($query) use ($location) {
                 $query->where('tipping_location_id', $location->id)
-                      ->whereIn('current_status', ['arrived', 'in_location', 'at_bay', 'unloading', 'trailer_dropped']);
+                      ->whereIn('current_status', ['arrived', 'in_parking', 'back_to_parking', 'empty', 'at_bay', 'unloading']);
             })->with('movements')->get();
+            
+            $factoryBookings = \App\Models\FactoryBooking::whereHas('movements', function($query) use ($location) {
+                $query->where('tipping_location_id', $location->id)
+                      ->whereIn('current_status', ['arrived', 'in_parking', 'back_to_parking', 'empty', 'at_bay', 'unloading']);
+            })->with('movements')->get();
+            
+            $currentBookings = $regularBookings->merge($factoryBookings);
 
             $status = $this->determineLocationStatus($location, $currentBookings);
             
@@ -725,7 +966,7 @@ class DepotMapController extends Controller
         // Check for trailers awaiting collection
         $awaitingCollection = $currentBookings->filter(function($booking) {
             $movement = $booking->movements->first();
-            return $movement && $movement->current_status === 'trailer_dropped' && $movement->unit_departed_at;
+            return $movement && $movement->current_status === 'back_to_parking' && $movement->unloading_completed_at;
         });
 
         if ($awaitingCollection->count() > 0) {
@@ -735,7 +976,7 @@ class DepotMapController extends Controller
         // Check for scheduled/occupied
         $occupied = $currentBookings->filter(function($booking) {
             $movement = $booking->movements->first();
-            return $movement && in_array($movement->current_status, ['arrived', 'in_location']);
+            return $movement && in_array($movement->current_status, ['arrived', 'in_parking']);
         });
 
         if ($occupied->count() > 0) {
@@ -754,28 +995,187 @@ class DepotMapController extends Controller
     {
         $now = now();
         $today = $now->copy()->startOfDay();
+        
+        // Count both bays and locations
+        $totalBays = TippingBay::where('depot_id', $depotId)->where('is_active', true)->count();
+        $totalLocations = TippingLocation::where('depot_id', $depotId)->active()->count();
+        
+        // Count available bays (based on status, not just is_occupied flag)
+        $availableBays = TippingBay::where('depot_id', $depotId)
+            ->where('is_active', true)
+            ->get()
+            ->filter(function($bay) {
+                $currentBooking = $bay->currentBooking();
+                return !$currentBooking; // No current booking = available
+            })->count();
+            
+        $availableLocations = TippingLocation::where('depot_id', $depotId)
+            ->active()
+            ->available()
+            ->count();
+        
+        // Full trailers breakdown
+        // 1. Full trailers in parking areas (awaiting tipping)
+        $fullInParkingAreas = \DB::table('movements')
+            ->join('tipping_locations', 'movements.tipping_location_id', '=', 'tipping_locations.id')
+            ->where('tipping_locations.depot_id', $depotId)
+            ->whereIn('movements.current_status', ['arrived', 'in_parking'])
+            ->whereNull('movements.unloading_completed_at')
+            ->count();
+            
+        // 2. Full trailers currently tipping (at bays)
+        $fullCurrentlyTipping = \DB::table('movements')
+            ->leftJoin('tipping_bays', 'movements.tipping_bay_id', '=', 'tipping_bays.id')
+            ->leftJoin('tipping_locations', 'movements.tipping_location_id', '=', 'tipping_locations.id')
+            ->where(function($query) use ($depotId) {
+                $query->where('tipping_bays.depot_id', $depotId)
+                      ->orWhere('tipping_locations.depot_id', $depotId);
+            })
+            ->whereIn('movements.current_status', ['at_bay', 'unloading'])
+            ->count();
+            
+        $totalFullTrailers = $fullInParkingAreas + $fullCurrentlyTipping;
+        
+        // Awaiting collection (empty trailers) - get breakdown by location type
+        $awaitingInParkingAreas = \DB::table('movements')
+            ->join('tipping_locations', 'movements.tipping_location_id', '=', 'tipping_locations.id')
+            ->where('tipping_locations.depot_id', $depotId)
+            ->where(function($query) {
+                $query->where('movements.current_status', 'empty')
+                      ->orWhere('movements.current_status', 'back_to_parking')
+                      ->orWhere('movements.current_status', 'in_parking');
+            })
+            ->whereNotNull('movements.unloading_completed_at')
+            ->count();
+            
+        $awaitingInBays = \DB::table('movements')
+            ->join('tipping_bays', 'movements.tipping_bay_id', '=', 'tipping_bays.id')
+            ->where('tipping_bays.depot_id', $depotId)
+            ->where('movements.current_status', 'empty')
+            ->whereNotNull('movements.unloading_completed_at')
+            ->count();
+            
+        $awaitingCollection = $awaitingInParkingAreas + $awaitingInBays;
+
+        // Calculate expected vs actual totals for trailers currently on site
+        $expectedUnits = 0;
+        $actualUnits = 0;
+        $expectedPallets = 0;
+        $actualPallets = 0;
+        
+        // Get all bookings currently on site at this depot
+        $onSiteBookings = Booking::whereHas('movements', function($query) use ($depotId) {
+                $query->where(function($subQuery) use ($depotId) {
+                    $subQuery->whereHas('tippingLocation', function($locationQuery) use ($depotId) {
+                        $locationQuery->where('depot_id', $depotId);
+                    })->orWhereHas('tippingBay', function($bayQuery) use ($depotId) {
+                        $bayQuery->where('depot_id', $depotId);
+                    });
+                })->whereIn('current_status', ['arrived', 'in_parking', 'at_bay', 'unloading', 'empty']);
+            })
+            ->whereNull('departed_at')
+            ->with(['poNumbers.lines.actualPallets', 'products'])
+            ->get();
+            
+        $onSiteFactoryBookings = \App\Models\FactoryBooking::whereHas('movements', function($query) use ($depotId) {
+                $query->where(function($subQuery) use ($depotId) {
+                    $subQuery->whereHas('tippingLocation', function($locationQuery) use ($depotId) {
+                        $locationQuery->where('depot_id', $depotId);
+                    })->orWhereHas('tippingBay', function($bayQuery) use ($depotId) {
+                        $bayQuery->where('depot_id', $depotId);
+                    });
+                })->whereIn('current_status', ['arrived', 'in_parking', 'at_bay', 'unloading', 'empty']);
+            })
+            ->whereNull('departed_at')
+            ->with(['poNumbers.lines.actualPallets'])
+            ->get();
+            
+        foreach ($onSiteBookings->merge($onSiteFactoryBookings) as $booking) {
+            // Expected totals
+            if ($booking->poNumbers && $booking->poNumbers->count() > 0) {
+                $expectedUnits += $booking->poNumbers->sum(function($po) {
+                    return $po->lines->sum('expected_cases');
+                });
+                $expectedPallets += $booking->poNumbers->sum(function($po) {
+                    return $po->lines->sum('expected_pallets');
+                });
+                
+                // Actual totals
+                $actualUnits += $booking->poNumbers->sum(function($po) {
+                    return $po->lines->sum('actual_cases');
+                });
+                $actualPallets += $booking->poNumbers->sum(function($po) {
+                    return $po->lines->flatMap->actualPallets->sum('quantity');
+                });
+            }
+        }
+        
+        // Calculate what's been processed today (completed tipping today)
+        $todayProcessedUnits = 0;
+        $todayProcessedPallets = 0;
+        
+        $todaysCompletedBookings = Booking::whereHas('movements', function($query) use ($depotId, $today) {
+                $query->where(function($subQuery) use ($depotId) {
+                    $subQuery->whereHas('tippingLocation', function($locationQuery) use ($depotId) {
+                        $locationQuery->where('depot_id', $depotId);
+                    })->orWhereHas('tippingBay', function($bayQuery) use ($depotId) {
+                        $bayQuery->where('depot_id', $depotId);
+                    });
+                })->where('unloading_completed_at', '>=', $today);
+            })
+            ->with(['poNumbers.lines.actualPallets', 'products'])
+            ->get();
+            
+        $todaysCompletedFactoryBookings = \App\Models\FactoryBooking::whereHas('movements', function($query) use ($depotId, $today) {
+                $query->where(function($subQuery) use ($depotId) {
+                    $subQuery->whereHas('tippingLocation', function($locationQuery) use ($depotId) {
+                        $locationQuery->where('depot_id', $depotId);
+                    })->orWhereHas('tippingBay', function($bayQuery) use ($depotId) {
+                        $bayQuery->where('depot_id', $depotId);
+                    });
+                })->where('unloading_completed_at', '>=', $today);
+            })
+            ->with(['poNumbers.lines.actualPallets'])
+            ->get();
+            
+        foreach ($todaysCompletedBookings->merge($todaysCompletedFactoryBookings) as $booking) {
+            if ($booking->poNumbers && $booking->poNumbers->count() > 0) {
+                $todayProcessedUnits += $booking->poNumbers->sum(function($po) {
+                    return $po->lines->sum('actual_cases');
+                });
+                $todayProcessedPallets += $booking->poNumbers->sum(function($po) {
+                    return $po->lines->flatMap->actualPallets->sum('quantity');
+                });
+            }
+        }
+
+        // Capacity calculations (bays only)
+        $totalCapacity = $totalBays;
+        $availableCapacity = $availableBays;
+        $inUseCapacity = $totalCapacity - $availableCapacity;
 
         return [
-            'total_locations' => TippingLocation::where('depot_id', $depotId)->active()->count(),
-            'available_locations' => TippingLocation::where('depot_id', $depotId)
-                ->active()
-                ->available()
-                ->count(),
-            'active_bookings' => Booking::whereHas('movements', function($query) use ($depotId) {
-                $query->whereHas('tippingLocation', function($subQuery) use ($depotId) {
-                    $subQuery->where('depot_id', $depotId);
-                })->whereIn('current_status', ['at_bay', 'unloading']);
-            })->count(),
-            'awaiting_collection' => Booking::whereHas('movements', function($query) use ($depotId) {
-                $query->whereHas('tippingLocation', function($subQuery) use ($depotId) {
-                    $subQuery->where('depot_id', $depotId);
-                })->where('current_status', 'trailer_dropped')
-                  ->whereNotNull('unit_departed_at');
-            })->count(),
+            'total_locations' => $totalBays + $totalLocations,
+            'total_capacity' => $totalCapacity,
+            'in_use_capacity' => $inUseCapacity,
+            'available_capacity' => $availableCapacity,
+            'total_full_trailers' => $totalFullTrailers,
+            'full_in_parking' => $fullInParkingAreas,
+            'full_currently_tipping' => $fullCurrentlyTipping,
+            'awaiting_collection' => $awaitingCollection,
+            'awaiting_in_parking' => $awaitingInParkingAreas,
+            'awaiting_in_bays' => $awaitingInBays,
+            'expected_units' => $expectedUnits,
+            'actual_units' => $actualUnits,
+            'expected_pallets' => $expectedPallets,
+            'actual_pallets' => $actualPallets,
+            'today_processed_units' => $todayProcessedUnits,
+            'today_processed_pallets' => $todayProcessedPallets,
             'todays_arrivals' => Booking::where('arrived_at', '>=', $today)
                 ->whereHas('slot', function($query) use ($depotId) {
                     $query->where('depot_id', $depotId);
-                })->count(),
+                })->count() + \App\Models\FactoryBooking::where('arrived_at', '>=', $today)
+                ->where('depot_id', $depotId)->count(),
             'pending_arrivals' => Booking::whereNull('arrived_at')
                 ->whereHas('slot', function($query) use ($today, $depotId) {
                     $query->where('start_at', '>=', $today)

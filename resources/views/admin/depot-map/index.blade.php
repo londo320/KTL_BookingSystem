@@ -559,7 +559,7 @@
         // Show bay details in modal
         async function showBayDetails(bayId) {
             try {
-                const response = await fetch(`{{ url('admin/depot-map/bay') }}/${bayId}`);
+                const response = await fetch(`{{ route('app.depot-map.bay-status', '') }}/${bayId}`);
                 if (response.ok) {
                     const data = await response.json();
                     displayBayModal(data);
@@ -570,11 +570,22 @@
         }
         // Show location details in modal
         async function showLocationDetails(locationId) {
+            console.log('showLocationDetails called with locationId:', locationId);
             try {
-                const response = await fetch(`{{ url('admin/depot-map/location') }}/${locationId}`);
+                const url = `{{ url($routePrefix . 'depot-map/location') }}/${locationId}?v=${Date.now()}`;
+                console.log('Fetching URL:', url);
+                const response = await fetch(url);
+                console.log('Response status:', response.status);
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('Response data:', data);
+                    console.log('Data type:', typeof data);
+                    console.log('Data keys:', Object.keys(data));
                     displayLocationModal(data);
+                } else {
+                    console.error('API response not ok:', response.status, response.statusText);
+                    const errorText = await response.text();
+                    console.error('Error response:', errorText);
                 }
             } catch (error) {
                 console.error('Failed to fetch location details:', error);
@@ -706,44 +717,98 @@
                 }
             }
         }
-        // Display location modal with data
+        // Display location modal with data - v2.0 cache buster
         function displayLocationModal(data) {
-            document.getElementById('modal-title').textContent = data.location_name;
+            try {
+                console.log('displayLocationModal called with data:', data);
+                
+                // Check for required properties
+                if (!data || typeof data !== 'object') {
+                    console.error('Invalid data object:', data);
+                    return;
+                }
+                if (!data.location_name) {
+                    console.error('Missing location_name in data:', data);
+                    return;
+                }
+                if (data.current_occupancy === undefined) {
+                    console.error('Missing current_occupancy in data:', data);
+                    return;
+                }
+                if (data.capacity === undefined) {
+                    console.error('Missing capacity in data:', data);
+                    return;
+                }
+                
+                document.getElementById('modal-title').textContent = `${data.location_name} - ${data.current_occupancy}/${data.capacity} Trailers`;
             let content = `
                 <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4 text-sm">
-                        <div><strong>Status:</strong> ${data.status.charAt(0).toUpperCase() + data.status.slice(1)}</div>
-                        <div><strong>Type:</strong> ${data.location_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
-                        <div><strong>Capacity:</strong> ${data.current_occupancy}/${data.capacity}</div>
+                    <div class="grid grid-cols-3 gap-4 text-sm bg-gray-50 p-3 rounded">
+                        <div><strong>Status:</strong> ${data.status ? data.status.charAt(0).toUpperCase() + data.status.slice(1) : 'Unknown'}</div>
+                        <div><strong>Occupancy:</strong> ${data.current_occupancy}/${data.capacity}</div>
                         <div><strong>Available:</strong> ${data.available_capacity}</div>
                     </div>
             `;
             if (data.current_bookings && data.current_bookings.length > 0) {
                 content += `
                     <div>
-                        <strong>Current Bookings:</strong>
-                        <div class="mt-2 space-y-2">
+                        <h4 class="font-medium text-gray-800 mb-3 flex items-center">
+                            <span class="mr-2">🚛</span>
+                            Trailers in Location (${data.current_bookings.length})
+                        </h4>
+                        <div class="space-y-3 max-h-96 overflow-y-auto">
                 `;
                 data.current_bookings.forEach(booking => {
+                    const trailerStatus = booking.trailer_status || 'Unknown';
+                    const statusBadge = trailerStatus.includes('Empty') ? 'bg-green-100 text-green-800' :
+                                       trailerStatus.includes('Tipping') ? 'bg-orange-100 text-orange-800' :
+                                       trailerStatus.includes('Arrived') ? 'bg-blue-100 text-blue-800' :
+                                       'bg-gray-100 text-gray-800';
                     content += `
-                        <div class="bg-gray-50 p-3 rounded text-sm">
-                            <div class="font-medium">${booking.booking_reference}</div>
-                            <div class="text-gray-600">${booking.customer_name}</div>
-                            ${booking.vehicle_registration ? `<div class="text-gray-500">${booking.vehicle_registration}</div>` : ''}
-                            <div class="text-xs text-gray-500">
-                                Status: ${booking.status} 
-                                ${booking.arrived_at ? `• Arrived: ${booking.arrived_at}` : ''}
-                                ${booking.unit_departed ? `• Unit Left: ${booking.unit_departed}` : ''}
+                        <div class="bg-white border rounded-lg p-3 hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center space-x-2">
+                                    <span class="px-2 py-1 text-xs rounded-full ${statusBadge}">${trailerStatus}</span>
+                                    <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700">${booking.type}</span>
+                                </div>
+                                <a href="${booking.booking_url}" class="text-blue-600 hover:text-blue-800 text-xs font-medium">
+                                    View Details →
+                                </a>
                             </div>
+                            <div class="grid grid-cols-2 gap-2 text-sm">
+                                <div><strong>Ref:</strong> ${booking.booking_reference}</div>
+                                <div><strong>Customer:</strong> ${booking.customer_name}</div>
+                                <div><strong>Vehicle:</strong> ${booking.vehicle_registration || 'Not specified'}</div>
+                                <div><strong>Container:</strong> ${booking.container_number || 'Not specified'}</div>
+                                <div><strong>Arrived:</strong> ${booking.arrived_at || 'Unknown'}</div>
+                                <div><strong>Time on Site:</strong> <span class="font-medium text-blue-600">${booking.time_on_site || 'Unknown'}</span></div>
+                            </div>
+                            ${booking.tipping_completed ? `
+                                <div class="mt-2 text-xs text-green-600 bg-green-50 p-2 rounded">
+                                    ✅ Tipping completed: ${booking.tipping_completed}
+                                </div>
+                            ` : ''}
                         </div>
                     `;
                 });
                 content += '</div></div>';
+            } else {
+                content += `
+                    <div class="text-center py-8 text-gray-500">
+                        <div class="text-4xl mb-4">📭</div>
+                        <h4 class="font-medium text-gray-700 mb-2">No Trailers Currently</h4>
+                        <p class="text-sm">This location is currently empty and available for use.</p>
+                    </div>
+                `;
             }
             content += '</div>';
             document.getElementById('modal-content').innerHTML = content;
             document.getElementById('location-modal').classList.remove('hidden');
             document.getElementById('location-modal').classList.add('flex');
+            } catch (error) {
+                console.error('Error in displayLocationModal:', error);
+                console.error('Data that caused error:', data);
+            }
         }
         // Close modal
         function closeLocationModal() {

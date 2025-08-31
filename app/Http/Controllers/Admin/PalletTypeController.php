@@ -51,7 +51,7 @@ class PalletTypeController extends Controller
 
         PalletType::create($validated);
 
-        return redirect()->route('admin.pallet-types.index')
+        return redirect()->route('app.settings.pallet-types')
             ->with('success', 'Pallet type created successfully.');
     }
 
@@ -80,7 +80,7 @@ class PalletTypeController extends Controller
 
         $palletType->update($validated);
 
-        return redirect()->route('admin.pallet-types.index')
+        return redirect()->route('app.settings.pallet-types')
             ->with('success', 'Pallet type updated successfully.');
     }
 

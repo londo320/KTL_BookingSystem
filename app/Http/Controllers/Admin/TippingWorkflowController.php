@@ -693,4 +693,143 @@ class TippingWorkflowController extends Controller
             abort(403, 'You do not have access to this depot.');
         }
     }
+
+    public function moveTrailer(Request $request, Booking $booking)
+    {
+        $this->authorizeBookingAccess($booking);
+        
+        $request->validate([
+            'action' => 'required|in:move_to_location,move_to_bay,move_to_collection,depart',
+            'location_id' => 'nullable|exists:tipping_locations,id',
+            'bay_id' => 'nullable|exists:tipping_bays,id',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $movement = $booking->getOrCreateMovement();
+        
+        // Check if trailer has already departed
+        if ($movement->current_status === 'departed') {
+            return back()->withErrors(['error' => 'Trailer has already departed and cannot be moved.']);
+        }
+
+        switch ($request->action) {
+            case 'move_to_location':
+                return $this->handleBookingLocationMove($request, $booking, $movement);
+            case 'move_to_bay':
+                return $this->handleBookingBayMove($request, $booking, $movement);
+            case 'move_to_collection':
+                return $this->handleBookingCollectionMove($request, $booking, $movement);
+            case 'depart':
+                return $this->handleBookingDeparture($request, $booking, $movement);
+        }
+    }
+
+    private function handleBookingLocationMove(Request $request, Booking $booking, $movement)
+    {
+        $location = TippingLocation::findOrFail($request->location_id);
+        
+        if ($location->depot_id !== $booking->slot->depot_id) {
+            return back()->withErrors(['error' => 'Location must be within the same depot.']);
+        }
+        
+        if (!$location->isAvailable()) {
+            return back()->withErrors(['error' => 'Selected location is not available.']);
+        }
+
+        // Free up current locations/bays
+        if ($movement->tippingLocation && $movement->tippingLocation->id != $location->id) {
+            $movement->tippingLocation->markAvailable();
+        }
+        if ($movement->tippingBay) {
+            $movement->tippingBay->markAvailable($booking);
+        }
+
+        $movement->update([
+            'tipping_location_id' => $location->id,
+            'tipping_bay_id' => null,
+            'current_status' => 'in_location',
+            'moved_to_location_at' => now(),
+            'operation_notes' => $request->notes ? ($movement->operation_notes ? $movement->operation_notes."\n".$request->notes : $request->notes) : $movement->operation_notes,
+        ]);
+        
+        $location->markOccupied($booking);
+        
+        return back()->with('success', 'Trailer moved to location: ' . $location->name);
+    }
+
+    private function handleBookingBayMove(Request $request, Booking $booking, $movement)
+    {
+        $bay = TippingBay::findOrFail($request->bay_id);
+        
+        if ($bay->depot_id !== $booking->slot->depot_id) {
+            return back()->withErrors(['error' => 'Bay must be within the same depot.']);
+        }
+        
+        if (!$bay->isAvailable()) {
+            return back()->withErrors(['error' => 'Selected bay is not available.']);
+        }
+
+        // Free up current bay if different
+        if ($movement->tippingBay && $movement->tippingBay->id != $bay->id) {
+            $movement->tippingBay->markAvailable($booking);
+        }
+
+        $movement->update([
+            'tipping_bay_id' => $bay->id,
+            'current_status' => 'at_bay',
+            'moved_to_bay_at' => now(),
+            'operation_notes' => $request->notes ? ($movement->operation_notes ? $movement->operation_notes."\n".$request->notes : $request->notes) : $movement->operation_notes,
+        ]);
+        
+        $bay->markOccupied($booking);
+        
+        return back()->with('success', 'Trailer moved to bay: ' . $bay->name);
+    }
+
+    private function handleBookingCollectionMove(Request $request, Booking $booking, $movement)
+    {
+        // Free up current locations/bays when moving to collection
+        if ($movement->tippingLocation) {
+            $movement->tippingLocation->markAvailable();
+        }
+        if ($movement->tippingBay) {
+            $movement->tippingBay->markAvailable($booking);
+        }
+
+        $movement->update([
+            'tipping_location_id' => null,
+            'tipping_bay_id' => null,
+            'current_status' => 'awaiting_collection',
+            'moved_to_location_at' => now(),
+            'operation_notes' => $request->notes ? ($movement->operation_notes ? $movement->operation_notes."\n".$request->notes : $request->notes) : $movement->operation_notes,
+        ]);
+        
+        return back()->with('success', 'Trailer moved to collection zone. Bay and location freed.');
+    }
+
+    private function handleBookingDeparture(Request $request, Booking $booking, $movement)
+    {
+        // Free up all occupied locations/bays when departing
+        if ($movement->tippingLocation) {
+            $movement->tippingLocation->markAvailable();
+        }
+        if ($movement->tippingBay) {
+            $movement->tippingBay->markAvailable($booking);
+        }
+
+        $movement->update([
+            'current_status' => 'departed',
+            'actual_departure' => now(),
+            'tipping_location_id' => null,
+            'tipping_bay_id' => null,
+            'operation_notes' => $request->notes ? ($movement->operation_notes ? $movement->operation_notes."\n".$request->notes : $request->notes) : $movement->operation_notes,
+        ]);
+
+        $booking->update([
+            'tipping_status' => 'departed',
+            'departed_at' => now()
+        ]);
+        
+        return back()->with('success', 'Trailer departure recorded. All bays and locations freed.');
+    }
 }

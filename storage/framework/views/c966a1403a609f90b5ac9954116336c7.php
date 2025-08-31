@@ -68,6 +68,9 @@
                                         🗺️ Depot Map
                                     </a>
                                 <?php endif; ?>
+                                <a href="<?php echo e(route('app.trailer-operations-dashboard')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    🚛 Trailer Operations
+                                </a>
                             </div>
                         </div>
                     <?php endif; ?>

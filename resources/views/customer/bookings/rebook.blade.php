@@ -33,7 +33,7 @@
         </div>
         <div>
           <p class="text-sm text-gray-600">Rebook Count</p>
-          <p class="font-medium">{{ $booking->rebook_count }} / 3</p>
+          <p class="font-medium">{{ $booking->rebook_count }} / {{ $maxRebooksPerBooking }}</p>
         </div>
       </div>
     </div>

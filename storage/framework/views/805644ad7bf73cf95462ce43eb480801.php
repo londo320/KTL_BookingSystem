@@ -76,8 +76,15 @@
                     <p class="font-medium"><?php echo e($booking->customer->name); ?></p>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-600">Customer Reference</p>
-                    <p class="font-medium"><?php echo e($booking->reference ?: 'Not provided'); ?></p>
+                    <p class="text-sm text-gray-600">PO References</p>
+                    <p class="font-medium">
+                        <?php if($booking->poNumbers && $booking->poNumbers->count() > 0): ?>
+                            <?php echo e($booking->poNumbers->pluck('po_number')->join(', ')); ?>
+
+                        <?php else: ?>
+                            Not provided
+                        <?php endif; ?>
+                    </p>
                 </div>
                 <div>
                     <p class="text-sm text-gray-600">Slot Time</p>
@@ -231,9 +238,25 @@
         <div class="mb-6 bg-white rounded-lg shadow overflow-hidden">
             <div class="p-6 border-b border-gray-200">
                 <h3 class="text-xl font-semibold text-gray-800">🚛 Tipping Progress</h3>
+                <?php
+                    $movement = $booking->movements()->first();
+                    $currentStatus = $movement ? $movement->current_status : 'scheduled';
+                    // Create status badge based on movement status
+                    $statusLabels = [
+                        'scheduled' => ['🕐 Scheduled', 'bg-gray-100 text-gray-800'],
+                        'arrived' => ['✅ Arrived', 'bg-blue-100 text-blue-800'], 
+                        'in_parking' => ['🚛 Unit & Trailer in Parking', 'bg-blue-100 text-blue-800'],
+                        'at_bay' => ['🏗️ At Tipping Bay - Full', 'bg-orange-100 text-orange-800'],
+                        'unloading' => ['⚡ Tipping in Progress', 'bg-orange-100 text-orange-800'],
+                        'empty' => ['✅ Tipped - Ready for Collection', 'bg-green-100 text-green-800'],
+                        'back_to_parking' => ['📍 In Parking Area', 'bg-purple-100 text-purple-800'],
+                        'departed' => ['🏁 Departed', 'bg-green-100 text-green-800'],
+                        'trailer_dropped' => ['📍 Trailer Dropped', 'bg-yellow-100 text-yellow-800'],
+                    ];
+                    $statusConfig = $statusLabels[$currentStatus] ?? ['❓ Unknown Status', 'bg-gray-100 text-gray-800'];
+                ?>
                 <p class="text-sm text-gray-600 mt-1">
-                    Current Status: <?php echo $booking->tipping_status_badge; ?>
-
+                    Current Status: <span class="px-2 py-1 rounded text-xs font-medium <?php echo e($statusConfig[1]); ?>"><?php echo e($statusConfig[0]); ?></span>
                     <?php if(!$workflowEnabled): ?>
                         <span class="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Manual Mode</span>
                     <?php endif; ?>
@@ -243,32 +266,32 @@
             <div class="p-6">
                 <div class="flex items-center justify-between mb-8">
                     <?php
-                        $movement = $booking->movements()->first();
                         $isEmptyTrailer = $movement && in_array($movement->current_status, ['empty', 'departed']) && $movement->unloading_completed_at;
                         // Dynamic stages based on whether trailer is empty or not
                         if ($isEmptyTrailer) {
                             $stages = [
                                 'scheduled' => ['label' => '⏳ Not Started', 'icon' => 'text-gray-400'],
-                                'in_location' => ['label' => '✅ Empty Unit Positioned', 'icon' => 'text-green-500'],
-                                'trailer_dropped' => ['label' => '✅ Empty Trailer Dropped', 'icon' => 'text-green-500'],
-                                'at_bay' => ['label' => '✅ Empty Unit at Bay', 'icon' => 'text-green-500'],
+                                'in_parking' => ['label' => '✅ Empty Unit Positioned', 'icon' => 'text-green-500'],
+                                'back_to_parking' => ['label' => '✅ Empty Trailer in Parking', 'icon' => 'text-green-500'],
                                 'departed' => ['label' => '🏁 Departed', 'icon' => 'text-purple-500']
                             ];
                         } else {
                             $stages = [
                                 'scheduled' => ['label' => '⏳ Not Started', 'icon' => 'text-gray-400'],
-                                'in_location' => ['label' => '🚛 Unit & Trailer Positioned', 'icon' => 'text-blue-500'],
-                                'at_bay' => ['label' => '🚛 At Bay', 'icon' => 'text-yellow-500'],
-                                'unloading' => ['label' => '⚡ Tipping', 'icon' => 'text-orange-500'],
+                                'in_parking' => ['label' => '🚛 Unit & Trailer in Parking', 'icon' => 'text-blue-500'],
+                                'at_bay' => ['label' => '⚡ Tipping (Auto-started)', 'icon' => 'text-orange-500'],
+                                'unloading' => ['label' => '⚡ Tipping (Auto-started)', 'icon' => 'text-orange-500'],
                                 'empty' => ['label' => '✅ Tipped - Ready for Collection', 'icon' => 'text-green-500'],
-                                'trailer_dropped' => ['label' => '📍 In Collection Zone', 'icon' => 'text-purple-500'],
+                                'back_to_parking' => ['label' => '📍 In Parking Area', 'icon' => 'text-purple-500'],
                                 'departed' => ['label' => '🏁 Collected', 'icon' => 'text-blue-600']
                             ];
                         }
-                        $currentIndex = array_search($booking->tipping_status, array_keys($stages));
+                        // Use actual movement status instead of booking tipping_status
+                        $currentIndex = array_search($currentStatus, array_keys($stages));
                         // If status not found in current stage set, find the closest match
                         if ($currentIndex === false) {
-                            if ($booking->tipping_status === 'arrived') $currentIndex = 0;
+                            if ($currentStatus === 'arrived') $currentIndex = 1; // Map to in_parking stage
+                            elseif ($currentStatus === 'scheduled') $currentIndex = 0;
                             else $currentIndex = -1;
                         }
                     ?>
@@ -316,8 +339,8 @@
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     
-                    <?php if($workflowEnabled ? in_array($booking->tipping_status, ['scheduled', 'arrived']) : true): ?>
-                        <div class="p-4 border border-blue-200 rounded-lg bg-blue-50 <?php echo e(!$workflowEnabled && !in_array($booking->tipping_status, ['scheduled', 'arrived']) ? 'opacity-75' : ''); ?>">
+                    <?php if($workflowEnabled ? in_array($currentStatus, ['scheduled', 'arrived']) : true): ?>
+                        <div class="p-4 border border-blue-200 rounded-lg bg-blue-50">
                             <h4 class="font-medium text-blue-800 mb-3">🚛 Move to Location (Attached)</h4>
                             <p class="text-xs text-blue-700 mb-3">Vehicle with trailer attached moves to a location on-site</p>
                             <form action="<?php echo e(route('app.tipping-workflow.drop-trailer', $booking)); ?>" method="POST">
@@ -344,8 +367,11 @@
                         </div>
                     <?php endif; ?>
                     
-                    <?php if($workflowEnabled ? in_array($booking->tipping_status, ['scheduled', 'arrived', 'in_location']) : true): ?>
-                        <div class="p-4 border border-red-200 rounded-lg bg-red-50 <?php echo e(!$workflowEnabled && !in_array($booking->tipping_status, ['scheduled', 'arrived', 'in_location']) ? 'opacity-75' : ''); ?>">
+                    <?php
+                        $canDropTrailer = in_array($currentStatus, ['scheduled', 'arrived', 'in_parking']);
+                    ?>
+                    <?php if($canDropTrailer): ?>
+                        <div class="p-4 border border-red-200 rounded-lg bg-red-50">
                             <h4 class="font-medium text-red-800 mb-3">📍 Drop Trailer (Detached)</h4>
                             <p class="text-xs text-red-700 mb-3">Detach trailer from unit and leave at location</p>
                             <form action="<?php echo e(route('app.tipping-workflow.drop-trailer-detached', $booking)); ?>" method="POST">
@@ -372,8 +398,11 @@
                         </div>
                     <?php endif; ?>
                     
-                    <?php if($workflowEnabled ? $booking->tipping_status === 'in_location' : true): ?>
-                        <div class="p-4 border border-cyan-200 rounded-lg bg-cyan-50 <?php echo e(!$workflowEnabled && $booking->tipping_status !== 'in_location' ? 'opacity-75' : ''); ?>">
+                    <?php
+                        $canMoveToLocation = in_array($currentStatus, ['in_parking']);
+                    ?>
+                    <?php if($canMoveToLocation): ?>
+                        <div class="p-4 border border-cyan-200 rounded-lg bg-cyan-50">
                             <h4 class="font-medium text-cyan-800 mb-3">🔄 Move Between Locations</h4>
                             <p class="text-xs text-cyan-700 mb-3">Move vehicle to a different location on-site</p>
                             <form action="<?php echo e(route('app.tipping-workflow.move-to-location', $booking)); ?>" method="POST">
@@ -407,11 +436,12 @@
                     <?php endif; ?>
                     
                     <?php
-                        $currentMovement = $booking->movements->first();
-                        $tippingAlreadyCompleted = $currentMovement && $currentMovement->unloading_completed_at;
+                        $tippingAlreadyCompleted = $movement && $movement->unloading_completed_at;
+                        // Show "Move to Bay" action for trailers in parking that haven't completed tipping
+                        $canMoveToBay = in_array($currentStatus, ['in_parking']) && !$tippingAlreadyCompleted;
                     ?>
-                    <?php if($workflowEnabled ? in_array($booking->tipping_status, ['in_location', 'trailer_dropped']) && $booking->tipping_status !== 'empty' && !$tippingAlreadyCompleted : !in_array($booking->tipping_status, ['empty', 'departed']) && !$tippingAlreadyCompleted): ?>
-                        <div class="p-4 border border-yellow-200 rounded-lg bg-yellow-50 <?php echo e(!$workflowEnabled && !in_array($booking->tipping_status, ['in_location', 'trailer_dropped']) ? 'opacity-75' : ''); ?>">
+                    <?php if($canMoveToBay): ?>
+                        <div class="p-4 border border-yellow-200 rounded-lg bg-yellow-50">
                             <h4 class="font-medium text-yellow-800 mb-3">🚛 Move to Tipping Bay</h4>
                             <form action="<?php echo e(route('app.tipping-workflow.move-to-bay', $booking)); ?>" method="POST">
                                 <?php echo csrf_field(); ?>
@@ -441,28 +471,12 @@
                         </div>
                     <?php endif; ?>
                     
-                    <?php
-                        $currentMovement = $booking->movements->first();
-                        $tippingAlreadyCompleted = $currentMovement && $currentMovement->unloading_completed_at;
-                    ?>
-                    <?php if($workflowEnabled ? ($booking->tipping_status === 'at_bay' && !$tippingAlreadyCompleted) : (!$tippingAlreadyCompleted)): ?>
-                        <div class="p-4 border border-orange-200 rounded-lg bg-orange-50 <?php echo e(!$workflowEnabled && $booking->tipping_status !== 'at_bay' ? 'opacity-75' : ''); ?>">
-                            <h4 class="font-medium text-orange-800 mb-3">⚡ Start Tipping</h4>
-                            <form action="<?php echo e(route('app.tipping-workflow.start-tipping', $booking)); ?>" method="POST">
-                                <?php echo csrf_field(); ?>
-                                <div class="mb-3">
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                                    <textarea name="notes" class="w-full px-3 py-2 border border-gray-300 rounded-md" rows="2" placeholder="Optional notes..."></textarea>
-                                </div>
-                                <button type="submit" class="w-full px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600">
-                                    Start Tipping
-                                </button>
-                            </form>
-                        </div>
-                    <?php endif; ?>
                     
-                    <?php if($workflowEnabled ? ($booking->tipping_status === 'unloading' && !$tippingAlreadyCompleted) : (!$tippingAlreadyCompleted)): ?>
-                        <div class="col-span-2 p-4 border border-green-200 rounded-lg bg-green-50 <?php echo e(!$workflowEnabled && $booking->tipping_status !== 'unloading' ? 'opacity-75' : ''); ?>">
+                    <?php
+                        $canCompleteTipping = in_array($currentStatus, ['at_bay', 'unloading']) && !$tippingAlreadyCompleted;
+                    ?>
+                    <?php if($canCompleteTipping): ?>
+                        <div class="col-span-2 p-4 border border-green-200 rounded-lg bg-green-50">
                             <h4 class="font-medium text-green-800 mb-3">✅ Complete Tipping</h4>
                             <p class="text-sm text-green-700 mb-3">Complete this form only after tipping has finished to record the actual quantities received.</p>
                             <?php if($booking->poNumbers && $booking->poNumbers->count() > 0): ?>
@@ -607,10 +621,9 @@
                     <?php endif; ?>
                     
                     <?php
-                        $currentMovement = $booking->movements->first();
-                        $isUnitStillOnSite = !$currentMovement || !$currentMovement->unit_departed_at;
+                        $isUnitStillOnSite = !$movement || !$movement->unit_departed_at;
                     ?>
-                    <?php if($booking->tipping_status === 'unloading' && $isUnitStillOnSite): ?>
+                    <?php if($currentStatus === 'unloading' && $isUnitStillOnSite): ?>
                         <div class="p-4 border border-purple-200 rounded-lg bg-purple-50">
                             <h4 class="font-medium text-purple-800 mb-3">🚛 Unit Depart (Leave Trailer)</h4>
                             <p class="text-xs text-purple-700 mb-3">Record when the vehicle leaves site while trailer continues tipping process</p>
@@ -627,47 +640,25 @@
                         </div>
                     <?php endif; ?>
                     
-                    <?php if($booking->tipping_status === 'empty' && $booking->tippingBay): ?>
-                        <div class="p-4 border border-indigo-200 rounded-lg bg-indigo-50">
-                            <h4 class="font-medium text-indigo-800 mb-3">⚡ Quick Actions</h4>
-                            <div class="space-y-2">
-                                <form action="<?php echo e(route('app.bookings.clear-bay', $booking)); ?>" method="POST" class="inline-block w-full">
-                                    <?php echo csrf_field(); ?>
-                                    <button type="submit" class="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                                        🔄 Clear Bay (Make Available)
-                                    </button>
-                                </form>
-                                <form action="<?php echo e(route('app.bookings.move-to-waiting', $booking)); ?>" method="POST" class="inline-block w-full">
-                                    <?php echo csrf_field(); ?>
-                                    <button type="submit" class="w-full px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600">
-                                        📍 Move to Waiting Area
-                                    </button>
-                                </form>
-                            </div>
-                            <p class="text-xs text-indigo-700 mt-2">💡 Use these actions to quickly make room for the next vehicle</p>
-                        </div>
-                    <?php endif; ?>
-                    
                     <?php
-                        $currentMovement = $booking->movements->first();
-                        $isUnitStillOnSite = !$currentMovement || !$currentMovement->unit_departed_at;
-                        $isTrailerWaitingCollection = $currentMovement && $currentMovement->current_status === 'trailer_dropped';
-                        $isCollectionInProgress = $currentMovement && $currentMovement->current_status === 'trailer_collected';
+                        $isUnitStillOnSite = !$movement || !$movement->unit_departed_at;
+                        $isTrailerWaitingCollection = $movement && $movement->current_status === 'trailer_dropped';
+                        $isCollectionInProgress = $movement && $movement->current_status === 'trailer_collected';
                     ?>
                     
-                    <?php if($booking->tipping_status === 'empty'): ?>
+                    <?php if($currentStatus === 'empty'): ?>
                         <div class="col-span-2 p-6 border border-purple-200 rounded-lg bg-purple-50">
-                            <h4 class="font-medium text-purple-800 mb-4 text-center">🏁 Tipping Complete - Move to Collection Zone</h4>
-                            <p class="text-sm text-purple-600 mb-4 text-center">Select which specific collection zone to move the empty trailer to for organized pickup.</p>
+                            <h4 class="font-medium text-purple-800 mb-4 text-center">🏁 Tipping Complete - Move to Parking Area</h4>
+                            <p class="text-sm text-purple-600 mb-4 text-center">Select which specific parking area to move the empty trailer to for organized pickup.</p>
                             <form action="<?php echo e(route('app.operations.move-to-collection-zone', $booking)); ?>" method="POST" class="max-w-md mx-auto">
                                 <?php echo csrf_field(); ?>
                                 <div class="mb-3">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">
-                                        📍 Select Specific Collection Zone <span class="text-red-500">*</span>
+                                        📍 Select Specific Parking Area <span class="text-red-500">*</span>
                                     </label>
                                     <select name="location_id" class="w-full px-3 py-2 border border-gray-300 rounded-md" required>
-                                        <option value="">Choose which collection zone...</option>
-                                        <?php $__empty_1 = true; $__currentLoopData = $collectionZones; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $location): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                        <option value="">Choose which parking area...</option>
+                                        <?php $__empty_1 = true; $__currentLoopData = $parkingAreas; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $location): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                             <option value="<?php echo e($location->id); ?>">
                                                 📦 <?php echo e($location->name); ?> 
                                                 <?php if($location->code): ?> 
@@ -676,17 +667,17 @@
                                                 - <?php echo e($location->getAvailableCapacity()); ?>/<?php echo e($location->capacity); ?> spaces
                                             </option>
                                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                                            <option value="" disabled>❌ No collection zones available</option>
+                                            <option value="" disabled>❌ No parking areas available</option>
                                         <?php endif; ?>
                                     </select>
                                     <p class="text-xs text-gray-600 mt-1">Trailer will be positioned in the selected zone for transport pickup</p>
                                 </div>
                                 <div class="mb-3">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                                    <textarea name="notes" class="w-full px-3 py-2 border border-gray-300 rounded-md" rows="2" placeholder="Collection zone notes..."></textarea>
+                                    <textarea name="notes" class="w-full px-3 py-2 border border-gray-300 rounded-md" rows="2" placeholder="parking area notes..."></textarea>
                                 </div>
                                 <button type="submit" class="w-full px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600">
-                                    Move to Collection Zone
+                                    Move to Parking Area
                                 </button>
                             </form>
                             <div class="mt-4 text-center">
@@ -818,6 +809,18 @@
                         <?php endif; ?>
                         <?php if($booking->tipping_completed_at && $booking->actual_tipping_duration): ?>
                             <p class="text-sm text-gray-600">Duration: <?php echo e($booking->actual_tipping_duration); ?> minutes</p>
+                        <?php endif; ?>
+                        <?php if($movement && $movement->unit_departed_at): ?>
+                            <p class="text-sm text-gray-600">Unit Departed: <?php echo e($movement->unit_departed_at->format('M j, H:i')); ?></p>
+                        <?php endif; ?>
+                        <?php if($movement && $movement->collection_unit_arrived_at): ?>
+                            <p class="text-sm text-gray-600">Collection Arrived: <?php echo e($movement->collection_unit_arrived_at->format('M j, H:i')); ?></p>
+                        <?php endif; ?>
+                        <?php if($movement && $movement->departed_at): ?>
+                            <p class="text-sm text-gray-600">Trailer Departed: <?php echo e($movement->departed_at->format('M j, H:i')); ?></p>
+                        <?php endif; ?>
+                        <?php if($movement && $movement->collection_unit_departed_at): ?>
+                            <p class="text-sm text-gray-600">Collection Departed: <?php echo e($movement->collection_unit_departed_at->format('M j, H:i')); ?></p>
                         <?php endif; ?>
                         <?php if($booking->trailer_departed_at): ?>
                             <p class="text-sm text-gray-600">Departed: <?php echo e($booking->trailer_departed_at->format('M j, H:i')); ?></p>
