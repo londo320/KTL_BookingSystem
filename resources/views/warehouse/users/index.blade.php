@@ -31,13 +31,10 @@
         </thead>
         <tbody>
           @forelse($users as $user)
-            <tr class="border-t hover:bg-gray-50 {{ $user->isProtectedSystemOwner() ? 'bg-yellow-50' : '' }}">
+            <tr class="border-t hover:bg-gray-50">
               {{-- Name --}}
               <td class="px-4 py-2">
                 {{ $user->name }}
-                @if($user->isProtectedSystemOwner())
-                  <span class="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">🔒 Protected</span>
-                @endif
                 @if(!($user->is_active ?? true))
                   <span class="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">❌ Disabled</span>
                 @endif
@@ -98,19 +95,11 @@
                     </a>
                   @else
                     <span class="inline-block text-center px-2 py-1 bg-gray-300 text-gray-500 rounded-full text-xs cursor-not-allowed">
-                      @if($user->isProtectedSystemOwner())
-                        🔒 Protected
-                      @else
                         No Access
-                      @endif
                     </span>
                   @endif
                   
-                  @if($user->isProtectedSystemOwner())
-                    <span class="inline-block text-center px-2 py-1 bg-gray-300 text-gray-500 rounded-full text-xs cursor-not-allowed">
-                      🔒 Cannot Delete
-                    </span>
-                  @elseif(auth()->user()->hasRole('admin') || auth()->user()->isProtectedSystemOwner())
+                  @if(auth()->user()->hasRole('admin') || auth()->user()->isProtectedSystemOwner())
                     <form action="{{ route('app.users.destroy', $user) }}" method="POST">
                       @csrf @method('DELETE')
                       <button type="submit"

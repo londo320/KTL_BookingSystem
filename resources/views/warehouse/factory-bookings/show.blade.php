@@ -60,12 +60,10 @@
               </form>
             @endif
             @if($factoryBooking->status === 'completed')
-              <form method="POST" action="{{ route('app.factory-bookings.mark-departed', $factoryBooking) }}" class="inline">
-                @csrf
-                <button type="submit" class="inline-flex items-center px-3 py-1.5 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 transition-colors">
-                  🏁 Mark Departed
-                </button>
-              </form>
+              <a href="{{ route('app.factory-booking-workflow.show', $factoryBooking) }}" 
+                 class="inline-flex items-center px-3 py-1.5 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 transition-colors">
+                🏁 Handle Departure
+              </a>
             @endif
             <a href="{{ route('app.factory-bookings.edit', $factoryBooking) }}"
                class="inline-flex items-center px-3 py-1.5 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors">
@@ -377,12 +375,36 @@
                 </form>
               @endif
               @if($factoryBooking->status === 'completed')
-                <form method="POST" action="{{ route('app.factory-bookings.mark-departed', $factoryBooking) }}">
-                  @csrf
-                  <button type="submit" class="w-full px-3 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700">
-                    🏁 Mark Departed
-                  </button>
-                </form>
+                <div class="space-y-3">
+                  <h5 class="text-sm font-medium text-gray-800">🏁 Departure Flow</h5>
+                  <form method="POST" action="{{ route('app.factory-booking-workflow.trailer-depart', $factoryBooking) }}" class="space-y-3">
+                    @csrf
+                    
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700 mb-2">What happened?</label>
+                      <div class="space-y-2">
+                        <label class="flex items-center p-2 border rounded cursor-pointer hover:bg-gray-50">
+                          <input type="radio" name="departure_scenario" value="completed_with_trailer" required class="mr-2">
+                          <span class="text-xs">🚛✅ Left WITH trailer</span>
+                        </label>
+                        <label class="flex items-center p-2 border rounded cursor-pointer hover:bg-gray-50">
+                          <input type="radio" name="departure_scenario" value="completed_dropped_trailer" required class="mr-2">
+                          <span class="text-xs">🚛📦 Unit Left - Trailer DROPPED</span>
+                        </label>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700 mb-1">Notes (optional)</label>
+                      <input type="text" name="departure_notes" placeholder="e.g., Driver requested early departure..." 
+                             class="w-full px-2 py-1 border border-gray-300 rounded-md text-xs">
+                    </div>
+                    
+                    <button type="submit" class="w-full px-3 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700">
+                      🏁 Record Departure
+                    </button>
+                  </form>
+                </div>
               @endif
             </div>
           </div>

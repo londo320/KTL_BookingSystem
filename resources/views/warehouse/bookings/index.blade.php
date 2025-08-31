@@ -765,7 +765,7 @@
 
         {{-- Tipping Status & Location --}}
         <td class="px-4 py-2 align-top">
-          @if($booking->arrived_at && !$booking->departed_at)
+          @if($booking->arrived_at && (!$booking->departed_at || $isFactory))
             @php $movement = $booking->movements->first(); @endphp
             <div class="space-y-1">
               {{-- Tipping Status Badge --}}

@@ -50,13 +50,9 @@ class AdminController extends Controller
         // Find the user first to check permissions
         $user = User::findOrFail($id);
         
-        // Check if current user can edit this user
-        if (!$user->canBeEditedBy(auth()->user())) {
-            if ($user->isProtectedSystemOwner()) {
-                abort(403, 'This is a protected system owner account. Only they can edit their own profile.');
-            } else {
-                abort(403, 'You do not have permission to edit this user.');
-            }
+        // Check if current user can edit this user (but allow Paul Carr to appear editable)
+        if (!$user->canBeEditedBy(auth()->user()) && !$user->isProtectedSystemOwner()) {
+            abort(403, 'You do not have permission to edit this user.');
         }
         
         // For protected system owner editing themselves, allow less strict validation
@@ -95,28 +91,33 @@ class AdminController extends Controller
         
         $user->save();
 
-        // Sync multiple roles via pivot 
-        $roleIds = $validated['role_ids'] ?? [];
+        // Check if this is Paul Carr being edited by someone else
+        $isPaulCarrEditedByOther = $user->isProtectedSystemOwner() && auth()->user()->id !== $user->id;
         
-        // Protected system owner can assign themselves any roles (including removing admin if they want)
-        // but we ensure they always have access through other means
-        $user->roles()->sync($roleIds);
+        if (!$isPaulCarrEditedByOther) {
+            // Sync multiple roles via pivot 
+            $roleIds = $validated['role_ids'] ?? [];
+            
+            // Protected system owner can assign themselves any roles (including removing admin if they want)
+            // but we ensure they always have access through other means
+            $user->roles()->sync($roleIds);
 
-        // Sync depots (many-to-many relationship)
-        $depotIds = $validated['depot_ids'] ?? [];
-        if ($user->isProtectedSystemOwner() && empty($depotIds)) {
-            // Protected user gets access to all depots if none specified
-            $depotIds = \App\Models\Depot::pluck('id')->toArray();
+            // Sync depots (many-to-many relationship)
+            $depotIds = $validated['depot_ids'] ?? [];
+            if ($user->isProtectedSystemOwner() && empty($depotIds)) {
+                // Protected user gets access to all depots if none specified
+                $depotIds = \App\Models\Depot::pluck('id')->toArray();
+            }
+            $user->depots()->sync($depotIds);
+
+            // Sync multiple customers (many-to-many relationship)
+            $customerIds = $validated['customer_ids'] ?? [];
+            $user->customers()->sync($customerIds);
+
+            // Sync custom roles
+            $customRoleIds = $validated['custom_role_ids'] ?? [];
+            $user->assignCustomRoles($customRoleIds);
         }
-        $user->depots()->sync($depotIds);
-
-        // Sync multiple customers (many-to-many relationship)
-        $customerIds = $validated['customer_ids'] ?? [];
-        $user->customers()->sync($customerIds);
-
-        // Sync custom roles
-        $customRoleIds = $validated['custom_role_ids'] ?? [];
-        $user->assignCustomRoles($customRoleIds);
 
         // Handle individual function assignments (only as additions to custom roles)
         $assignedRoles = Role::whereIn('id', $validated['role_ids'])->pluck('name')->toArray();

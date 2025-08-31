@@ -283,18 +283,34 @@ class FactoryBookingWorkflowController extends Controller
         $this->authorizeBookingAccess($factoryBooking);
 
         $request->validate([
-            'notes' => 'nullable|string|max:1000',
+            'departure_scenario' => 'required|in:completed_with_trailer,completed_dropped_trailer',
+            'departure_notes' => 'nullable|string|max:1000',
         ]);
 
-        // Manual mode - allow action without strict workflow enforcement
         $movement = $factoryBooking->getOrCreateMovement();
+        
+        // Build operation notes
+        $operationNotes = $movement->operation_notes ?: '';
+        $scenarioText = $request->departure_scenario === 'completed_with_trailer' 
+            ? 'Departed with trailer' 
+            : 'Departed - trailer dropped';
+        
+        if ($request->departure_notes) {
+            $operationNotes .= ($operationNotes ? "\n" : '') . $scenarioText . ': ' . $request->departure_notes;
+        } else {
+            $operationNotes .= ($operationNotes ? "\n" : '') . $scenarioText;
+        }
+        
         $movement->update([
             'current_status' => 'departed',
             'departed_at' => now(),
-            'operation_notes' => $request->notes ? ($movement->operation_notes ? $movement->operation_notes."\n".$request->notes : $request->notes) : $movement->operation_notes,
+            'operation_notes' => $operationNotes,
         ]);
 
-        $factoryBooking->update(['status' => 'departed', 'departed_at' => now()]);
+        $factoryBooking->update([
+            'status' => 'departed', 
+            'departed_at' => now()
+        ]);
 
         // Free up location and bay
         if ($movement->tippingLocation) {
@@ -304,7 +320,7 @@ class FactoryBookingWorkflowController extends Controller
             $movement->tippingBay->markAvailable();
         }
 
-        return back()->with('success', 'Trailer departure recorded successfully.');
+        return back()->with('success', 'Vehicle departure recorded successfully - ' . $scenarioText);
     }
 
     private function authorizeBookingAccess(FactoryBooking $factoryBooking): void

@@ -492,7 +492,7 @@ class BookingController extends Controller
                 'trailer_registration' => $factoryBooking->trailer_registration,
                 'container_number' => null,
                 'arrived_at' => $factoryBooking->arrived_at,
-                'departed_at' => $factoryBooking->completed_at,
+                'departed_at' => $factoryBooking->departed_at,
                 'cancelled_at' => null,
                 'cancellation_reason' => null,
                 'status' => $factoryBooking->status,
@@ -3645,6 +3645,7 @@ class BookingController extends Controller
             'at_bay' => 'at_bay',
             'unloading' => 'tipping_in_progress',
             'empty' => 'tipping_completed',
+            'back_to_parking' => 'tipping_completed',
             'ready_to_depart', 'departed' => 'departed',
             default => $factoryBooking->completed_at ? 'completed' : 'processing'
         };
