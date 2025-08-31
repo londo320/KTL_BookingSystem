@@ -112,7 +112,7 @@ Route::middleware('auth')->group(function () {
      * ───── Main Application Routes (Unified Function-Based Access) ─────
      * All users access the application through these routes with function-based permissions
      */
-    Route::prefix('app')->as('app.')->middleware(['auth', 'function-access', 'demo'])->group(function () {
+    Route::prefix('app')->as('app.')->middleware(['auth', 'function-access'])->group(function () {
         
         // ──── Core Application Routes (Always Available) ────
         Route::get('/dashboard', [WarehouseController::class, 'dashboard'])->name('dashboard');
@@ -368,7 +368,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\DepotMapController::class, 'index'])->name('index');
             Route::get('/manage-positions/{depot}', [\App\Http\Controllers\Admin\DepotMapController::class, 'managePositions'])->name('manage-positions');
             Route::get('/select-map-file/{depot?}', [\App\Http\Controllers\Admin\DepotMapController::class, 'selectMapFile'])->name('select-map-file');
-            Route::post('/refresh', [\App\Http\Controllers\Admin\DepotMapController::class, 'refresh'])->name('refresh');
+            Route::post('/refresh', [\App\Http\Controllers\Admin\DepotMapController::class, 'refreshStatus'])->name('refresh');
             Route::post('/change-bay', [\App\Http\Controllers\Admin\DepotMapController::class, 'changeBay'])->name('change-bay');
             Route::get('/location/{location}', [\App\Http\Controllers\Admin\DepotMapController::class, 'getLocationStatus'])->name('location-status');
             Route::post('/update-position', [\App\Http\Controllers\Admin\DepotMapController::class, 'updatePosition'])->name('update-position');
