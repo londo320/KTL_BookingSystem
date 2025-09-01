@@ -112,34 +112,7 @@ sed -i "s/DB_DATABASE=.*/DB_DATABASE=ktl_booking/" .env
 sed -i "s/DB_USERNAME=.*/DB_USERNAME=ktl_user/" .env
 sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=ktl_password/" .env
 
-echo "📧 Configuring email settings..."
-# Add or update email configuration
-if ! grep -q "MAIL_MAILER" .env; then
-    echo "" >> .env
-    echo "# Email Configuration" >> .env
-    echo "MAIL_MAILER=smtp" >> .env
-    echo "MAIL_HOST=sandbox.smtp.mailtrap.io" >> .env
-    echo "MAIL_PORT=2525" >> .env
-    echo "MAIL_USERNAME=482ea0b1203385" >> .env
-    echo "MAIL_PASSWORD=8272b92e6640c3" >> .env
-    echo "MAIL_ENCRYPTION=null" >> .env
-    echo "MAIL_FROM_ADDRESS=hello@ktl-booking.com" >> .env
-    echo "MAIL_FROM_NAME=\"KTL Booking System\"" >> .env
-    echo "MAIL_SCHEME=null" >> .env
-else
-    # Update existing mail settings
-    sed -i "s/MAIL_MAILER=.*/MAIL_MAILER=smtp/" .env
-    sed -i "s/MAIL_HOST=.*/MAIL_HOST=sandbox.smtp.mailtrap.io/" .env
-    sed -i "s/MAIL_PORT=.*/MAIL_PORT=2525/" .env
-    sed -i "s/MAIL_USERNAME=.*/MAIL_USERNAME=482ea0b1203385/" .env
-    sed -i "s/MAIL_PASSWORD=.*/MAIL_PASSWORD=8272b92e6640c3/" .env
-    sed -i "s/MAIL_ENCRYPTION=.*/MAIL_ENCRYPTION=null/" .env
-    sed -i "s/MAIL_FROM_ADDRESS=.*/MAIL_FROM_ADDRESS=hello@ktl-booking.com/" .env
-    sed -i "s/MAIL_FROM_NAME=.*/MAIL_FROM_NAME=\"KTL Booking System\"/" .env
-    sed -i "s/MAIL_SCHEME=.*/MAIL_SCHEME=null/" .env
-fi
-
-echo "✅ Environment and email configured"
+echo "✅ Environment configured from .env.example"
 
 echo "🐳 Creating Laravel app container..."
 docker run -d \
