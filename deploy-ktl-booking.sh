@@ -86,28 +86,11 @@ fi
 echo "⚙️ Setting up environment file..."
 if [ -f ".env.example" ]; then
     cp .env.example .env
-    echo "✅ Copied .env.example to .env"
+    echo "✅ Copied .env.example to .env with complete production configuration"
 else
-    echo "⚠️ Creating basic .env file..."
-    echo 'APP_NAME="KTL Booking System"' > .env
-    echo 'APP_ENV=production' >> .env
-    echo 'APP_KEY=' >> .env
-    echo 'APP_DEBUG=false' >> .env
-    echo 'APP_URL=http://localhost:8088' >> .env
-    echo '' >> .env
-    echo 'DB_CONNECTION=mysql' >> .env
-    echo 'DB_HOST=ktl-booking-mysql' >> .env
-    echo 'DB_PORT=3306' >> .env
-    echo 'DB_DATABASE=ktl_booking' >> .env
-    echo 'DB_USERNAME=ktl_user' >> .env
-    echo 'DB_PASSWORD=ktl_password' >> .env
+    echo "❌ .env.example not found - this should not happen"
+    exit 1
 fi
-
-# Update database settings
-sed -i "s/DB_HOST=.*/DB_HOST=ktl-booking-mysql/" .env
-sed -i "s/DB_DATABASE=.*/DB_DATABASE=ktl_booking/" .env
-sed -i "s/DB_USERNAME=.*/DB_USERNAME=ktl_user/" .env
-sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=ktl_password/" .env
 
 echo "✅ Environment configured"
 
