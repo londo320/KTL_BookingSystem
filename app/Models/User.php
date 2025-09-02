@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
+use App\Notifications\CustomPasswordReset;
 
 class User extends Authenticatable
 {
@@ -322,5 +323,13 @@ class User extends Authenticatable
         
         // For all other users, proceed normally
         return parent::update($attributes, $options);
+    }
+
+    /**
+     * Send the password reset notification.
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new CustomPasswordReset($token));
     }
 }

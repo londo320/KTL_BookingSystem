@@ -254,6 +254,21 @@ class DepotMapController extends Controller
         }
     }
     
+    public function updatePosition(Request $request)
+    {
+        // Determine if it's a bay or location update based on the request data
+        if ($request->has('bay_id')) {
+            return $this->updateBayPosition($request);
+        } elseif ($request->has('location_id')) {
+            return $this->updateLocationPosition($request);
+        }
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Neither bay_id nor location_id provided'
+        ], 400);
+    }
+    
     public function updateBayPosition(Request $request)
     {
         $request->validate([
