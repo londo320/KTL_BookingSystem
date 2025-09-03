@@ -8,12 +8,23 @@
         </div>
     @endif
 
-    {{-- Create User Button --}}
-    <div class="mb-4">
+    {{-- Create User Button & Filter --}}
+    <div class="mb-4 flex items-center justify-between">
         <a href="{{ route('app.users.create') }}"
            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
             Create New User
         </a>
+        
+        <div class="flex gap-2">
+            <a href="{{ route('app.users.index') }}"
+               class="px-3 py-2 {{ !$showDeleted ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-700' }} rounded hover:bg-gray-700 hover:text-white">
+                Active Users
+            </a>
+            <a href="{{ route('app.users.index', ['show_deleted' => 1]) }}"
+               class="px-3 py-2 {{ $showDeleted ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700' }} rounded hover:bg-red-700 hover:text-white">
+                🗑️ Deleted Users
+            </a>
+        </div>
     </div>
 
     {{-- User List Table --}}

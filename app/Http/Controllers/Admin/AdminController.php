@@ -13,14 +13,21 @@ use Spatie\Permission\Models\Role;
 class AdminController extends Controller
 {
     // Display the list of users
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::with(['roles', 'depots', 'customers'])->paginate(15);
+        $showDeleted = $request->get('show_deleted', false);
+        
+        if ($showDeleted) {
+            $users = User::onlyTrashed()->with(['roles', 'depots', 'customers'])->paginate(15);
+        } else {
+            $users = User::with(['roles', 'depots', 'customers'])->paginate(15);
+        }
+        
         $roles = Role::all(); // Get all roles for the dropdown
         $depots = Depot::all();
         $customers = Customer::all();  // Get all customers for selection
 
-        return view('warehouse.users.index', compact('users', 'roles', 'depots', 'customers'));
+        return view('warehouse.users.index', compact('users', 'roles', 'depots', 'customers', 'showDeleted'));
     }
 
     // Show the form for editing a user
