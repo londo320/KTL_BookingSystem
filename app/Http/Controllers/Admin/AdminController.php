@@ -280,7 +280,7 @@ class AdminController extends Controller
             abort(403, 'You do not have permission to delete this user.');
         }
         
-        // Clean up all relationships before soft-deleting
+        // Clean up all relationships and fields before soft-deleting
         $user->roles()->detach();
         $user->depots()->detach();
         $user->customers()->detach();
@@ -288,6 +288,11 @@ class AdminController extends Controller
             $user->customRoles()->detach();
         }
         $user->functions()->delete();
+        
+        // Clear default depot and customer fields
+        $user->depot_id = null;
+        $user->customer_id = null;
+        $user->save();
         
         $user->delete();
         
