@@ -243,4 +243,31 @@ class AdminController extends Controller
 
         return view('warehouse.users.create', compact('roles', 'depots', 'customers'));
     }
+
+    public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+        
+        if ($user->isProtectedSystemOwner()) {
+            abort(403, 'Cannot delete protected system owner account.');
+        }
+        
+        if (!$user->canBeEditedBy(auth()->user())) {
+            abort(403, 'You do not have permission to delete this user.');
+        }
+        
+        // Clean up all relationships before soft-deleting
+        $user->roles()->detach();
+        $user->depots()->detach();
+        $user->customers()->detach();
+        if (method_exists($user, 'customRoles')) {
+            $user->customRoles()->detach();
+        }
+        $user->functions()->delete();
+        
+        $user->delete();
+        
+        return redirect()->route('app.users.index')
+            ->with('success', 'User deleted successfully.');
+    }
 }
