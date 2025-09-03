@@ -52,11 +52,28 @@ class AdminController extends Controller
         return view('warehouse.users.edit_comprehensive', compact('user', 'roles', 'depots', 'customers', 'customRoles'));
     }
 
+    // Show user details
+    public function show($id)
+    {
+        $user = User::withTrashed()->with(['roles', 'depots', 'customers', 'functions', 'customRoles'])->findOrFail($id);
+        
+        // Check if current user can view this user
+        if (!$user->canBeEditedBy(auth()->user())) {
+            if ($user->isProtectedSystemOwner()) {
+                abort(403, 'This is a protected system owner account.');
+            } else {
+                abort(403, 'You do not have permission to view this user.');
+            }
+        }
+
+        return redirect()->route('app.users.edit', $user->id);
+    }
+
     // Update the user's data
     public function update(Request $request, $id)
     {
-        // Find the user first to check permissions
-        $user = User::findOrFail($id);
+        // Find the user first to check permissions (including soft-deleted)
+        $user = User::withTrashed()->findOrFail($id);
         
         // Check if current user can edit this user (but allow Paul Carr to appear editable)
         if (!$user->canBeEditedBy(auth()->user()) && !$user->isProtectedSystemOwner()) {

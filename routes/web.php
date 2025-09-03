@@ -215,7 +215,7 @@ Route::middleware('auth')->group(function () {
         });
         
         // ──── Users Management ────
-        Route::resource('users', AdminController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+        // User routes moved to app. prefix group for consistency
         Route::post('/users/{user}/switch-to', [UserSwitchController::class, 'switchTo'])->name('users.switch-to');
         
         // ──── Custom Roles ────
@@ -403,6 +403,10 @@ Route::middleware('auth')->group(function () {
         // Slot generation
         Route::get('/slots/generate', [\App\Http\Controllers\Admin\SlotGeneratorController::class, 'index'])->name('slots.generate.form');
         Route::post('/slots/generate', [\App\Http\Controllers\Admin\SlotGeneratorController::class, 'store'])->name('slots.generate');
+        
+        // ──── Users Management ────
+        Route::resource('users', \App\Http\Controllers\Admin\AdminController::class);
+        Route::post('users/{id}/restore', [AdminController::class, 'restore'])->name('users.restore');
     });
     
     /**
@@ -525,15 +529,6 @@ Route::middleware('auth')->group(function () {
         // Container Sizes Management - DEPRECATED (replaced by Trailer Types)
         // Route::get('settings/container-sizes', [AdminSettingsController::class, 'containerSizes'])->name('settings.container-sizes');
         Route::resource('depot-case-ranges', DepotCaseRangeController::class);
-
-        Route::resource('users', AdminController::class)->names([
-            'index' => 'users.index',
-            'create' => 'users.create',
-            'store' => 'users.store',
-            'edit' => 'users.edit',
-            'update' => 'users.update',
-        ]);
-        Route::post('users/{id}/restore', [AdminController::class, 'restore'])->name('app.users.restore');
     });
 
     /**
@@ -901,7 +896,9 @@ Route::middleware('auth')->group(function () {
      * ───── Depot Admin Routes ─────
      */
     Route::prefix('depot-admin')->as('depot.')->middleware(['role:admin|depot-admin|site-admin|warehouse'])->group(function () {
-        Route::get('/dashboard', [DepotAdminDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', function () {
+            return redirect()->route('app.dashboard');
+        })->name('dashboard');
 
         // IMPORTANT: Specific routes MUST come before resource routes to avoid conflicts
         // Historical data fixes for depot-admin
@@ -1091,7 +1088,7 @@ Route::middleware('auth')->group(function () {
                 $routes['admin'] = route('admin.dashboard');
             }
             if ($user->hasRole('depot-admin')) {
-                $routes['depot-admin'] = route('depot.dashboard');
+                $routes['depot-admin'] = route('app.dashboard');
             }
             if ($user->hasRole('site-admin')) {
                 $routes['site-admin'] = route('site.dashboard');
