@@ -533,7 +533,7 @@ Route::middleware('auth')->group(function () {
             'edit' => 'users.edit',
             'update' => 'users.update',
         ]);
-        Route::post('users/{id}/restore', [AdminController::class, 'restore'])->name('users.restore');
+        Route::post('users/{id}/restore', [AdminController::class, 'restore'])->name('app.users.restore');
     });
 
     /**
