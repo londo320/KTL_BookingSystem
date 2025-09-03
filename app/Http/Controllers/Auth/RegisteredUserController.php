@@ -36,6 +36,19 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
+        // Check if a soft-deleted user exists with this email and clean up their relationships
+        $existingSoftDeletedUser = User::withTrashed()->where('email', $request->email)->first();
+        if ($existingSoftDeletedUser && $existingSoftDeletedUser->trashed()) {
+            // Clean up all relationships from the soft-deleted user to ensure fresh start
+            $existingSoftDeletedUser->roles()->detach();
+            $existingSoftDeletedUser->depots()->detach();
+            $existingSoftDeletedUser->customers()->detach();
+            if (method_exists($existingSoftDeletedUser, 'customRoles')) {
+                $existingSoftDeletedUser->customRoles()->detach();
+            }
+            $existingSoftDeletedUser->functions()->delete();
+        }
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
