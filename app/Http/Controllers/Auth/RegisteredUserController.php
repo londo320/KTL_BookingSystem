@@ -47,6 +47,9 @@ class RegisteredUserController extends Controller
                 $existingSoftDeletedUser->customRoles()->detach();
             }
             $existingSoftDeletedUser->functions()->delete();
+            
+            // Keep the soft-deleted user but ensure clean relationships
+            // This preserves historic booking records while allowing fresh registration
         }
 
         $user = User::create([
