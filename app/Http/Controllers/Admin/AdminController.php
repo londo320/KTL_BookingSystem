@@ -33,7 +33,7 @@ class AdminController extends Controller
     // Show the form for editing a user
     public function edit($id)
     {
-        $user = User::with(['roles', 'depots', 'customers', 'functions', 'customRoles'])->findOrFail($id);
+        $user = User::withTrashed()->with(['roles', 'depots', 'customers', 'functions', 'customRoles'])->findOrFail($id);
         
         // Check if current user can edit this user
         if (!$user->canBeEditedBy(auth()->user())) {
@@ -276,5 +276,28 @@ class AdminController extends Controller
         
         return redirect()->route('app.users.index')
             ->with('success', 'User deleted successfully.');
+    }
+
+    public function restore($id)
+    {
+        $user = User::withTrashed()->findOrFail($id);
+        
+        if (!$user->trashed()) {
+            return redirect()->route('app.users.index')
+                ->with('error', 'User is not deleted.');
+        }
+        
+        if ($user->isProtectedSystemOwner()) {
+            abort(403, 'Cannot restore protected system owner account.');
+        }
+        
+        if (!$user->canBeEditedBy(auth()->user())) {
+            abort(403, 'You do not have permission to restore this user.');
+        }
+        
+        $user->restore();
+        
+        return redirect()->route('app.users.index')
+            ->with('success', 'User restored successfully.');
     }
 }

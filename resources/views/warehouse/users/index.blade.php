@@ -99,26 +99,45 @@
               {{-- Actions --}}
               <td class="px-4 py-2 align-top">
                 <div class="flex flex-col space-y-1">
-                  @if($user->canBeEditedBy(auth()->user()))
-                    <a href="{{ route('app.users.edit', $user) }}"
-                       class="inline-block text-center px-2 py-1 bg-yellow-500 text-white rounded-full hover:bg-yellow-600 text-xs">
-                      Edit
-                    </a>
+                  @if($showDeleted)
+                    {{-- Actions for deleted users --}}
+                    @if($user->canBeEditedBy(auth()->user()))
+                      <a href="{{ route('app.users.edit', $user) }}"
+                         class="inline-block text-center px-2 py-1 bg-yellow-500 text-white rounded-full hover:bg-yellow-600 text-xs">
+                        View/Edit
+                      </a>
+                      <form action="{{ route('app.users.restore', $user) }}" method="POST">
+                        @csrf
+                        <button type="submit"
+                                class="inline-block text-center px-2 py-1 bg-green-500 text-white rounded-full hover:bg-green-600 text-xs"
+                                onclick="return confirm('Are you sure you want to restore this user?')">
+                          Restore
+                        </button>
+                      </form>
+                    @endif
                   @else
-                    <span class="inline-block text-center px-2 py-1 bg-gray-300 text-gray-500 rounded-full text-xs cursor-not-allowed">
-                        No Access
-                    </span>
-                  @endif
-                  
-                  @if(auth()->user()->hasRole('admin') || auth()->user()->isProtectedSystemOwner())
-                    <form action="{{ route('app.users.destroy', $user) }}" method="POST">
-                      @csrf @method('DELETE')
-                      <button type="submit"
-                              class="inline-block text-center px-2 py-1 bg-red-500 text-white rounded-full hover:bg-red-600 text-xs"
-                              onclick="return confirm('Are you sure you want to delete this user?')">
-                        Delete
-                      </button>
-                    </form>
+                    {{-- Actions for active users --}}
+                    @if($user->canBeEditedBy(auth()->user()))
+                      <a href="{{ route('app.users.edit', $user) }}"
+                         class="inline-block text-center px-2 py-1 bg-yellow-500 text-white rounded-full hover:bg-yellow-600 text-xs">
+                        Edit
+                      </a>
+                    @else
+                      <span class="inline-block text-center px-2 py-1 bg-gray-300 text-gray-500 rounded-full text-xs cursor-not-allowed">
+                          No Access
+                      </span>
+                    @endif
+                    
+                    @if(auth()->user()->hasRole('admin') || auth()->user()->isProtectedSystemOwner())
+                      <form action="{{ route('app.users.destroy', $user) }}" method="POST">
+                        @csrf @method('DELETE')
+                        <button type="submit"
+                                class="inline-block text-center px-2 py-1 bg-red-500 text-white rounded-full hover:bg-red-600 text-xs"
+                                onclick="return confirm('Are you sure you want to delete this user?')">
+                          Delete
+                        </button>
+                      </form>
+                    @endif
                   @endif
                 </div>
               </td>
