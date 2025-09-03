@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AdminSettingsController;
+use App\Http\Controllers\TestEmailController;
 use App\Http\Controllers\Warehouse\BookingController;
 use App\Http\Controllers\Warehouse\BookingRebookController;
 use App\Http\Controllers\Admin\BookingRulesController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\Admin\SlotUsageController;
 use App\Http\Controllers\Admin\UserSwitchController;
 use App\Http\Controllers\Customer\CustomerDashboardController;
 use App\Http\Controllers\DepotAdmin\DepotAdminDashboardController;
+use App\Http\Controllers\PendingAccessController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SiteAdmin\SiteAdminDashboardController;
 use App\Http\Controllers\WarehouseController;
@@ -33,8 +35,16 @@ use Illuminate\Support\Facades\Route;
 
 require __DIR__.'/auth.php';
 
+// Pending access route (for users without roles/depots)
+Route::middleware('auth')->get('/pending-access', [PendingAccessController::class, 'index'])->name('pending-access');
+
 Route::get('/redirect-after-login', function () {
     $user = auth()->user();
+    
+    // Check if user has any roles or depot assignments
+    if (!$user->roles()->exists() || !$user->depots()->exists()) {
+        return redirect()->route('pending-access');
+    }
     
     // Warehouse users (warehouse, depot-admin, site-admin, admin) go to app dashboard
     if ($user->hasWarehouseAccess()) {
@@ -46,8 +56,8 @@ Route::get('/redirect-after-login', function () {
         return redirect()->route('customer.dashboard');
     }
     
-    // Fallback to app dashboard
-    return redirect()->route('app.dashboard');
+    // Fallback to pending access page
+    return redirect()->route('pending-access');
 })->name('redirect-after-login');
 
 Route::get('/', function () {
@@ -57,6 +67,7 @@ Route::get('/', function () {
     
     return redirect()->route('redirect-after-login');
 });
+
 
 Route::get('/depot-info-public', function () {
     $depots = \App\Models\Depot::select('id', 'name')->get();
@@ -243,6 +254,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/settings/tipping-workflow', [AdminSettingsController::class, 'updateTippingWorkflow'])->name('settings.tipping-workflow');
         Route::post('/settings/outbound-module', [AdminSettingsController::class, 'updateOutboundModule'])->name('settings.outbound-module');
         Route::post('/settings/inbound-module', [AdminSettingsController::class, 'updateInboundModule'])->name('settings.inbound-module');
+        Route::post('/settings/admin-approval-emails', [AdminSettingsController::class, 'updateAdminApprovalEmails'])->name('settings.admin-approval-emails');
         Route::get('/settings/pallet-types', [\App\Http\Controllers\Admin\PalletTypeController::class, 'index'])->name('settings.pallet-types');
         Route::get('/settings/pallet-types/create', [\App\Http\Controllers\Admin\PalletTypeController::class, 'create'])->name('settings.pallet-types.create');
         Route::post('/settings/pallet-types', [\App\Http\Controllers\Admin\PalletTypeController::class, 'store'])->name('settings.pallet-types.store');
@@ -285,6 +297,13 @@ Route::middleware('auth')->group(function () {
         }); // End Inbound Module Routes
         
         // ──── General Management Routes (Always Available) ────
+        
+        // Email testing routes
+        Route::prefix('test-email')->name('test-email.')->group(function () {
+            Route::get('/', [TestEmailController::class, 'index'])->name('index');
+            Route::get('/preview', [TestEmailController::class, 'preview'])->name('preview');
+            Route::post('/send', [TestEmailController::class, 'send'])->name('send');
+        });
         Route::resource('products', ProductController::class);
         Route::resource('trailer-types', \App\Http\Controllers\Admin\TrailerTypeController::class);
         Route::post('trailer-types/{id}/restore', [\App\Http\Controllers\Admin\TrailerTypeController::class, 'restore'])->name('trailer-types.restore');

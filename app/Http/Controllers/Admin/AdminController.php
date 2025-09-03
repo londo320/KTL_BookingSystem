@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller; // Import the base controller
 use App\Models\Customer;
 use App\Models\Depot;
 use App\Models\User;
+use App\Notifications\AccessGrantedNotification;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 
@@ -95,6 +96,11 @@ class AdminController extends Controller
         $isPaulCarrEditedByOther = $user->isProtectedSystemOwner() && auth()->user()->id !== $user->id;
         
         if (!$isPaulCarrEditedByOther) {
+            // Check if user previously had no access (for welcome email)
+            $hadPreviousRoles = $user->roles()->exists();
+            $hadPreviousDepots = $user->depots()->exists();
+            $wasNewUser = !$hadPreviousRoles || !$hadPreviousDepots;
+            
             // Sync multiple roles via pivot 
             $roleIds = $validated['role_ids'] ?? [];
             
@@ -113,6 +119,14 @@ class AdminController extends Controller
             // Sync multiple customers (many-to-many relationship)
             $customerIds = $validated['customer_ids'] ?? [];
             $user->customers()->sync($customerIds);
+            
+            // Send welcome email if user was previously without access and now has both roles and depots
+            if ($wasNewUser && !empty($roleIds) && !empty($depotIds)) {
+                $roleNames = Role::whereIn('id', $roleIds)->pluck('name')->toArray();
+                $depotNames = \App\Models\Depot::whereIn('id', $depotIds)->pluck('name')->toArray();
+                
+                $user->notify(new AccessGrantedNotification($roleNames, $depotNames));
+            }
 
             // Sync custom roles
             $customRoleIds = $validated['custom_role_ids'] ?? [];

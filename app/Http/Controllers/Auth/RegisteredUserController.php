@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AdminNotificationService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -42,6 +43,9 @@ class RegisteredUserController extends Controller
         ]);
 
         event(new Registered($user));
+        
+        // Send admin notification for approval
+        AdminNotificationService::sendNewUserRegistration($user);
 
         Auth::login($user);
 

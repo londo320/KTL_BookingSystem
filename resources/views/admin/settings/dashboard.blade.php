@@ -103,6 +103,40 @@
       </div>
     </div>
 
+    {{-- User Approval Settings --}}
+    <div class="bg-white shadow rounded-lg p-6">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4">👥 User Approval Settings</h3>
+      <p class="text-sm text-gray-600 mb-4">
+        Configure email notifications for new user registration approvals.
+      </p>
+      
+      <form method="POST" action="{{ route('app.settings.admin-approval-emails') }}">
+        @csrf
+        <div class="space-y-4">
+          <div>
+            <label for="admin_approval_emails" class="block text-sm font-medium text-gray-700 mb-2">
+              Admin Approval Email Addresses
+            </label>
+            <textarea 
+              name="admin_approval_emails" 
+              id="admin_approval_emails"
+              rows="3"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              placeholder="admin@knowleslogistics.com, manager@knowleslogistics.com"
+            >{{ $adminApprovalEmails }}</textarea>
+            <p class="mt-1 text-sm text-gray-500">
+              Enter email addresses separated by commas. These admins will receive notifications when new users register and need approval.
+            </p>
+          </div>
+          <div class="flex justify-end">
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+              Save Email Settings
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
     {{-- Depot Map Management Section --}}
     <div class="bg-white shadow rounded-lg p-6">
       <h3 class="text-lg font-semibold text-gray-800 mb-4">🗺️ Depot Map Management</h3>
@@ -175,6 +209,9 @@
       </a>
       <a href="{{ route('app.slots.generate.form') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         🧮 Generate Slots
+      </a>
+      <a href="{{ route('app.test-email.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+        📧 Test Password Reset Emails
       </a>
       <a href="{{ route('app.slot-usage.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         📊 Slot Usage Viewer

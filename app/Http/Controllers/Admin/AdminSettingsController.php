@@ -24,11 +24,15 @@ class AdminSettingsController extends Controller
         $outboundModuleEnabled = Setting::get('outbound_module_enabled', false);
         $inboundModuleEnabled = Setting::get('inbound_module_enabled', true); // Default true for existing functionality
 
+        // User approval settings
+        $adminApprovalEmails = Setting::get('admin_approval_emails', '');
+        
         return view('admin.settings.dashboard', compact(
             'depots', 
             'tippingWorkflowEnabled',
             'outboundModuleEnabled',
-            'inboundModuleEnabled'
+            'inboundModuleEnabled',
+            'adminApprovalEmails'
         ));
     }
 
@@ -69,6 +73,27 @@ class AdminSettingsController extends Controller
         $status = $request->inbound_module_enabled ? 'enabled' : 'disabled';
 
         return back()->with('success', "Inbound module has been {$status}.");
+    }
+    
+    public function updateAdminApprovalEmails(Request $request)
+    {
+        $request->validate([
+            'admin_approval_emails' => 'nullable|string|max:1000',
+        ]);
+        
+        // Clean up email list - remove spaces, validate format
+        $emails = $request->admin_approval_emails;
+        if ($emails) {
+            $emailArray = array_map('trim', explode(',', $emails));
+            $validEmails = array_filter($emailArray, function($email) {
+                return filter_var($email, FILTER_VALIDATE_EMAIL);
+            });
+            $emails = implode(', ', $validEmails);
+        }
+        
+        Setting::set('admin_approval_emails', $emails ?: '');
+        
+        return back()->with('success', 'Admin approval email addresses updated successfully.');
     }
 
     public function palletTypes()
