@@ -27,6 +27,60 @@
         </div>
     </div>
 
+    {{-- Search and Filters --}}
+    <div class="mb-4 bg-white p-4 rounded-lg border">
+        <form method="GET" class="flex flex-wrap gap-4 items-end">
+            <input type="hidden" name="show_deleted" value="{{ $showDeleted ? '1' : '' }}">
+            
+            {{-- Search Box --}}
+            <div class="flex-1 min-w-64">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Search Users</label>
+                <input type="text" 
+                       name="search" 
+                       value="{{ $search }}"
+                       placeholder="Search by name or email..."
+                       class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            {{-- Customer Filter --}}
+            <div class="min-w-48">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Customer</label>
+                <select name="customer_id" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Customers</option>
+                    @foreach($customers as $customer)
+                        <option value="{{ $customer->id }}" {{ $customerFilter == $customer->id ? 'selected' : '' }}>
+                            {{ $customer->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            
+            {{-- Depot Filter --}}
+            <div class="min-w-48">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Depot</label>
+                <select name="depot_id" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Depots</option>
+                    @foreach($depots as $depot)
+                        <option value="{{ $depot->id }}" {{ $depotFilter == $depot->id ? 'selected' : '' }}>
+                            {{ $depot->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            
+            {{-- Action Buttons --}}
+            <div class="flex gap-2">
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    Search
+                </button>
+                <a href="{{ route('app.users.index', ['show_deleted' => $showDeleted ? '1' : '']) }}" 
+                   class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
+                    Clear
+                </a>
+            </div>
+        </form>
+    </div>
+
     {{-- User List Table --}}
     <div class="overflow-x-auto bg-white border border-gray-200">
       <table class="min-w-full text-sm">

@@ -16,18 +16,55 @@ class AdminController extends Controller
     public function index(Request $request)
     {
         $showDeleted = $request->get('show_deleted', false);
+        $search = $request->get('search', '');
+        $customerFilter = $request->get('customer_id', '');
+        $depotFilter = $request->get('depot_id', '');
         
+        // Start with base query
         if ($showDeleted) {
-            $users = User::onlyTrashed()->with(['roles', 'depots', 'customers'])->paginate(15);
+            $query = User::onlyTrashed();
         } else {
-            $users = User::with(['roles', 'depots', 'customers'])->paginate(15);
+            $query = User::query();
         }
         
+        // Add relationships
+        $query->with(['roles', 'depots', 'customers']);
+        
+        // Apply search filter
+        if (!empty($search)) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%")
+                  ->orWhere('email', 'LIKE', "%{$search}%");
+            });
+        }
+        
+        // Apply customer filter
+        if (!empty($customerFilter)) {
+            $query->whereHas('customers', function($q) use ($customerFilter) {
+                $q->where('customers.id', $customerFilter);
+            });
+        }
+        
+        // Apply depot filter
+        if (!empty($depotFilter)) {
+            $query->whereHas('depots', function($q) use ($depotFilter) {
+                $q->where('depots.id', $depotFilter);
+            });
+        }
+        
+        // Order alphabetically by name
+        $query->orderBy('name', 'asc');
+        
+        $users = $query->paginate(15)->appends($request->query());
+        
         $roles = Role::all(); // Get all roles for the dropdown
-        $depots = Depot::all();
-        $customers = Customer::all();  // Get all customers for selection
+        $depots = Depot::orderBy('name')->get();
+        $customers = Customer::orderBy('name')->get();
 
-        return view('warehouse.users.index', compact('users', 'roles', 'depots', 'customers', 'showDeleted'));
+        return view('warehouse.users.index', compact(
+            'users', 'roles', 'depots', 'customers', 'showDeleted', 
+            'search', 'customerFilter', 'depotFilter'
+        ));
     }
 
     // Show the form for editing a user
@@ -189,18 +226,172 @@ class AdminController extends Controller
     }
 
     // Helper method to generate a random password
-    private function generatePassword($length = 8)
+    private function generatePassword($length = 12)
     {
-        // Generate a password of 3 words with at least 8 characters
-        $words = ['apple', 'banana', 'cherry', 'date', 'elderberry', 'fig', 'grape', 'honeydew'];
-        $password = implode('', array_map(function () use ($words) {
-            return $words[array_rand($words)];
-        }, range(1, 3))); // Generate 3 random words
+        // Expanded EFF-style wordlist for secure password generation (500+ words)
+        $words = [
+            'abacus', 'absorb', 'accent', 'action', 'atomic', 'attach', 'august', 'avenue',
+            'awning', 'backup', 'badge', 'banana', 'beacon', 'behalf', 'benzine', 'bicycle',
+            'bishop', 'blanket', 'bleach', 'blimp', 'blocks', 'bloody', 'blouse', 'blunt',
+            'bobsled', 'bogey', 'bombard', 'bookend', 'boxing', 'broken', 'bucket', 'budget',
+            'buffet', 'buggy', 'bumper', 'bundle', 'butane', 'cabinet', 'cactus', 'camera',
+            'campus', 'canal', 'cannon', 'canoe', 'canvas', 'carbon', 'career', 'castle',
+            'catalog', 'cement', 'center', 'ceramic', 'chamber', 'channel', 'chapter', 'charcoal',
+            'charge', 'chicken', 'chrome', 'church', 'circle', 'circus', 'classic', 'climate',
+            'closet', 'cluster', 'coaster', 'coating', 'cobalt', 'cocaine', 'coconut', 'coding',
+            'coffee', 'coiled', 'column', 'combat', 'comedy', 'comet', 'comfort', 'common',
+            'company', 'complex', 'concept', 'conduct', 'connect', 'console', 'contact', 'content',
+            'contest', 'context', 'copper', 'correct', 'cosmic', 'costume', 'cottage', 'county',
+            'couple', 'courage', 'cover', 'cowboy', 'cradle', 'craft', 'crater', 'crazy',
+            'create', 'credit', 'crisp', 'crystal', 'cubic', 'culture', 'cursor', 'custom',
+            'cymbal', 'damage', 'danger', 'daring', 'dating', 'daybed', 'debris', 'decade',
+            'decor', 'defeat', 'degree', 'delete', 'deluxe', 'demand', 'density', 'depot',
+            'derive', 'design', 'desktop', 'device', 'diesel', 'digital', 'dilemma', 'dining',
+            'diploma', 'direct', 'discard', 'domain', 'donate', 'dosage', 'double', 'dragon',
+            'drain', 'drama', 'drawer', 'dream', 'dress', 'dried', 'drift', 'drill',
+            'drink', 'drive', 'drone', 'drums', 'drying', 'duck', 'duke', 'dune',
+            'during', 'dusk', 'dutch', 'dwarf', 'dynamic', 'eagle', 'early', 'earth',
+            'easel', 'eastern', 'eating', 'echo', 'eclipse', 'economy', 'edge', 'editor',
+            'effect', 'eight', 'either', 'eject', 'elbow', 'elder', 'eleven', 'elite',
+            'email', 'ember', 'emerge', 'empire', 'employ', 'enable', 'encore', 'endless',
+            'enemy', 'energy', 'engage', 'engine', 'enjoy', 'enough', 'enroll', 'entire',
+            'entry', 'equal', 'error', 'escape', 'ethics', 'evoke', 'exact', 'exam',
+            'exceed', 'except', 'excuse', 'execute', 'exile', 'exist', 'expand', 'expect',
+            'expert', 'expose', 'extend', 'extent', 'fabric', 'facial', 'factor', 'falcon',
+            'family', 'famous', 'fancy', 'father', 'fault', 'favor', 'feast', 'federal',
+            'female', 'fender', 'ferry', 'fiber', 'fiddle', 'field', 'figure', 'filter',
+            'final', 'finger', 'finish', 'fiscal', 'fixed', 'fizzy', 'flame', 'flash',
+            'fleet', 'flesh', 'flight', 'float', 'flood', 'floor', 'flower', 'fluid',
+            'flush', 'focal', 'folder', 'force', 'forest', 'forget', 'formal', 'format',
+            'former', 'fossil', 'foster', 'found', 'fourth', 'frame', 'freeze', 'french',
+            'fresh', 'friday', 'friend', 'front', 'frost', 'frozen', 'fruit', 'fusion',
+            'future', 'gadget', 'galaxy', 'garage', 'garden', 'gather', 'gender', 'gentle',
+            'ghost', 'giant', 'gift', 'given', 'glacier', 'glass', 'global', 'glory',
+            'glove', 'golden', 'gossip', 'govern', 'grace', 'grade', 'grain', 'grand',
+            'grant', 'grape', 'graph', 'grass', 'grave', 'great', 'green', 'greet',
+            'grief', 'grill', 'grind', 'gross', 'ground', 'group', 'grown', 'guard',
+            'guess', 'guest', 'guide', 'guild', 'guilty', 'guitar', 'hammer', 'handle',
+            'hangar', 'happen', 'harbor', 'hardly', 'harsh', 'hatch', 'hazard', 'health',
+            'hearing', 'heart', 'heavy', 'height', 'helmet', 'helper', 'hidden', 'hiking',
+            'history', 'hockey', 'holder', 'honest', 'honor', 'hoping', 'horizon', 'horror',
+            'hotel', 'hover', 'human', 'humble', 'humor', 'hybrid', 'iconic', 'ideal',
+            'image', 'impact', 'import', 'income', 'indeed', 'index', 'infant', 'inform',
+            'inject', 'injury', 'inline', 'inner', 'input', 'insect', 'inside', 'inspire',
+            'install', 'intact', 'intake', 'intend', 'invest', 'invite', 'involve', 'island',
+            'issue', 'ivory', 'jacket', 'jargon', 'jasmine', 'jersey', 'jigsaw', 'jobless',
+            'jockey', 'joking', 'jolly', 'judge', 'juice', 'jumbo', 'jumper', 'jungle',
+            'junior', 'junk', 'justice', 'kernel', 'kettle', 'kidney', 'kitten', 'knife',
+            'knot', 'known', 'label', 'labor', 'ladder', 'landed', 'laptop', 'large',
+            'laser', 'last', 'later', 'launch', 'lawyer', 'leader', 'league', 'learn',
+            'lease', 'least', 'leather', 'leave', 'ledge', 'legal', 'legend', 'lemon',
+            'length', 'lesson', 'level', 'lever', 'liberty', 'license', 'likely', 'limit',
+            'linear', 'linked', 'liquid', 'listen', 'litter', 'living', 'lizard', 'loan',
+            'lobby', 'local', 'locate', 'locked', 'lodge', 'logic', 'lonely', 'lookup',
+            'loop', 'loose', 'lounge', 'lovely', 'lower', 'lucky', 'lumber', 'lunar',
+            'lunch', 'luxury', 'lying', 'machine', 'madness', 'magic', 'magnet', 'makeup',
+            'manage', 'mandate', 'mango', 'manner', 'manual', 'maple', 'marble', 'march',
+            'margin', 'marine', 'marker', 'market', 'marvel', 'master', 'matrix', 'matter',
+            'mature', 'meadow', 'measure', 'media', 'medical', 'medium', 'member', 'memory',
+            'mental', 'mentor', 'method', 'metric', 'middle', 'mighty', 'miller', 'mining',
+            'minor', 'minute', 'miracle', 'mirror', 'missing', 'mission', 'mistake', 'mixture',
+            'mobile', 'modern', 'modest', 'modify', 'moment', 'monday', 'money', 'monitor',
+            'month', 'moral', 'mortar', 'mother', 'motion', 'motor', 'mount', 'mouse',
+            'mouth', 'move', 'movie', 'muffin', 'muscle', 'museum', 'music', 'mutual',
+            'myself', 'mystery', 'napkin', 'narrow', 'nation', 'native', 'nature', 'nearby',
+            'nearly', 'nectar', 'needle', 'nephew', 'nerve', 'nested', 'network', 'neural',
+            'never', 'newer', 'nicely', 'night', 'noble', 'nobody', 'noise', 'nomad',
+            'normal', 'north', 'notice', 'notion', 'novel', 'number', 'nurse', 'nylon',
+            'object', 'obtain', 'ocean', 'offer', 'office', 'often', 'online', 'only',
+            'opener', 'option', 'orange', 'orbit', 'order', 'organ', 'origin', 'other',
+            'outcome', 'outer', 'output', 'outside', 'oval', 'overall', 'owner', 'oxygen',
+            'ozone', 'package', 'packed', 'paddle', 'palace', 'panel', 'panic', 'paper',
+            'parade', 'parent', 'park', 'parcel', 'party', 'patch', 'pathway', 'patrol',
+            'pause', 'payment', 'peace', 'peach', 'peaked', 'peanut', 'peasant', 'pecan',
+            'pelican', 'penalty', 'pencil', 'people', 'pepper', 'perfect', 'permit', 'person',
+            'phone', 'phrase', 'physics', 'piano', 'pickup', 'picture', 'piece', 'pilot',
+            'pink', 'pioneer', 'pipeline', 'pistol', 'pitch', 'pizza', 'place', 'plain',
+            'planet', 'plastic', 'plate', 'platform', 'playoff', 'please', 'pledge', 'pliers',
+            'plot', 'pluck', 'plugin', 'plunge', 'plywood', 'pocket', 'poem', 'point',
+            'polar', 'policy', 'polite', 'polygon', 'pony', 'poplar', 'popular', 'portal',
+            'portion', 'posture', 'potato', 'pottery', 'poverty', 'powder', 'power', 'praise',
+            'prayer', 'precise', 'predict', 'prefer', 'premium', 'prepare', 'present', 'preset',
+            'pretty', 'prevent', 'price', 'pride', 'primary', 'prime', 'print', 'prior',
+            'prison', 'private', 'prize', 'problem', 'produce', 'product', 'profile', 'program',
+            'project', 'promise', 'promote', 'proof', 'proper', 'protect', 'proud', 'provide',
+            'public', 'puddle', 'pulse', 'pumice', 'punch', 'pupil', 'purple', 'purpose',
+            'pursue', 'puzzle', 'pyramid', 'qualify', 'quality', 'quarter', 'question', 'quick',
+            'quiet', 'quilt', 'quit', 'quote', 'rabbit', 'racing', 'radar', 'radio',
+            'radius', 'ragdoll', 'raisin', 'random', 'ranger', 'rapid', 'rarely', 'rating',
+            'ratio', 'reach', 'reader', 'ready', 'realm', 'reason', 'rebel', 'rebuild',
+            'recall', 'recent', 'recipe', 'record', 'recover', 'reduce', 'refer', 'reform',
+            'refuse', 'regard', 'region', 'regular', 'reject', 'relate', 'relax', 'relief',
+            'remain', 'remark', 'remind', 'remote', 'remove', 'render', 'repair', 'repeat',
+            'replace', 'reply', 'report', 'rescue', 'resent', 'reset', 'resist', 'resort',
+            'result', 'retail', 'retain', 'retire', 'return', 'reveal', 'review', 'revise',
+            'revolt', 'reward', 'rhythm', 'ribbon', 'rider', 'ridge', 'rifle', 'right',
+            'rigid', 'rigor', 'rinse', 'ritual', 'rival', 'river', 'robot', 'rocket',
+            'roller', 'roman', 'roster', 'rotate', 'rough', 'round', 'route', 'royal',
+            'rubber', 'ruby', 'ruffle', 'rugby', 'ruler', 'rumor', 'runway', 'rural',
+            'rustic', 'sacred', 'saddle', 'safari', 'safety', 'salmon', 'sample', 'saturn',
+            'sauce', 'savage', 'saving', 'scale', 'scan', 'scare', 'scene', 'schema',
+            'school', 'science', 'scope', 'score', 'scout', 'screen', 'script', 'scroll',
+            'search', 'season', 'second', 'secret', 'sector', 'secure', 'select', 'senate',
+            'senior', 'sense', 'sequel', 'series', 'serve', 'session', 'setup', 'seven',
+            'shadow', 'shake', 'shame', 'shape', 'share', 'shark', 'sharp', 'shell',
+            'shelter', 'sheriff', 'shield', 'shift', 'shine', 'shirt', 'shock', 'shoot',
+            'shore', 'shower', 'shrimp', 'shrink', 'shuffle', 'sibling', 'sight', 'sigma',
+            'signal', 'silent', 'silver', 'simple', 'single', 'sister', 'sixth', 'sketch',
+            'skill', 'sleep', 'slice', 'slide', 'slight', 'slope', 'small', 'smart',
+            'smile', 'smoke', 'smooth', 'snake', 'snow', 'soccer', 'social', 'sodium',
+            'solar', 'solid', 'solve', 'sonic', 'sorry', 'sound', 'source', 'south',
+            'space', 'spare', 'speak', 'special', 'speed', 'spend', 'sphere', 'spice',
+            'spider', 'spine', 'spiral', 'spirit', 'split', 'spoke', 'sport', 'spray',
+            'spread', 'spring', 'squad', 'square', 'stable', 'stadium', 'staff', 'stage',
+            'stake', 'stamp', 'stand', 'staple', 'start', 'state', 'static', 'statue',
+            'status', 'steady', 'steam', 'steel', 'steep', 'steer', 'stem', 'stereo',
+            'stick', 'still', 'stock', 'stone', 'stood', 'stop', 'store', 'storm',
+            'story', 'strand', 'strap', 'stream', 'street', 'stress', 'strict', 'strike',
+            'string', 'strip', 'stroke', 'strong', 'stuck', 'studio', 'study', 'stuff',
+            'stupid', 'style', 'submit', 'subtle', 'subway', 'sudden', 'suffer', 'sugar',
+            'summer', 'sunday', 'sunset', 'super', 'supply', 'sure', 'surface', 'survey',
+            'switch', 'symbol', 'syntax', 'system', 'table', 'tackle', 'taken', 'talent',
+            'talked', 'target', 'taught', 'taxi', 'teach', 'team', 'tech', 'temple',
+            'tenant', 'tender', 'tennis', 'tension', 'term', 'test', 'text', 'thank',
+            'that', 'theft', 'their', 'theme', 'theory', 'therapy', 'these', 'thick',
+            'thing', 'think', 'third', 'those', 'though', 'thread', 'three', 'threw',
+            'through', 'throw', 'thumb', 'thunder', 'ticket', 'tidal', 'tight', 'timber',
+            'timing', 'tissue', 'title', 'toast', 'today', 'token', 'tomato', 'tongue',
+            'topic', 'torch', 'total', 'touch', 'tough', 'towel', 'tower', 'track',
+            'trade', 'train', 'trash', 'travel', 'treat', 'trend', 'trial', 'tribe',
+            'trick', 'tried', 'triple', 'truck', 'trust', 'truth', 'trying', 'tumor',
+            'tunnel', 'turkey', 'turned', 'turtle', 'twelve', 'twenty', 'twice', 'twist',
+            'typing', 'ultra', 'unable', 'uncle', 'under', 'unfold', 'unhappy', 'union',
+            'unique', 'unite', 'unity', 'unless', 'unlock', 'until', 'update', 'upper',
+            'urban', 'urgent', 'usage', 'useful', 'user', 'usual', 'value', 'vapor',
+            'varied', 'vector', 'vendor', 'venture', 'verify', 'verse', 'versus', 'vessel',
+            'victim', 'video', 'view', 'viral', 'virus', 'visit', 'visual', 'vital',
+            'vocal', 'voice', 'volume', 'voter', 'voyage', 'waffle', 'walker', 'wallet',
+            'walnut', 'wanted', 'warm', 'warn', 'waste', 'watch', 'water', 'wave',
+            'wealth', 'weapon', 'weather', 'weekly', 'weight', 'weird', 'welcome', 'west',
+            'whale', 'wheat', 'wheel', 'where', 'which', 'while', 'white', 'whole',
+            'whose', 'widow', 'width', 'wild', 'window', 'wine', 'wing', 'winter',
+            'wisdom', 'wise', 'wish', 'with', 'wizard', 'woman', 'wonder', 'wooden',
+            'wool', 'word', 'work', 'world', 'worry', 'worse', 'worst', 'worth',
+            'would', 'wrap', 'write', 'wrong', 'wrote', 'year', 'yellow', 'young',
+            'youth', 'zebra', 'zero', 'zone'
+        ];
+        
+        // Generate password with 2-3 words plus numbers for better security
+        $wordCount = rand(2, 3);
+        $selectedWords = [];
+        for ($i = 0; $i < $wordCount; $i++) {
+            $selectedWords[] = ucfirst($words[array_rand($words)]);
+        }
+        
+        $password = implode('', $selectedWords) . rand(100, 999);
 
-        // Ensure the password is at least 8 characters
-        return strlen($password) < $length
-            ? $password.rand(10, 99)
-            : $password;
+        // Ensure minimum length
+        return strlen($password) >= $length ? $password : $password . rand(10, 99);
     }
 
     // Store method for creating a user

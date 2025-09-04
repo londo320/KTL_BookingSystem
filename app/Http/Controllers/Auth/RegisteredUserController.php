@@ -36,20 +36,12 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // Check if a soft-deleted user exists with this email and clean up their relationships
+        // Check if a soft-deleted user exists with this email
         $existingSoftDeletedUser = User::withTrashed()->where('email', $request->email)->first();
         if ($existingSoftDeletedUser && $existingSoftDeletedUser->trashed()) {
-            // Clean up all relationships from the soft-deleted user to ensure fresh start
-            $existingSoftDeletedUser->roles()->detach();
-            $existingSoftDeletedUser->depots()->detach();
-            $existingSoftDeletedUser->customers()->detach();
-            if (method_exists($existingSoftDeletedUser, 'customRoles')) {
-                $existingSoftDeletedUser->customRoles()->detach();
-            }
-            $existingSoftDeletedUser->functions()->delete();
-            
-            // Keep the soft-deleted user but ensure clean relationships
-            // This preserves historic booking records while allowing fresh registration
+            return back()->withErrors([
+                'email' => 'This email address was previously registered but the account has been deactivated. Please contact your system administrator to restore your access.'
+            ])->withInput();
         }
 
         $user = User::create([
