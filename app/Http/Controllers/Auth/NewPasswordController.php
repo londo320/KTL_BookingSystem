@@ -36,26 +36,48 @@ class NewPasswordController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user) use ($request) {
-                $user->forceFill([
-                    'password' => Hash::make($request->password),
-                    'remember_token' => Str::random(60),
-                ])->save();
+        // Debug: Try direct database update to bypass any model issues
+        $tokenRecord = \DB::table('password_reset_tokens')->where('email', $request->email)->first();
+        if (!$tokenRecord || !Hash::check($request->token, $tokenRecord->token)) {
+            \Log::info('Token validation failed', ['email' => $request->email, 'has_token_record' => !!$tokenRecord]);
+            return back()->withInput($request->only('email'))
+                        ->withErrors(['email' => 'Invalid or expired token']);
+        }
 
-                event(new PasswordReset($user));
-            }
-        );
+        // Direct database update
+        $newPasswordHash = Hash::make($request->password);
+        $updated = \DB::table('users')
+            ->where('email', $request->email)
+            ->update([
+                'password' => $newPasswordHash,
+                'remember_token' => Str::random(60),
+                'updated_at' => now()
+            ]);
+
+        \Log::info('Direct database update result', [
+            'email' => $request->email,
+            'rows_updated' => $updated,
+            'new_hash' => substr($newPasswordHash, 0, 20) . '...'
+        ]);
+
+        // Clean up the token
+        \DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        $status = $updated > 0 ? Password::PASSWORD_RESET : 'passwords.token';
 
         // If the password was successfully reset, we will redirect the user back to
         // the application's home authenticated view. If there is an error we can
         // redirect them back to where they came from with their error message.
+        
+        // Debug logging to help identify the issue
+        \Log::info('Password reset attempt', [
+            'email' => $request->email,
+            'status' => $status,
+            'status_text' => __($status)
+        ]);
+        
         return $status == Password::PASSWORD_RESET
-                    ? redirect()->route('login')->with('status', __($status))
+                    ? redirect()->route('login')->with('status', 'Password has been reset successfully. Please login with your new password.')
                     : back()->withInput($request->only('email'))
                         ->withErrors(['email' => __($status)]);
     }

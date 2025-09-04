@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,6 +35,15 @@ class AppServiceProvider extends ServiceProvider
 
         // Register model observers
         Booking::observe(BookingObserver::class);
+
+        // Configure password validation rules
+        Password::defaults(function () {
+            return Password::min(8)
+                ->letters()
+                ->mixedCase()
+                ->numbers()
+                ->uncompromised();
+        });
 
         // Register custom blade directives for function-based permissions
         $this->registerFunctionBladeDirectives();
