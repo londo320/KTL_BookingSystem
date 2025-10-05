@@ -43,22 +43,6 @@
       @error('location')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
     </div>
 
-    <div>
-      <label for="cut_off_time" class="block text-sm font-medium text-gray-700">Cut Off Time</label>
-      <input
-        type="time"
-        name="cut_off_time"
-        id="cut_off_time"
-        value="{{ old('cut_off_time', $depot->cut_off_time) }}"
-        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-        pattern="[0-9]{2}:[0-9]{2}"
-        placeholder="HH:MM"
-        required
-      >
-      <p class="text-gray-500 text-sm mt-1">Format: HH:MM (24-hour)</p>
-      @error('cut_off_time')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
-    </div>
-
     <div class="flex justify-end space-x-2">
       <a href="{{ route('app.depots.index') }}"
          class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">

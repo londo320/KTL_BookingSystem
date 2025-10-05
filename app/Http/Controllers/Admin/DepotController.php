@@ -68,13 +68,12 @@ class DepotController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'location' => ['nullable', 'string', 'max:255'],
-            'cut_off_time' => 'required|date_format:H:i',
         ]);
 
         $depot->update($data);
 
         return redirect()
-            ->route('admin.depots.index')
+            ->route('app.depots.index')
             ->with('success', 'Depot updated successfully.');
     }
 
