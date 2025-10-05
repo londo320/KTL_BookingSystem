@@ -16,7 +16,7 @@
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100 dark:bg-gray-100">
-            @include('layouts.admin-nav')
+            @include('layouts.warehouse-nav')
 
             <!-- Page Heading -->
             @isset($header)

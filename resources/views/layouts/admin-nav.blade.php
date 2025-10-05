@@ -1,17 +1,19 @@
 <nav class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 mb-6">
   <div class="flex justify-between items-center px-6 py-3">
-    <ul class="flex space-x-4">
+    <ul class="flex space-x-1 items-center">
     <li>
       <a href="{{ route('app.dashboard') }}"
-         class="px-3 py-1 rounded {{ request()->routeIs('app.dashboard') ? 'bg-blue-500 text-white' : 'text-gray-700 dark:text-gray-300' }}">
-        Dashboard
+         class="px-4 py-2 rounded inline-flex items-center gap-2 font-medium text-sm {{ request()->routeIs('app.dashboard') ? 'bg-blue-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
+        <span class="text-base leading-none">📊</span>
+        <span>Dashboard</span>
       </a>
     </li>
     @canFunction('slots.view')
     <li>
       <a href="{{ route('app.slots.index') }}"
-         class="px-3 py-1 rounded {{ request()->routeIs('app.slots.*') ? 'bg-blue-500 text-white' : 'text-gray-700 dark:text-gray-300' }}">
-        Slots
+         class="px-4 py-2 rounded inline-flex items-center gap-2 font-medium text-sm {{ request()->routeIs('app.slots.*') ? 'bg-blue-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
+        <span class="text-base leading-none">📅</span>
+        <span>Slots</span>
       </a>
     </li>
     @endcanFunction
@@ -20,10 +22,11 @@
       @php
         $routePrefix = 'app.';
       @endphp
-      <button onclick="toggleBookingsDropdown()" 
-              class="px-3 py-1 rounded flex items-center {{ request()->routeIs('app.bookings.*') && !request()->routeIs('app.customer-behavior.*') ? 'bg-blue-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
-        📋 Bookings 
-        <svg id="bookings-arrow" class="ml-1 w-4 h-4 transform transition-transform" fill="currentColor" viewBox="0 0 20 20">
+      <button onclick="toggleBookingsDropdown()"
+              class="px-4 py-2 rounded inline-flex items-center gap-2 font-medium text-sm {{ request()->routeIs('app.bookings.*') && !request()->routeIs('app.customer-behavior.*') ? 'bg-blue-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
+        <span class="text-base leading-none">📋</span>
+        <span>Bookings</span>
+        <svg id="bookings-arrow" class="w-4 h-4 transform transition-transform" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
         </svg>
       </button>
@@ -36,15 +39,10 @@
         </a>
         @endcanFunction
         @canFunction('bookings.view-streamlined')
-        <a href="{{ route($routePrefix . 'bookings.streamlined') }}" 
+        <a href="{{ route($routePrefix . 'bookings.streamlined') }}"
            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.bookings.streamlined') ? 'bg-blue-50 text-blue-600' : '' }}">
           ⚡ Bookings (Live View)
           <div class="text-xs text-gray-500 mt-1">Streamlined interface with live updates</div>
-        </a>
-        <a href="{{ route($routePrefix . 'bookings.streamlined') }}" 
-           class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.bookings.streamlined') ? 'bg-blue-50 text-blue-600' : '' }}">
-          ⚡ Bookings (Test View)
-          <div class="text-xs text-gray-500 mt-1">Live Arrivals another Test View</div>
         </a>
         @endcanFunction
       </div>
@@ -52,24 +50,24 @@
     @endhasAnyFunction
     <li>
       <a href="{{ route('app.customer-behavior.index') }}"
-         class="px-3 py-1 rounded {{ request()->routeIs('app.customer-behavior.*') ? 'bg-purple-500 text-white' : 'text-gray-700 dark:text-gray-300' }}">
-        Customer Analysis
+         class="px-4 py-2 rounded inline-flex items-center gap-2 font-medium text-sm {{ request()->routeIs('app.customer-behavior.*') ? 'bg-purple-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
+        <span class="text-base leading-none">📈</span>
+        <span>Customer Analysis</span>
       </a>
     </li>
     <li>
-      @php
-        $depotMapPrefix = 'app.';
-      @endphp
-      <a href="{{ route($depotMapPrefix . 'depot-map.index') }}"
-         class="px-3 py-1 rounded {{ request()->routeIs('app.depot-map.*') ? 'bg-green-500 text-white' : 'text-gray-700 dark:text-gray-300' }}">
-        🗺️ Depot Map
+      <a href="{{ route('app.depot-map.index') }}"
+         class="px-4 py-2 rounded inline-flex items-center gap-2 font-medium text-sm {{ request()->routeIs('app.depot-map.*') ? 'bg-green-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
+        <span class="text-base leading-none">🗺️</span>
+        <span>Depot Map</span>
       </a>
     </li>
     <li class="relative">
-      <button onclick="toggleTippingDropdown()" 
-              class="px-3 py-1 rounded flex items-center {{ request()->routeIs('app.tipping-*') ? 'bg-orange-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
-        🚛 Tipping 
-        <svg id="tipping-arrow" class="ml-1 w-4 h-4 transform transition-transform" fill="currentColor" viewBox="0 0 20 20">
+      <button onclick="toggleTippingDropdown()"
+              class="px-4 py-2 rounded inline-flex items-center gap-2 font-medium text-sm {{ request()->routeIs('app.tipping-*') ? 'bg-orange-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
+        <span class="text-base leading-none">🚛</span>
+        <span>Tipping</span>
+        <svg id="tipping-arrow" class="w-4 h-4 transform transition-transform" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
         </svg>
       </button>
@@ -78,42 +76,32 @@
            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.tipping-workflow.*') ? 'bg-orange-50 text-orange-600' : '' }}">
           📊 Dashboard
         </a>
-        <a href="{{ route('app.tipping-locations.index') }}" 
+        <a href="{{ route('app.tipping-locations.index') }}"
            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.tipping-locations.*') ? 'bg-orange-50 text-orange-600' : '' }}">
           📍 Drop Locations
         </a>
-        <a href="{{ route('app.tipping-bays.index') }}" 
+        <a href="{{ route('app.tipping-bays.index') }}"
            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.tipping-bays.*') ? 'bg-orange-50 text-orange-600' : '' }}">
           🚛 Tipping Bays
         </a>
-        @php
-          $mapRoutePrefix = 'app.';
-        @endphp
-        <a href="{{ route($mapRoutePrefix . 'depot-map.index') }}" 
-           class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.depot-map.*') ? 'bg-orange-50 text-orange-600' : '' }}">
-          🗺️ Depot Map
-        </a>
         <div class="border-t border-gray-100 my-1"></div>
-        @php
-          $tippingRoutePrefix = 'app.';
-        @endphp
-        <a href="{{ route($tippingRoutePrefix . 'queue-management') }}" 
+        <a href="{{ route('app.queue-management') }}" 
            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.queue-management') ? 'bg-orange-50 text-orange-600' : '' }}">
           ⚡ Queue Management
         </a>
-        <a href="{{ route($tippingRoutePrefix . 'operations-control') }}" 
+        <a href="{{ route('app.operations-control') }}"
            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.operations-control') ? 'bg-orange-50 text-orange-600' : '' }}">
           🎯 Site Operations Control
         </a>
-        <a href="{{ route($tippingRoutePrefix . 'trailer-operations-dashboard') }}" 
+        <a href="{{ route('app.trailer-operations-dashboard') }}"
            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.trailer-operations-dashboard') ? 'bg-orange-50 text-orange-600' : '' }}">
           🚛 Trailer Operations Dashboard
         </a>
-        <a href="{{ route($tippingRoutePrefix . 'trailer-location-report') }}" 
+        <a href="{{ route('app.trailer-location-report') }}"
            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.trailer-location-report') ? 'bg-orange-50 text-orange-600' : '' }}">
           📍 Trailer Location Report
         </a>
-        <a href="{{ route($tippingRoutePrefix . 'empty-unit-collection') }}" 
+        <a href="{{ route('app.empty-unit-collection') }}"
            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.empty-unit-collection*') ? 'bg-orange-50 text-orange-600' : '' }}">
           🚛 Empty Unit Collection
         </a>
@@ -126,10 +114,11 @@
     </li>
     @if(\App\Models\Setting::get('outbound_module_enabled', false))
     <li class="relative">
-      <button onclick="toggleOutboundDropdown()" 
-              class="px-3 py-1 rounded flex items-center {{ request()->routeIs('outbound.*') ? 'bg-indigo-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
-        🚛 Outbound 
-        <svg id="outbound-arrow" class="ml-1 w-4 h-4 transform transition-transform" fill="currentColor" viewBox="0 0 20 20">
+      <button onclick="toggleOutboundDropdown()"
+              class="px-4 py-2 rounded inline-flex items-center gap-2 font-medium text-sm {{ request()->routeIs('outbound.*') ? 'bg-indigo-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
+        <span class="text-base leading-none">📦</span>
+        <span>Outbound</span>
+        <svg id="outbound-arrow" class="w-4 h-4 transform transition-transform" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
         </svg>
       </button>
@@ -137,27 +126,27 @@
         <div class="px-4 py-2 text-xs font-semibold text-indigo-400 uppercase border-b border-gray-100">
           🧪 Beta - Testing Phase
         </div>
-        <a href="{{ route('outbound.dashboard') }}" 
+        <a href="{{ route('outbound.dashboard') }}"
            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('outbound.dashboard') ? 'bg-indigo-50 text-indigo-600' : '' }}">
           📊 Outbound Dashboard
           <div class="text-xs text-gray-500 mt-1">Overview of delivery operations</div>
         </a>
-        <a href="{{ route('outbound.loads.index') }}" 
+        <a href="{{ route('outbound.loads.index') }}"
            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('outbound.loads.*') ? 'bg-indigo-50 text-indigo-600' : '' }}">
           📦 Load Management
           <div class="text-xs text-gray-500 mt-1">Create and manage delivery loads</div>
         </a>
-        <a href="{{ route('outbound.arrivals.dashboard') }}" 
+        <a href="{{ route('outbound.arrivals.dashboard') }}"
            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('outbound.arrivals.*') ? 'bg-indigo-50 text-indigo-600' : '' }}">
           🚛 Driver Arrivals
           <div class="text-xs text-gray-500 mt-1">Register loads when drivers arrive</div>
         </a>
-        <a href="{{ route('outbound.imports.dashboard') }}" 
+        <a href="{{ route('outbound.imports.dashboard') }}"
            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('outbound.imports.*') ? 'bg-indigo-50 text-indigo-600' : '' }}">
           📁 WMS File Imports
           <div class="text-xs text-gray-500 mt-1">Upload and process WMS files</div>
         </a>
-        <a href="{{ route('outbound.addresses.index') }}" 
+        <a href="{{ route('outbound.addresses.index') }}"
            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('outbound.addresses.*') ? 'bg-indigo-50 text-indigo-600' : '' }}">
           📍 Customer Addresses
           <div class="text-xs text-gray-500 mt-1">Manage delivery addresses</div>
@@ -172,10 +161,11 @@
     </li>
     @endif
     <li class="relative">
-      <button onclick="toggleSettingsDropdown()" 
-              class="px-3 py-1 rounded flex items-center {{ request()->routeIs('app.settings.*') ? 'bg-blue-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
-        ⚙️ Settings 
-        <svg id="settings-arrow" class="ml-1 w-4 h-4 transform transition-transform" fill="currentColor" viewBox="0 0 20 20">
+      <button onclick="toggleSettingsDropdown()"
+              class="px-4 py-2 rounded inline-flex items-center gap-2 font-medium text-sm {{ request()->routeIs('app.settings.*') || request()->routeIs('app.depots.*') || request()->routeIs('app.products.*') || request()->routeIs('app.customers.*') || request()->routeIs('app.slot-templates.*') || request()->routeIs('app.booking-types.*') || request()->routeIs('app.users.*') || request()->routeIs('app.custom-roles.*') ? 'bg-blue-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
+        <span class="text-base leading-none">⚙️</span>
+        <span>Settings</span>
+        <svg id="settings-arrow" class="w-4 h-4 transform transition-transform" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
         </svg>
       </button>
@@ -183,24 +173,24 @@
         {{-- Site Configuration (for depot-admin and site-admin) --}}
         @if(auth()->user()->hasRole('depot-admin|site-admin'))
           <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase border-b border-gray-100">Site Configuration</div>
-          <a href="{{ route('app.depots.index') }}" 
-             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.depots.*') ? 'bg-blue-50 text-blue-600' : '' }}">
+          <a href="{{ route('app.depots.index') }}"
+             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.depots.*') ? 'bg-blue-50 text-blue-600 font-medium' : '' }}">
             🏭 Depots
           </a>
-          <a href="{{ route('app.products.index') }}" 
-             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.products.*') ? 'bg-blue-50 text-blue-600' : '' }}">
+          <a href="{{ route('app.products.index') }}"
+             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.products.*') ? 'bg-blue-50 text-blue-600 font-medium' : '' }}">
             📦 Products
           </a>
-          <a href="{{ route('app.customers.index') }}" 
-             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.customers.*') ? 'bg-blue-50 text-blue-600' : '' }}">
+          <a href="{{ route('app.customers.index') }}"
+             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.customers.*') ? 'bg-blue-50 text-blue-600 font-medium' : '' }}">
             👥 Customers
           </a>
-          <a href="{{ route('app.slot-templates.index') }}" 
-             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.slot-templates.*') ? 'bg-blue-50 text-blue-600' : '' }}">
+          <a href="{{ route('app.slot-templates.index') }}"
+             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.slot-templates.*') ? 'bg-blue-50 text-blue-600 font-medium' : '' }}">
             📅 Slot Templates
           </a>
-          <a href="{{ route('app.booking-types.index') }}" 
-             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.booking-types.*') ? 'bg-blue-50 text-blue-600' : '' }}">
+          <a href="{{ route('app.booking-types.index') }}"
+             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.booking-types.*') ? 'bg-blue-50 text-blue-600 font-medium' : '' }}">
             📝 Booking Types
           </a>
         @endif
@@ -211,16 +201,16 @@
             <div class="border-t border-gray-100 my-1"></div>
           @endif
           <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase border-b border-gray-100">Admin Settings</div>
-          <a href="{{ route('app.settings.dashboard') }}" 
-             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <a href="{{ route('app.settings.dashboard') }}"
+             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.settings.dashboard') ? 'bg-blue-50 text-blue-600 font-medium' : '' }}">
             🛠️ System Settings
           </a>
-          <a href="{{ route('app.users.index') }}" 
-             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.users.*') ? 'bg-blue-50 text-blue-600' : '' }}">
+          <a href="{{ route('app.users.index') }}"
+             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.users.*') ? 'bg-blue-50 text-blue-600 font-medium' : '' }}">
             👤 User Management
           </a>
-          <a href="{{ route('app.custom-roles.index') }}" 
-             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.custom-roles.*') ? 'bg-blue-50 text-blue-600' : '' }}">
+          <a href="{{ route('app.custom-roles.index') }}"
+             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.custom-roles.*') ? 'bg-blue-50 text-blue-600 font-medium' : '' }}">
             🏷️ Custom Roles
           </a>
         @endif
@@ -228,8 +218,8 @@
         {{-- Operational Settings (for all) --}}
         <div class="border-t border-gray-100 my-1"></div>
         <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase border-b border-gray-100">Operations</div>
-        <a href="{{ route('app.settings.factory-tipping-targets') }}" 
-           class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.settings.factory-tipping-targets*') ? 'bg-blue-50 text-blue-600' : '' }}">
+        <a href="{{ route('app.settings.factory-tipping-targets') }}"
+           class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.settings.factory-tipping-targets*') ? 'bg-blue-50 text-blue-600 font-medium' : '' }}">
           🏭 Factory Tipping Targets
         </a>
       </div>
@@ -238,18 +228,18 @@
 
     {{-- User Switching (Testing Only) --}}
     @if(!app()->isProduction() && session('original_admin_id'))
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center space-x-3">
         <span class="text-sm text-orange-600 font-medium">🔄 Testing as: {{ auth()->user()->name }}</span>
         <form action="{{ route('switch-back') }}" method="POST" class="inline">
           @csrf
-          <button type="submit" class="px-2 py-1 bg-orange-500 text-white rounded text-xs hover:bg-orange-600">
+          <button type="submit" class="px-3 py-1.5 bg-orange-500 text-white rounded text-sm hover:bg-orange-600 transition">
             Switch Back
           </button>
         </form>
       </div>
     @elseif(!app()->isProduction())
       <div class="relative">
-        <select onchange="switchUser(this.value)" class="text-xs border border-gray-300 rounded px-2 py-1 bg-white">
+        <select onchange="switchUser(this.value)" class="text-sm border border-gray-300 rounded px-3 py-2 bg-white hover:border-gray-400 transition">
           <option value="">🔄 Switch User (Testing)</option>
           @foreach(\App\Models\User::with('roles')->get() as $user)
             <option value="{{ $user->id }}">

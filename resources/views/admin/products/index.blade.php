@@ -1,5 +1,3 @@
-  {{-- Admin Nav --}}
-  @include('layouts.admin-nav')
 @extends('layouts.admin')
 
 @section('content')

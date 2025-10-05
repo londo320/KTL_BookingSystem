@@ -24,6 +24,11 @@ class OutboundLoadController extends Controller
             $query->where('status', $request->status);
         }
 
+        // Filter by vehicle
+        if ($request->filled('vehicle')) {
+            $query->where('planned_vehicle_id', $request->vehicle);
+        }
+
         // Filter by date range
         if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
@@ -56,7 +61,10 @@ class OutboundLoadController extends Controller
             'in_transit_loads' => OutboundLoad::whereIn('status', ['collecting', 'in_transit', 'delivering'])->count(),
         ];
 
-        return view('outbound::admin.loads.index', compact('loads', 'stats'));
+        // Get vehicles for filter dropdown
+        $vehicles = Vehicle::active()->orderBy('registration')->get();
+
+        return view('outbound::admin.loads.index', compact('loads', 'stats', 'vehicles'));
     }
 
     public function show(OutboundLoad $load)

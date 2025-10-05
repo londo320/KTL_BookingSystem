@@ -103,9 +103,9 @@ class CustomerAddress extends Model
         return !empty($this->latitude) && !empty($this->longitude);
     }
 
-    public function needsGeocoding(): bool
+    public function requiresGeocoding(): bool
     {
-        return !$this->hasCoordinates() || 
+        return !$this->hasCoordinates() ||
                ($this->geocoded_at && $this->geocoded_at->lt(now()->subMonths(6)));
     }
 
