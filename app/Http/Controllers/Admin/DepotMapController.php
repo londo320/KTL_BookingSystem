@@ -133,13 +133,18 @@ class DepotMapController extends Controller
             }
             
             // Get user's accessible depots for filter dropdown
-            $userDepots = [];
+            $userDepots = collect();
             try {
-                if (Auth::check() && Auth::user()->depots) {
-                    // User has specific depot access
-                    $userDepots = Auth::user()->depots()->orderBy('name')->get();
+                $user = Auth::user();
+
+                // Check if user has admin roles (access to all depots)
+                if ($user->hasAnyRole(['admin', 'super-admin'])) {
+                    $userDepots = Depot::orderBy('name')->get();
+                } elseif ($user->depot_id) {
+                    // User has a default depot - only show that one
+                    $userDepots = Depot::where('id', $user->depot_id)->get();
                 } else {
-                    // Admin access to all depots
+                    // Fallback to all depots
                     $userDepots = Depot::orderBy('name')->get();
                 }
             } catch (\Exception $e) {
