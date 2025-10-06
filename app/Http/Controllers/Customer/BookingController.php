@@ -133,7 +133,7 @@ class BookingController extends Controller
         ]);
     }
 
-    public function update(Request $request, Booking $booking)
+    public function update(Request $request, Booking $booking, SlotBookingService $slotBookingService)
     {
         $this->authorize('update', $booking);
         if ($booking->arrived_at) {
@@ -166,7 +166,26 @@ class BookingController extends Controller
         $poNumbers = $data['po_numbers'] ?? [];
         unset($data['po_numbers']);
 
-        $booking->update($data);
+        // Check if slot or booking type changed
+        $slotChanged = $data['slot_id'] != $booking->slot_id;
+        $typeChanged = $data['booking_type_id'] != $booking->booking_type_id;
+
+        if ($slotChanged || $typeChanged) {
+            // Use SlotBookingService to update slots
+            $newSlot = Slot::findOrFail($data['slot_id']);
+            $newBookingTypeId = $data['booking_type_id'];
+
+            try {
+                $slotBookingService->updateBooking($booking, $data, $newSlot, $newBookingTypeId);
+            } catch (\Exception $e) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['slot_id' => $e->getMessage()]);
+            }
+        } else {
+            // Just update the booking data
+            $booking->update($data);
+        }
 
         // Update PO numbers and lines - delete existing and recreate
         if (array_key_exists('po_numbers', $request->all())) {
