@@ -146,6 +146,16 @@ class Booking extends Model
         return $this->hasMany(Movement::class);
     }
 
+    /**
+     * Get all slots occupied by this booking (primary + extended slots)
+     */
+    public function occupiedSlots()
+    {
+        return $this->belongsToMany(Slot::class, 'slot_bookings')
+            ->withPivot('is_primary')
+            ->withTimestamps();
+    }
+
 
     /**
      * Get or create the primary movement for this booking

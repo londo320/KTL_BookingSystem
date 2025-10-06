@@ -24,7 +24,7 @@ class BookingType extends Model
 
     public function depots()
     {
-        return $this->belongsToMany(Depot::class)
+        return $this->belongsToMany(Depot::class, 'booking_type_depot')
             ->withPivot('duration_minutes')
             ->withTimestamps();
     }
@@ -32,5 +32,14 @@ class BookingType extends Model
     public function slots()
     {
         return $this->hasMany(Slot::class);
+    }
+
+    /**
+     * Get duration for a specific depot (in minutes)
+     */
+    public function getDurationForDepot($depotId)
+    {
+        $pivot = $this->depots()->where('depot_id', $depotId)->first();
+        return $pivot ? $pivot->pivot->duration_minutes : ($this->duration_minutes ?? 60);
     }
 }

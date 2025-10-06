@@ -55,4 +55,31 @@ class Slot extends Model
             'customer_id'          // Foreign key on pivot table for related model
         );
     }
+
+    /**
+     * Get all bookings occupying this slot (including extended bookings from earlier slots)
+     */
+    public function occupyingBookings()
+    {
+        return $this->belongsToMany(Booking::class, 'slot_bookings')
+            ->withPivot('is_primary')
+            ->withTimestamps();
+    }
+
+    /**
+     * Check remaining capacity for this slot
+     */
+    public function remainingCapacity()
+    {
+        $occupied = $this->occupyingBookings()->count();
+        return max(0, ($this->capacity ?? 1) - $occupied);
+    }
+
+    /**
+     * Check if slot has available capacity
+     */
+    public function hasCapacity()
+    {
+        return $this->remainingCapacity() > 0;
+    }
 }
