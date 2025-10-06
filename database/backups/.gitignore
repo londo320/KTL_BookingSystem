@@ -1,0 +1,2 @@
+# Allow production.sql to be committed
+!production.sql
