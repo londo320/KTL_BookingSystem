@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\BookingRulesController;
 use App\Http\Controllers\Admin\BookingTypeController;
 use App\Http\Controllers\Admin\CarrierController;
 use App\Http\Controllers\Admin\CarrierMergeController;
+use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\CustomerBehaviorController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\CustomerDepotProductController;
@@ -118,6 +119,7 @@ Route::middleware('auth')->group(function () {
     // API routes accessible to all authenticated users
     Route::get('api/carriers/search', [CarrierController::class, 'search'])->name('api.carriers.search');
     Route::post('api/carriers/quick-create', [CarrierController::class, 'quickCreate'])->name('api.carriers.quick-create');
+    Route::get('api/products/search', [ProductController::class, 'search'])->name('api.products.search');
 
     /**
      * ───── Main Application Routes (Unified Function-Based Access) ─────

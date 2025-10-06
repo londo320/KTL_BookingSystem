@@ -1,4 +1,4 @@
-@props(['booking', 'readonly' => false, 'customer_view' => false, 'hide_actuals' => false])
+@props(['booking', 'readonly' => false, 'customer_view' => false, 'hide_actuals' => false, 'customer_id' => null])
 
 @php
     $palletTypes = \App\Models\PalletType::active()->orderBy('name')->get();
@@ -66,7 +66,7 @@
     }
 @endphp
 
-<div x-data="poNumbersManager()" x-init="init({{ $existingData->toJson() }}); window.poNumbersManagerInstance = this;" @if($readonly) data-readonly="true" @endif>
+<div x-data="poNumbersManager({{ $customer_id ?? 'null' }})" x-init="init({{ $existingData->toJson() }}); window.poNumbersManagerInstance = this;" @if($readonly) data-readonly="true" @endif>
     <div class="bg-white border rounded-lg p-4">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-medium text-gray-900">PO Numbers & Lines</h3>
@@ -132,13 +132,34 @@
                                     @if($hide_actuals)
                                         <!-- SKU and Description Fields -->
                                         <div class="mb-3 grid grid-cols-2 gap-3">
-                                            <div>
+                                            <div class="relative">
                                                 <label class="block text-sm font-medium text-gray-700 mb-1">SKU / Product Number</label>
                                                 <input type="text" x-model="line.sku"
+                                                       :id="`sku-input-${poIndex}-${lineIndex}`"
                                                        :name="`po_numbers[${poIndex}][lines][${lineIndex}][sku]`"
+                                                       @input="searchProducts(poIndex, lineIndex, $event.target.value)"
+                                                       @focus="showSkuDropdown[`${poIndex}-${lineIndex}`] = false"
                                                        placeholder="e.g., SKU123"
+                                                       autocomplete="off"
                                                        class="w-full border-gray-300 rounded {{ $readonly ? 'bg-gray-100' : '' }}"
                                                        {{ $readonly ? 'readonly' : '' }}>
+                                                <div x-show="showSkuDropdown[`${poIndex}-${lineIndex}`]"
+                                                     x-ref="skuDropdown"
+                                                     @click.away="showSkuDropdown[`${poIndex}-${lineIndex}`] = false"
+                                                     class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                                    <template x-for="product in skuSearchResults[`${poIndex}-${lineIndex}`] || []" :key="product.id">
+                                                        <button type="button"
+                                                                @click="selectProduct(poIndex, lineIndex, product)"
+                                                                class="w-full text-left px-3 py-2 hover:bg-gray-100 border-b last:border-b-0">
+                                                            <div class="font-medium text-sm" x-text="product.sku"></div>
+                                                            <div class="text-xs text-gray-600" x-text="product.description"></div>
+                                                        </button>
+                                                    </template>
+                                                    <div x-show="(skuSearchResults[`${poIndex}-${lineIndex}`] || []).length === 0 && skuSearchLoading[`${poIndex}-${lineIndex}`]"
+                                                         class="px-3 py-2 text-sm text-gray-500">
+                                                        Searching...
+                                                    </div>
+                                                </div>
                                             </div>
                                             <div>
                                                 <label class="block text-sm font-medium text-gray-700 mb-1">Product Description</label>
@@ -375,18 +396,76 @@
 </div>
 
 <script>
-function poNumbersManager() {
+function poNumbersManager(customerId = null) {
     return {
         poNumbers: [],
-        
+        customerId: customerId,
+        skuSearchResults: {},
+        showSkuDropdown: {},
+        skuSearchLoading: {},
+        skuSearchTimeout: null,
+
         init(existingData = []) {
             this.poNumbers = existingData.length > 0 ? existingData : [];
-            
+
             // If no existing PO data and not readonly, add a default empty PO for customer creation
             if (this.poNumbers.length === 0 && !document.querySelector('[data-readonly="true"]')) {
                 this.addPoNumber();
                 this.addPoLine(0);
             }
+        },
+
+        searchProducts(poIndex, lineIndex, query) {
+            const key = `${poIndex}-${lineIndex}`;
+
+            // Clear previous timeout
+            if (this.skuSearchTimeout) {
+                clearTimeout(this.skuSearchTimeout);
+            }
+
+            // If query is too short, hide dropdown
+            if (query.length < 1) {
+                this.showSkuDropdown[key] = false;
+                this.skuSearchResults[key] = [];
+                return;
+            }
+
+            // Set loading state
+            this.skuSearchLoading[key] = true;
+            this.showSkuDropdown[key] = true;
+
+            if (!this.customerId) {
+                console.error('Customer ID not found');
+                this.skuSearchLoading[key] = false;
+                return;
+            }
+
+            // Debounce the search
+            this.skuSearchTimeout = setTimeout(() => {
+                fetch(`/api/products/search?q=${encodeURIComponent(query)}&customer_id=${this.customerId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        this.skuSearchResults[key] = data.products || [];
+                        this.skuSearchLoading[key] = false;
+                        this.showSkuDropdown[key] = this.skuSearchResults[key].length > 0;
+                    })
+                    .catch(error => {
+                        console.error('Error searching products:', error);
+                        this.skuSearchLoading[key] = false;
+                        this.showSkuDropdown[key] = false;
+                    });
+            }, 300);
+        },
+
+        selectProduct(poIndex, lineIndex, product) {
+            const key = `${poIndex}-${lineIndex}`;
+
+            // Update the line with selected product
+            this.poNumbers[poIndex].lines[lineIndex].sku = product.sku;
+            this.poNumbers[poIndex].lines[lineIndex].description = product.description;
+
+            // Hide dropdown
+            this.showSkuDropdown[key] = false;
         },
         
         addPoNumber() {

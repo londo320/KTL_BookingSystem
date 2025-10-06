@@ -86,6 +86,22 @@ class BookingController extends Controller
 
                     if (! empty($poData['lines'])) {
                         foreach ($poData['lines'] as $lineData) {
+                            // Auto-create product if SKU provided and doesn't exist
+                            if (!empty($lineData['sku']) && !empty($lineData['description'])) {
+                                $customerId = $data['customer_id'];
+                                \App\Models\Product::firstOrCreate(
+                                    [
+                                        'customer_id' => $customerId,
+                                        'sku' => $lineData['sku']
+                                    ],
+                                    [
+                                        'description' => $lineData['description'],
+                                        'default_case_count' => null,
+                                        'default_pallets' => null
+                                    ]
+                                );
+                            }
+
                             $po->lines()->create($lineData);
                         }
                     }
@@ -164,6 +180,22 @@ class BookingController extends Controller
 
                     if (! empty($poData['lines'])) {
                         foreach ($poData['lines'] as $lineData) {
+                            // Auto-create product if SKU provided and doesn't exist
+                            if (!empty($lineData['sku']) && !empty($lineData['description'])) {
+                                $customerId = $booking->customer_id;
+                                \App\Models\Product::firstOrCreate(
+                                    [
+                                        'customer_id' => $customerId,
+                                        'sku' => $lineData['sku']
+                                    ],
+                                    [
+                                        'description' => $lineData['description'],
+                                        'default_case_count' => null,
+                                        'default_pallets' => null
+                                    ]
+                                );
+                            }
+
                             $po->lines()->create($lineData);
                         }
                     }

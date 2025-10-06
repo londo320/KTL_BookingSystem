@@ -42,6 +42,8 @@ unset($__defined_vars, $__key, $__value); ?>
                 'lines' => collect($po['lines'] ?? [])->map(function($line) {
                     return [
                         'line_number' => $line['line_number'] ?? 1,
+                        'sku' => $line['sku'] ?? '',
+                        'description' => $line['description'] ?? '',
                         'expected_cases' => $line['expected_cases'] ?? null,
                         'expected_pallets' => $line['expected_pallets'] ?? null,
                         'expected_pallet_type_id' => $line['expected_pallet_type_id'] ?? '',
@@ -76,6 +78,8 @@ unset($__defined_vars, $__key, $__value); ?>
                     
                     return [
                         'line_number' => $line->line_number,
+                        'sku' => $line->sku ?? '',
+                        'description' => $line->description ?? '',
                         'expected_cases' => $line->expected_cases,
                         'expected_pallets' => $line->expected_pallets,
                         'expected_pallet_type_id' => $line->expected_pallet_type_id,
@@ -150,13 +154,33 @@ unset($__defined_vars, $__key, $__value); ?>
                                         <?php endif; ?>
                                     </div>
 
-                                    <input type="hidden" :name="`po_numbers[${poIndex}][lines][${lineIndex}][line_number]`" 
+                                    <input type="hidden" :name="`po_numbers[${poIndex}][lines][${lineIndex}][line_number]`"
                                            :value="lineIndex + 1">
 
                                     <?php if($hide_actuals): ?>
+                                        <!-- SKU and Description Fields -->
+                                        <div class="mb-3 grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-1">SKU / Product Number</label>
+                                                <input type="text" x-model="line.sku"
+                                                       :name="`po_numbers[${poIndex}][lines][${lineIndex}][sku]`"
+                                                       placeholder="e.g., SKU123"
+                                                       class="w-full border-gray-300 rounded <?php echo e($readonly ? 'bg-gray-100' : ''); ?>"
+                                                       <?php echo e($readonly ? 'readonly' : ''); ?>>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-1">Product Description</label>
+                                                <input type="text" x-model="line.description"
+                                                       :name="`po_numbers[${poIndex}][lines][${lineIndex}][description]`"
+                                                       placeholder="Product description"
+                                                       class="w-full border-gray-300 rounded <?php echo e($readonly ? 'bg-gray-100' : ''); ?>"
+                                                       <?php echo e($readonly ? 'readonly' : ''); ?>>
+                                            </div>
+                                        </div>
+
                                         <!-- Simplified Three-Box Layout -->
                                         <div>
-                                            <h6 class="text-sm font-medium text-gray-700 mb-3">Line Details</h6>
+                                            <h6 class="text-sm font-medium text-gray-700 mb-3">Pallet & Case Details</h6>
                                             
                                             <!-- Multiple pallet type entries for the same line -->
                                             <div class="space-y-3">
@@ -407,6 +431,8 @@ function poNumbersManager() {
         addPoLine(poIndex) {
             this.poNumbers[poIndex].lines.push({
                 line_number: this.poNumbers[poIndex].lines.length + 1,
+                sku: '',
+                description: '',
                 expected_cases: null,
                 expected_pallets: null,
                 expected_pallet_type_id: '',

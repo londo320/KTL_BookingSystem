@@ -67,4 +67,56 @@ class ProductController extends Controller
         return redirect()->route('admin.products.index')
             ->with('success', 'Product deleted successfully');
     }
+
+    public function search(Request $request)
+    {
+        $query = $request->get('q', '');
+        $customerId = $request->get('customer_id');
+
+        if (strlen($query) < 1) {
+            return response()->json([
+                'products' => [],
+                'total' => 0,
+                'has_more' => false,
+                'exact_match' => null
+            ]);
+        }
+
+        if (!$customerId) {
+            return response()->json([
+                'products' => [],
+                'total' => 0,
+                'has_more' => false,
+                'exact_match' => null,
+                'error' => 'Customer ID required'
+            ]);
+        }
+
+        $page = $request->get('page', 1);
+        $perPage = 10;
+        $offset = ($page - 1) * $perPage;
+
+        // Search products for this customer
+        $productsQuery = Product::where('customer_id', $customerId)
+            ->where(function ($q) use ($query) {
+                $q->where('sku', 'like', '%' . $query . '%')
+                  ->orWhere('description', 'like', '%' . $query . '%');
+            })
+            ->orderBy('sku');
+
+        $total = $productsQuery->count();
+        $products = $productsQuery->skip($offset)->take($perPage)->get(['id', 'sku', 'description', 'customer_id']);
+
+        // Check for exact SKU match
+        $exactMatch = Product::where('customer_id', $customerId)
+            ->where('sku', $query)
+            ->first(['id', 'sku', 'description', 'customer_id']);
+
+        return response()->json([
+            'products' => $products,
+            'total' => $total,
+            'has_more' => $total > ($offset + $perPage),
+            'exact_match' => $exactMatch
+        ]);
+    }
 }
