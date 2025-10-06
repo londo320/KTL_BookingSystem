@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\BookingType;
 use App\Models\Slot;
+use App\Services\SlotBookingService;
 use Illuminate\Http\Request;
 
 class BookingController extends Controller
@@ -29,7 +30,7 @@ class BookingController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, SlotBookingService $slotBookingService)
     {
         $data = $request->validate([
             'slot_id' => 'required|exists:slots,id',
@@ -48,6 +49,18 @@ class BookingController extends Controller
             'po_numbers.*.lines.*.actual_pallet_type_id' => 'nullable|exists:pallet_types,id',
         ]);
 
+        $slot = Slot::findOrFail($data['slot_id']);
+        $bookingTypeId = $data['booking_type_id'];
+
+        // Check if booking can be made
+        $availability = $slotBookingService->checkAvailability($slot, $bookingTypeId);
+
+        if (!$availability['can_book']) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['slot_id' => $availability['message']]);
+        }
+
         $data['user_id'] = auth()->id();
         $data['customer_id'] = auth()->user()->getCustomerId();
 
@@ -55,24 +68,31 @@ class BookingController extends Controller
         $poNumbers = $data['po_numbers'] ?? [];
         unset($data['po_numbers']);
 
-        $booking = Booking::create($data);
+        try {
+            // Create booking and occupy slots
+            $booking = $slotBookingService->createBooking($data, $slot, $bookingTypeId);
 
-        // Create PO numbers and lines if provided
-        if (! empty($poNumbers)) {
-            foreach ($poNumbers as $poData) {
-                $po = $booking->poNumbers()->create([
-                    'po_number' => $poData['po_number'],
-                ]);
+            // Create PO numbers and lines if provided
+            if (! empty($poNumbers)) {
+                foreach ($poNumbers as $poData) {
+                    $po = $booking->poNumbers()->create([
+                        'po_number' => $poData['po_number'],
+                    ]);
 
-                if (! empty($poData['lines'])) {
-                    foreach ($poData['lines'] as $lineData) {
-                        $po->lines()->create($lineData);
+                    if (! empty($poData['lines'])) {
+                        foreach ($poData['lines'] as $lineData) {
+                            $po->lines()->create($lineData);
+                        }
                     }
                 }
             }
-        }
 
-        return redirect()->route('customer.bookings.index')->with('success', 'Booking created.');
+            return redirect()->route('customer.bookings.index')->with('success', 'Booking created. ' . $availability['message']);
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['slot_id' => $e->getMessage()]);
+        }
     }
 
     public function edit(Booking $booking)
