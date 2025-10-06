@@ -56,9 +56,10 @@ class BookingController extends Controller
 
         $slot = Slot::findOrFail($data['slot_id']);
         $bookingTypeId = $data['booking_type_id'];
+        $customerId = auth()->user()->getCustomerId();
 
-        // Check if booking can be made
-        $availability = $slotBookingService->checkAvailability($slot, $bookingTypeId);
+        // Check if booking can be made (include customer_id for customer-specific durations)
+        $availability = $slotBookingService->checkAvailability($slot, $bookingTypeId, $customerId);
 
         if (!$availability['can_book']) {
             return redirect()->back()

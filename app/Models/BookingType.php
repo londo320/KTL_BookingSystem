@@ -29,6 +29,13 @@ class BookingType extends Model
             ->withTimestamps();
     }
 
+    public function customers()
+    {
+        return $this->belongsToMany(Customer::class, 'booking_type_customer')
+            ->withPivot('depot_id', 'duration_minutes')
+            ->withTimestamps();
+    }
+
     public function slots()
     {
         return $this->hasMany(Slot::class);
@@ -41,5 +48,39 @@ class BookingType extends Model
     {
         $pivot = $this->depots()->where('depot_id', $depotId)->first();
         return $pivot ? $pivot->pivot->duration_minutes : ($this->duration_minutes ?? 60);
+    }
+
+    /**
+     * Get duration for a specific customer at a specific depot (in minutes)
+     * Checks in this order:
+     * 1. Customer + depot specific
+     * 2. Customer-only (depot_id null)
+     * 3. Depot-only
+     * 4. Default duration
+     */
+    public function getDurationForCustomer($depotId, $customerId)
+    {
+        // Check for customer + depot specific duration
+        $customerDepotPivot = $this->customers()
+            ->where('customer_id', $customerId)
+            ->where('depot_id', $depotId)
+            ->first();
+
+        if ($customerDepotPivot) {
+            return $customerDepotPivot->pivot->duration_minutes;
+        }
+
+        // Check for customer-only duration (any depot)
+        $customerPivot = $this->customers()
+            ->where('customer_id', $customerId)
+            ->whereNull('depot_id')
+            ->first();
+
+        if ($customerPivot) {
+            return $customerPivot->pivot->duration_minutes;
+        }
+
+        // Fall back to depot-only duration
+        return $this->getDurationForDepot($depotId);
     }
 }

@@ -34,7 +34,7 @@ class SlotController extends Controller
         }
 
         $query = Slot::with('depot')
-            ->withCount('bookings')
+            ->withCount('occupyingBookings')
             ->whereIn('depot_id', $allowedDepotIds);
 
         if (! $request->has('show_past')) {

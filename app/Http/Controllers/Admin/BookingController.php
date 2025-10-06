@@ -859,7 +859,22 @@ class BookingController extends Controller
         $poNumbers = $data['po_numbers'] ?? [];
         unset($data['po_numbers']);
 
-        $booking = Booking::create($data);
+        // Use SlotBookingService to create booking and occupy required slots
+        $slotBookingService = app(\App\Services\SlotBookingService::class);
+        $slot = \App\Models\Slot::findOrFail($data['slot_id']);
+        $bookingTypeId = $data['booking_type_id'];
+
+        // Check availability first
+        $customerId = $data['customer_id'];
+        $availability = $slotBookingService->checkAvailability($slot, $bookingTypeId, $customerId);
+
+        if (!$availability['can_book']) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['slot_id' => $availability['message']]);
+        }
+
+        $booking = $slotBookingService->createBooking($data, $slot, $bookingTypeId);
 
         // Create PO numbers and lines if provided
         if (! empty($poNumbers)) {
@@ -1044,7 +1059,27 @@ class BookingController extends Controller
         $poNumbers = $data['po_numbers'] ?? [];
         unset($data['po_numbers']);
 
-        $booking->update($data);
+        // Check if booking type or slot changed - need to recalculate occupied slots
+        $bookingTypeChanged = isset($data['booking_type_id']) && $data['booking_type_id'] != $booking->booking_type_id;
+        $slotChanged = isset($data['slot_id']) && $data['slot_id'] != $booking->slot_id;
+
+        if ($bookingTypeChanged || $slotChanged) {
+            $slotBookingService = app(\App\Services\SlotBookingService::class);
+
+            $targetSlot = $slotChanged ? \App\Models\Slot::find($data['slot_id']) : $booking->slot;
+            $targetBookingTypeId = $bookingTypeChanged ? $data['booking_type_id'] : $booking->booking_type_id;
+
+            try {
+                // Update booking and re-occupy slots with new duration
+                $slotBookingService->updateBooking($booking, $data, $targetSlot, $targetBookingTypeId);
+            } catch (\Exception $e) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['slot_id' => $e->getMessage()]);
+            }
+        } else {
+            $booking->update($data);
+        }
 
         // Update PO numbers and lines - delete existing and recreate
         if (array_key_exists('po_numbers', $request->all())) {

@@ -401,7 +401,7 @@
                 </div>
               @endif
 
-              {{ $slotStart->format('d-M H:i') }} → {{ $booking->slot->end_at->format('d-M H:i') }}
+              {{ $slotStart->format('d-M H:i') }} → {{ ($booking->getScheduledEndTime() ?? $booking->slot->end_at)->format('d-M H:i') }}
 </td>
 
         {{-- Customer / Collection --}}

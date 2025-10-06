@@ -13,8 +13,8 @@
 </head>
 <body class="bg-gray-100 font-sans">
 
-    <!-- Unified Navigation -->
-    @include('layouts.warehouse-nav')
+    <!-- Dynamic Navigation -->
+    @include('layouts.dynamic-nav')
 
     <!-- Main Content Section -->
     <main class="container mx-auto px-4">

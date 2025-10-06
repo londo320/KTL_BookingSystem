@@ -77,7 +77,7 @@
 <td class="px-4 py-2">{{ \Carbon\Carbon::parse($slot->start_at)->format('d-M H:i') }}</td>
 <td class="px-4 py-2">{{ \Carbon\Carbon::parse($slot->end_at)->format('d-M H:i') }}</td>
             <td class="px-4 py-2">{{ $slot->capacity }}</td>
-            <td class="px-4 py-2">{{ $slot->bookings_count }} / {{ $slot->capacity }}</td>
+            <td class="px-4 py-2">{{ $slot->occupying_bookings_count }} / {{ $slot->capacity }}</td>
             <td class="px-4 py-2 space-x-2">
               @php $canTakeAction = $slot->depot_id == $defaultDepotId; @endphp
               @if($canTakeAction)

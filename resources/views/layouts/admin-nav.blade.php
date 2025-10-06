@@ -4,7 +4,7 @@
     <li>
       <a href="{{ route('app.dashboard') }}"
          class="px-4 py-2 rounded inline-flex items-center gap-2 font-medium text-sm {{ request()->routeIs('app.dashboard') ? 'bg-blue-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
-        <span class="text-base leading-none">📊</span>
+        <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">📊</span>
         <span>Dashboard</span>
       </a>
     </li>
@@ -12,7 +12,7 @@
     <li>
       <a href="{{ route('app.slots.index') }}"
          class="px-4 py-2 rounded inline-flex items-center gap-2 font-medium text-sm {{ request()->routeIs('app.slots.*') ? 'bg-blue-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
-        <span class="text-base leading-none">📅</span>
+        <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">📅</span>
         <span>Slots</span>
       </a>
     </li>
@@ -24,7 +24,7 @@
       @endphp
       <button onclick="toggleBookingsDropdown()"
               class="px-4 py-2 rounded inline-flex items-center gap-2 font-medium text-sm {{ request()->routeIs('app.bookings.*') && !request()->routeIs('app.customer-behavior.*') ? 'bg-blue-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
-        <span class="text-base leading-none">📋</span>
+        <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">📋</span>
         <span>Bookings</span>
         <svg id="bookings-arrow" class="w-4 h-4 transform transition-transform" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -51,21 +51,21 @@
     <li>
       <a href="{{ route('app.customer-behavior.index') }}"
          class="px-4 py-2 rounded inline-flex items-center gap-2 font-medium text-sm {{ request()->routeIs('app.customer-behavior.*') ? 'bg-purple-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
-        <span class="text-base leading-none">📈</span>
+        <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">📈</span>
         <span>Customer Analysis</span>
       </a>
     </li>
     <li>
       <a href="{{ route('app.depot-map.index') }}"
          class="px-4 py-2 rounded inline-flex items-center gap-2 font-medium text-sm {{ request()->routeIs('app.depot-map.*') ? 'bg-green-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
-        <span class="text-base leading-none">🗺️</span>
+        <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">🗺️</span>
         <span>Depot Map</span>
       </a>
     </li>
     <li class="relative">
       <button onclick="toggleTippingDropdown()"
               class="px-4 py-2 rounded inline-flex items-center gap-2 font-medium text-sm {{ request()->routeIs('app.tipping-*') ? 'bg-orange-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
-        <span class="text-base leading-none">🚛</span>
+        <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">🚛</span>
         <span>Tipping</span>
         <svg id="tipping-arrow" class="w-4 h-4 transform transition-transform" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -116,7 +116,7 @@
     <li class="relative">
       <button onclick="toggleOutboundDropdown()"
               class="px-4 py-2 rounded inline-flex items-center gap-2 font-medium text-sm {{ request()->routeIs('outbound.*') ? 'bg-indigo-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
-        <span class="text-base leading-none">📦</span>
+        <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">📦</span>
         <span>Outbound</span>
         <svg id="outbound-arrow" class="w-4 h-4 transform transition-transform" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -163,7 +163,7 @@
     <li class="relative">
       <button onclick="toggleSettingsDropdown()"
               class="px-4 py-2 rounded inline-flex items-center gap-2 font-medium text-sm {{ request()->routeIs('app.settings.*') || request()->routeIs('app.depots.*') || request()->routeIs('app.products.*') || request()->routeIs('app.customers.*') || request()->routeIs('app.slot-templates.*') || request()->routeIs('app.booking-types.*') || request()->routeIs('app.users.*') || request()->routeIs('app.custom-roles.*') ? 'bg-blue-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
-        <span class="text-base leading-none">⚙️</span>
+        <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">⚙️</span>
         <span>Settings</span>
         <svg id="settings-arrow" class="w-4 h-4 transform transition-transform" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />

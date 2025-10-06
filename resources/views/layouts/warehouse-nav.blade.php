@@ -21,7 +21,7 @@
                     <!-- Dashboard -->
                     <a href="{{ route('app.dashboard') }}"
                        class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('app.dashboard') ? 'border-indigo-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
-                        <span class="text-base leading-none">📊</span>
+                        <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">📊</span>
                         <span>Dashboard</span>
                     </a>
 
@@ -30,7 +30,7 @@
                         <div class="relative">
                             <button onclick="toggleBookingsMenu()"
                                     class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 border-transparent text-sm font-medium {{ request()->routeIs('app.bookings*') || request()->routeIs('app.slots.*') ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
-                                <span class="text-base leading-none">📋</span>
+                                <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">📋</span>
                                 <span>Bookings</span>
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -64,7 +64,7 @@
                         <div class="relative">
                             <button onclick="toggleOperationsMenu()"
                                     class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 border-transparent text-sm font-medium {{ request()->routeIs('app.tipping-*') || request()->routeIs('app.operations-*') || request()->routeIs('app.queue-*') || request()->routeIs('app.depot-map.*') ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
-                                <span class="text-base leading-none">🚛</span>
+                                <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">🚛</span>
                                 <span>Operations</span>
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -130,7 +130,7 @@
                         <div class="relative">
                             <button onclick="toggleManagementMenu()"
                                     class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 border-transparent text-sm font-medium {{ request()->routeIs('app.customers.*') || request()->routeIs('app.carriers.*') || request()->routeIs('app.users.*') || request()->routeIs('app.custom-roles.*') || request()->routeIs('app.customer-behavior.*') ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
-                                <span class="text-base leading-none">👥</span>
+                                <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">👥</span>
                                 <span>Management</span>
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -173,7 +173,7 @@
                         <div class="relative">
                             <button onclick="toggleConfigMenu()"
                                     class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                                <span class="text-base leading-none">⚙️</span>
+                                <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">⚙️</span>
                                 <span>Configuration</span>
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -233,7 +233,7 @@
                         <div class="relative">
                             <button onclick="toggleReportsMenu()"
                                     class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                                <span class="text-base leading-none">📊</span>
+                                <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">📊</span>
                                 <span>Reports</span>
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -264,7 +264,7 @@
                         <div class="relative">
                             <button onclick="toggleOutboundMenu()"
                                     class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                                <span class="text-base leading-none">📦</span>
+                                <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">📦</span>
                                 <span>Outbound</span>
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>

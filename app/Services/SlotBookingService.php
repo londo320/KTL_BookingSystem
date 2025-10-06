@@ -14,15 +14,19 @@ class SlotBookingService
      *
      * @param Slot $primarySlot The slot the customer is trying to book
      * @param int $bookingTypeId The booking type ID
+     * @param int|null $customerId The customer ID (optional, for customer-specific durations)
      * @return array ['can_book' => bool, 'slots' => Collection, 'message' => string]
      */
-    public function checkAvailability(Slot $primarySlot, int $bookingTypeId)
+    public function checkAvailability(Slot $primarySlot, int $bookingTypeId, ?int $customerId = null)
     {
         $bookingType = BookingType::findOrFail($bookingTypeId);
         $depotId = $primarySlot->depot_id;
 
         // Get duration for this booking type at this depot (in minutes)
-        $durationMinutes = $bookingType->getDurationForDepot($depotId);
+        // Use customer-specific duration if customer ID provided, otherwise depot-only
+        $durationMinutes = $customerId
+            ? $bookingType->getDurationForCustomer($depotId, $customerId)
+            : $bookingType->getDurationForDepot($depotId);
 
         // Calculate how many slots we need
         $slotDurationMinutes = $primarySlot->start_at->diffInMinutes($primarySlot->end_at);
@@ -88,8 +92,9 @@ class SlotBookingService
      */
     public function createBooking(array $bookingData, Slot $primarySlot, int $bookingTypeId)
     {
-        // Check availability first
-        $availability = $this->checkAvailability($primarySlot, $bookingTypeId);
+        // Check availability first (pass customer_id if available in booking data)
+        $customerId = $bookingData['customer_id'] ?? null;
+        $availability = $this->checkAvailability($primarySlot, $bookingTypeId, $customerId);
 
         if (!$availability['can_book']) {
             throw new \Exception($availability['message']);
@@ -142,8 +147,9 @@ class SlotBookingService
             $targetSlot = $newSlot ?? $booking->slot;
             $targetTypeId = $newBookingTypeId ?? $booking->booking_type_id;
 
-            // Check new slot availability
-            $availability = $this->checkAvailability($targetSlot, $targetTypeId);
+            // Check new slot availability (use customer_id from booking)
+            $customerId = $updateData['customer_id'] ?? $booking->customer_id;
+            $availability = $this->checkAvailability($targetSlot, $targetTypeId, $customerId);
 
             if (!$availability['can_book']) {
                 throw new \Exception($availability['message']);

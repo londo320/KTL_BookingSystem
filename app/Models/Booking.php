@@ -1208,4 +1208,83 @@ class Booking extends Model
             static::updateBayOccupancy($booking);
         });
     }
+
+    /**
+     * Get the scheduled end time based on slot start + booking type duration
+     */
+    public function getScheduledEndTime(): ?\Carbon\Carbon
+    {
+        if (!$this->slot || !$this->bookingType) {
+            return null;
+        }
+
+        // Get booking type duration for this customer and depot
+        $durationMinutes = $this->bookingType->getDurationForCustomer(
+            $this->slot->depot_id,
+            $this->customer_id
+        );
+
+        return $this->slot->start_at->copy()->addMinutes($durationMinutes);
+    }
+
+    /**
+     * Get the expected completion time for this booking based on arrival + booking type duration
+     */
+    public function getExpectedCompletionTime(): ?\Carbon\Carbon
+    {
+        if (!$this->arrived_at || !$this->bookingType || !$this->slot) {
+            return null;
+        }
+
+        // Get booking type duration for this customer and depot
+        $durationMinutes = $this->bookingType->getDurationForCustomer(
+            $this->slot->depot_id,
+            $this->customer_id
+        );
+
+        return $this->arrived_at->copy()->addMinutes($durationMinutes);
+    }
+
+    /**
+     * Check if booking is overdue for tipping target
+     * This checks if the expected completion time exceeds the tipping deadline
+     */
+    public function isOverdueForTipping(): bool
+    {
+        if (!$this->arrived_at || $this->tipping_completed_at || $this->departed_at || !$this->slot) {
+            return false;
+        }
+
+        $tippingTargetMinutes = $this->slot->depot->getFactoryTippingTimeTarget($this->customer_id);
+        $tippingDeadline = $this->arrived_at->copy()->addMinutes($tippingTargetMinutes);
+        $expectedCompletion = $this->getExpectedCompletionTime();
+
+        if (!$expectedCompletion) {
+            return false;
+        }
+
+        // Booking is overdue if its expected completion time is past the tipping deadline
+        return $expectedCompletion->greaterThan($tippingDeadline);
+    }
+
+    /**
+     * Get minutes until tipping becomes overdue (can be negative if already overdue)
+     */
+    public function getMinutesUntilTippingOverdue(): ?int
+    {
+        if (!$this->arrived_at || $this->tipping_completed_at || $this->departed_at || !$this->slot) {
+            return null;
+        }
+
+        $tippingTargetMinutes = $this->slot->depot->getFactoryTippingTimeTarget($this->customer_id);
+        $tippingDeadline = $this->arrived_at->copy()->addMinutes($tippingTargetMinutes);
+        $expectedCompletion = $this->getExpectedCompletionTime();
+
+        if (!$expectedCompletion) {
+            return null;
+        }
+
+        // Return negative if already overdue, positive if time remaining
+        return $tippingDeadline->diffInMinutes($expectedCompletion, false);
+    }
 }
