@@ -1,10 +1,9 @@
 #!/bin/bash
 
 # Unraid script to export production database and push to git
-# Update these variables with your production paths
 
 # Path to your Laravel application on Unraid
-APP_PATH="/mnt/user/appdata/your-app-name"
+APP_PATH="/mnt/user/appdata/ktl-booking"
 
 # Navigate to app directory
 cd "$APP_PATH" || exit 1
