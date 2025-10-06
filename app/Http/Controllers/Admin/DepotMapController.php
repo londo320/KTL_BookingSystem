@@ -140,6 +140,9 @@ class DepotMapController extends Controller
                 // Check if user has admin roles (access to all depots)
                 if ($user->hasAnyRole(['admin', 'super-admin'])) {
                     $userDepots = Depot::orderBy('name')->get();
+                } elseif ($user->depots && $user->depots->count() > 0) {
+                    // User has assigned depots - show only those
+                    $userDepots = $user->depots->sortBy('name');
                 } elseif ($user->depot_id) {
                     // User has a default depot - only show that one
                     $userDepots = Depot::where('id', $user->depot_id)->get();
