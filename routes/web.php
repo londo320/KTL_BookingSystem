@@ -17,7 +17,6 @@ use App\Http\Controllers\Admin\DepotCaseRangeController;
 use App\Http\Controllers\Admin\DepotController;
 use App\Http\Controllers\Admin\DroppedTrailersController;
 use App\Http\Controllers\Admin\FactoryBookingController;
-use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Warehouse\SettingsController as WarehouseSettingsController;
 use App\Http\Controllers\Admin\SlotCapacityController;
 use App\Http\Controllers\Admin\SlotController;
