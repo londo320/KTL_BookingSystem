@@ -56,6 +56,16 @@
         @error('container_number')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
       </div>
 
+      {{-- Seal Number --}}
+      <div>
+        <label class="block text-sm font-medium text-blue-800 mb-1">Seal Number</label>
+        <input type="text" name="seal_number"
+               value="{{ old('seal_number', $booking->seal_number) }}"
+               placeholder="e.g., SEAL123456"
+               class="mt-1 block w-full border-blue-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        @error('seal_number')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+      </div>
+
       {{-- Carrier Company --}}
       <div class="md:col-span-2">
         <label class="block text-sm font-medium text-blue-800 mb-1">

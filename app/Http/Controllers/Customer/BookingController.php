@@ -36,6 +36,9 @@ class BookingController extends Controller
             'slot_id' => 'required|exists:slots,id',
             'booking_type_id' => 'required|exists:booking_types,id',
             'container_size' => 'nullable|integer|min:0',
+            'container_number' => 'nullable|string|max:50',
+            'seal_number' => 'nullable|string|max:100',
+            'vehicle_registration' => 'nullable|string|max:50',
             'notes' => 'nullable|string',
             'po_numbers' => 'nullable|array',
             'po_numbers.*.po_number' => 'required|string|max:255',
@@ -47,6 +50,8 @@ class BookingController extends Controller
             'po_numbers.*.lines.*.actual_cases' => 'nullable|integer|min:0',
             'po_numbers.*.lines.*.actual_pallets' => 'nullable|integer|min:0',
             'po_numbers.*.lines.*.actual_pallet_type_id' => 'nullable|exists:pallet_types,id',
+            'po_numbers.*.lines.*.sku' => 'nullable|string|max:255',
+            'po_numbers.*.lines.*.description' => 'nullable|string',
         ]);
 
         $slot = Slot::findOrFail($data['slot_id']);
@@ -123,6 +128,9 @@ class BookingController extends Controller
             'slot_id' => 'required|exists:slots,id',
             'booking_type_id' => 'required|exists:booking_types,id',
             'container_size' => 'nullable|integer|min:0',
+            'container_number' => 'nullable|string|max:50',
+            'seal_number' => 'nullable|string|max:100',
+            'vehicle_registration' => 'nullable|string|max:50',
             'notes' => 'nullable|string',
             'po_numbers' => 'nullable|array',
             'po_numbers.*.po_number' => 'required|string|max:255',
@@ -134,6 +142,8 @@ class BookingController extends Controller
             'po_numbers.*.lines.*.actual_cases' => 'nullable|integer|min:0',
             'po_numbers.*.lines.*.actual_pallets' => 'nullable|integer|min:0',
             'po_numbers.*.lines.*.actual_pallet_type_id' => 'nullable|exists:pallet_types,id',
+            'po_numbers.*.lines.*.sku' => 'nullable|string|max:255',
+            'po_numbers.*.lines.*.description' => 'nullable|string',
         ]);
 
         // Handle PO numbers separately
