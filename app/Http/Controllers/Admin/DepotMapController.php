@@ -30,10 +30,10 @@ class DepotMapController extends Controller
                 $depot = Depot::findOrFail($request->depot_id);
                 \Log::info('DepotMap: Using requested depot', ['depot_id' => $request->depot_id, 'name' => $depot->name]);
             } elseif (Auth::check() && Auth::user()->depot_id) {
-                $depot = Auth::user()->depot;
+                $depot = Auth::user()->defaultDepot;
                 \Log::info('DepotMap: Using user default depot', [
                     'user_id' => Auth::user()->id,
-                    'user_depot_id' => Auth::user()->depot_id, 
+                    'user_depot_id' => Auth::user()->depot_id,
                     'depot_name' => $depot->name ?? 'null',
                     'user_name' => Auth::user()->name ?? 'unknown'
                 ]);
@@ -182,7 +182,7 @@ class DepotMapController extends Controller
             if ($request->depot_id) {
                 $depot = Depot::findOrFail($request->depot_id);
             } elseif (Auth::check() && Auth::user()->depot_id) {
-                $depot = Auth::user()->depot;
+                $depot = Auth::user()->defaultDepot;
             } 
             
             // Always fallback to first depot if none found
@@ -226,7 +226,7 @@ class DepotMapController extends Controller
             } elseif ($request->depot_id) {
                 $depot = Depot::findOrFail($request->depot_id);
             } elseif (Auth::check() && Auth::user()->depot_id) {
-                $depot = Auth::user()->depot;
+                $depot = Auth::user()->defaultDepot;
             } else {
                 // Always fallback to first depot if none found
                 $depot = Depot::first();
@@ -354,7 +354,7 @@ class DepotMapController extends Controller
             // Get user's depot or first depot
             $depot = null;
             if (Auth::check() && Auth::user()->depot_id) {
-                $depot = Auth::user()->depot;
+                $depot = Auth::user()->defaultDepot;
             } else {
                 $depot = Depot::first();
             }
