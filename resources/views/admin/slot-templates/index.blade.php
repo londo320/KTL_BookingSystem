@@ -39,6 +39,13 @@
                 </select>
                 @error('day_of_week')<p class="text-red-600 text-sm">{{ $message }}</p>@enderror
             </div>
+            <div>
+                <label class="block font-medium">Capacity (bookings per hour)</label>
+                <input type="number" name="capacity" min="1" max="20" value="{{ old('capacity', 4) }}"
+                       class="border p-2 w-full" placeholder="e.g., 4">
+                @error('capacity')<p class="text-red-600 text-sm">{{ $message }}</p>@enderror
+                <p class="text-xs text-gray-500 mt-1">Total bookings allowed in this time slot (all types combined)</p>
+            </div>
             @php
                 $times = [];
                 for ($hour = 0; $hour < 24; $hour++) {
@@ -102,6 +109,7 @@
                         <th class="px-3 py-1">Start</th>
                         <th class="px-3 py-1">End</th>
                         <th class="px-3 py-1">Duration</th>
+                        <th class="px-3 py-1">Capacity</th>
                         <th class="px-3 py-1">Actions</th>
                     </tr>
                 </thead>
@@ -129,6 +137,7 @@
                             <td class="px-3 py-1">{{ \Carbon\Carbon::parse($tpl->start_time)->format('H:i') }}</td>
                             <td class="px-3 py-1">{{ \Carbon\Carbon::parse($tpl->end_time)->format('H:i') }}</td>
                             <td class="px-3 py-1">{{ abs($tpl->duration_minutes) }} min</td>
+                            <td class="px-3 py-1"><span class="font-semibold text-blue-600">{{ $tpl->capacity ?? 1 }}</span> bookings</td>
                             <td class="px-3 py-1 text-sm">
                                 <a href="{{ route('app.slot-templates.edit', $tpl) }}" class="text-blue-600 hover:underline">Edit</a>
                                 <button onclick="openDuplicateModal({{ $tpl->id }}, '{{ $tpl->depot->name }}', '{{ ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][$tpl->day_of_week] }}', '{{ \Carbon\Carbon::parse($tpl->start_time)->format('H:i') }}', '{{ \Carbon\Carbon::parse($tpl->end_time)->format('H:i') }}')" 

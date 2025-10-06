@@ -67,6 +67,14 @@
                 </select>
                 @error('end_time')<p class="text-red-600 text-sm">{{ $message }}</p>@enderror
             </div>
+            <div>
+                <label class="block font-medium">Capacity (bookings per hour)</label>
+                <input type="number" name="capacity" min="1" max="20"
+                       value="{{ old('capacity', $slotTemplate->capacity ?? 4) }}"
+                       class="border p-2 w-full" placeholder="e.g., 4">
+                @error('capacity')<p class="text-red-600 text-sm">{{ $message }}</p>@enderror
+                <p class="text-xs text-gray-500 mt-1">Total bookings allowed in this time slot (all types combined)</p>
+            </div>
             <div class="text-right">
                 <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Update</button>
                 <a href="{{ route('app.slot-templates.index') }}" class="ml-2 text-sm text-gray-600 hover:underline">Cancel</a>
