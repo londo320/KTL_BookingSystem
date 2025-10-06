@@ -1182,6 +1182,39 @@ Route::middleware('auth')->group(function () {
         })->name('collections.show');
     });
 
+    // Debug route to check booking slot occupancy
+    Route::get('/debug/booking/{booking}', function(\App\Models\Booking $booking) {
+        $html = '<h1>Booking Debug Info</h1>';
+        $html .= '<p><strong>Booking ID:</strong> ' . $booking->id . '</p>';
+        $html .= '<p><strong>Created:</strong> ' . $booking->created_at . '</p>';
+        $html .= '<p><strong>Booking Type:</strong> ' . $booking->bookingType->name . '</p>';
+        $html .= '<p><strong>Primary Slot:</strong> ' . $booking->slot->start_at->format('Y-m-d H:i') . ' to ' . $booking->slot->end_at->format('H:i') . '</p>';
+
+        $duration = $booking->bookingType->getDurationForDepot($booking->slot->depot_id);
+        $slotDuration = $booking->slot->start_at->diffInMinutes($booking->slot->end_at);
+        $expectedSlots = ceil($duration / $slotDuration);
+
+        $html .= '<p><strong>Booking Type Duration:</strong> ' . $duration . ' minutes</p>';
+        $html .= '<p><strong>Slot Duration:</strong> ' . $slotDuration . ' minutes</p>';
+        $html .= '<p><strong>Expected Slots to Occupy:</strong> ' . $expectedSlots . '</p>';
+
+        $occupiedSlots = $booking->occupiedSlots;
+        $html .= '<p><strong>Actually Occupied Slots:</strong> ' . $occupiedSlots->count() . '</p>';
+
+        if ($occupiedSlots->count() > 0) {
+            $html .= '<ul>';
+            foreach ($occupiedSlots as $slot) {
+                $html .= '<li>Slot ' . $slot->id . ': ' . $slot->start_at->format('Y-m-d H:i') . ' to ' . $slot->end_at->format('H:i');
+                $html .= ' (Primary: ' . ($slot->pivot->is_primary ? 'Yes' : 'No') . ')</li>';
+            }
+            $html .= '</ul>';
+        } else {
+            $html .= '<p style="color: red;"><strong>WARNING: No slots occupied! This booking is not using the multi-slot system.</strong></p>';
+        }
+
+        return $html;
+    })->name('debug.booking');
+
     Route::fallback(function () {
         return auth()->check()
             ? redirect()->route('depot.dashboard')
