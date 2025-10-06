@@ -28,6 +28,15 @@ class SlotBookingService
         $slotDurationMinutes = $primarySlot->start_at->diffInMinutes($primarySlot->end_at);
         $slotsNeeded = ceil($durationMinutes / $slotDurationMinutes);
 
+        \Log::info('SlotBookingService: Checking availability', [
+            'slot_id' => $primarySlot->id,
+            'booking_type' => $bookingType->name,
+            'depot_id' => $depotId,
+            'duration_minutes' => $durationMinutes,
+            'slot_duration_minutes' => $slotDurationMinutes,
+            'slots_needed' => $slotsNeeded,
+        ]);
+
         // Find all consecutive slots needed
         $slots = collect([$primarySlot]);
         $currentSlotEnd = $primarySlot->end_at;
@@ -89,12 +98,26 @@ class SlotBookingService
         // Create the booking
         $booking = Booking::create($bookingData);
 
+        \Log::info('SlotBookingService: Creating booking', [
+            'booking_id' => $booking->id,
+            'slot_id' => $primarySlot->id,
+            'booking_type_id' => $bookingTypeId,
+            'slots_to_occupy' => $availability['slots']->pluck('id')->toArray(),
+            'slots_count' => $availability['slots']->count(),
+        ]);
+
         // Occupy all required slots
         foreach ($availability['slots'] as $index => $slot) {
             $booking->occupiedSlots()->attach($slot->id, [
                 'is_primary' => ($index === 0), // First slot is primary
                 'created_at' => now(),
                 'updated_at' => now(),
+            ]);
+
+            \Log::info('SlotBookingService: Attached slot', [
+                'booking_id' => $booking->id,
+                'slot_id' => $slot->id,
+                'is_primary' => ($index === 0),
             ]);
         }
 
