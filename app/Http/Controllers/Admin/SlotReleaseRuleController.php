@@ -54,7 +54,7 @@ class SlotReleaseRuleController extends Controller
         // sync many-to-many
         $rule->customers()->sync($request->input('customer_ids', []));
 
-        return redirect()->route('admin.slotReleaseRules.index')
+        return redirect()->route('app.slotReleaseRules.index')
             ->with('success', 'Rule created successfully.');
     }
 
@@ -87,7 +87,7 @@ class SlotReleaseRuleController extends Controller
         // sync many-to-many
         $rule->customers()->sync($request->input('customer_ids', []));
 
-        return redirect()->route('admin.slotReleaseRules.index')
+        return redirect()->route('app.slotReleaseRules.index')
             ->with('success', 'Rule updated successfully.');
     }
 
@@ -95,7 +95,7 @@ class SlotReleaseRuleController extends Controller
     {
         $rule->delete();
 
-        return redirect()->route('admin.slotReleaseRules.index')
+        return redirect()->route('app.slotReleaseRules.index')
             ->with('success', 'Rule deleted successfully.');
     }
 }
