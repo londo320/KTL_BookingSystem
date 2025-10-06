@@ -88,10 +88,20 @@
    <div class="bg-white shadow rounded p-6">
     <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-bold">Existing Templates</h2>
-        <button id="bulkCopyBtn" onclick="openBulkCopyModal()" disabled 
-                class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
-            📋 Copy Selected Templates
-        </button>
+        <div class="flex gap-2">
+            <button id="bulkDeleteBtn" onclick="openBulkDeleteModal()" disabled
+                    class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                🗑️ Delete Selected
+            </button>
+            <button id="bulkCapacityBtn" onclick="openBulkCapacityModal()" disabled
+                    class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                📊 Update Capacity
+            </button>
+            <button id="bulkCopyBtn" onclick="openBulkCopyModal()" disabled
+                    class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                📋 Copy Selected
+            </button>
+        </div>
     </div>
     @if($templates->isEmpty())
         <p class="text-gray-600">No templates yet.</p>
@@ -250,6 +260,43 @@
             </form>
         </div>
     </div>
+    {{-- BULK DELETE MODAL --}}
+    <div id="bulkDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 class="text-lg font-bold mb-4 text-red-600">Delete Selected Templates</h3>
+            <div id="deleteTemplatesInfo" class="mb-4 p-3 bg-red-50 rounded text-sm max-h-32 overflow-y-auto"></div>
+            <p class="text-sm text-gray-700 mb-4">⚠️ This action cannot be undone. Are you sure?</p>
+            <form id="bulkDeleteForm" method="POST" action="{{ route('app.slot-templates.bulk-delete') }}">
+                @csrf
+                <div id="deleteTemplateIds"></div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeBulkDeleteModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Delete Templates</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {{-- BULK CAPACITY UPDATE MODAL --}}
+    <div id="bulkCapacityModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 class="text-lg font-bold mb-4">Update Capacity for Selected Templates</h3>
+            <div id="capacityTemplatesInfo" class="mb-4 p-3 bg-gray-100 rounded text-sm max-h-32 overflow-y-auto"></div>
+            <form id="bulkCapacityForm" method="POST" action="{{ route('app.slot-templates.bulk-update-capacity') }}">
+                @csrf
+                <div id="capacityTemplateIds"></div>
+                <div class="mb-4">
+                    <label class="block font-medium mb-2">New Capacity:</label>
+                    <input type="number" name="capacity" min="1" max="20" value="4" required
+                           class="border p-2 w-full rounded" placeholder="e.g., 4">
+                    <p class="text-xs text-gray-500 mt-1">Total bookings allowed per time slot (1-20)</p>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeBulkCapacityModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">Update Capacity</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </x-app-layout>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -312,13 +359,24 @@ document.getElementById('duplicateModal').addEventListener('click', function(e) 
 // Bulk Copy Functions
 function updateBulkCopyButton() {
     const selectedCheckboxes = document.querySelectorAll('.template-checkbox:checked');
-    const bulkBtn = document.getElementById('bulkCopyBtn');
+    const bulkCopyBtn = document.getElementById('bulkCopyBtn');
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    const bulkCapacityBtn = document.getElementById('bulkCapacityBtn');
+
     if (selectedCheckboxes.length > 0) {
-        bulkBtn.disabled = false;
-        bulkBtn.textContent = `📋 Copy ${selectedCheckboxes.length} Selected Template(s)`;
+        bulkCopyBtn.disabled = false;
+        bulkCopyBtn.textContent = `📋 Copy ${selectedCheckboxes.length} Selected`;
+        bulkDeleteBtn.disabled = false;
+        bulkDeleteBtn.textContent = `🗑️ Delete ${selectedCheckboxes.length} Selected`;
+        bulkCapacityBtn.disabled = false;
+        bulkCapacityBtn.textContent = `📊 Update ${selectedCheckboxes.length} Selected`;
     } else {
-        bulkBtn.disabled = true;
-        bulkBtn.textContent = '📋 Copy Selected Templates';
+        bulkCopyBtn.disabled = true;
+        bulkCopyBtn.textContent = '📋 Copy Selected';
+        bulkDeleteBtn.disabled = true;
+        bulkDeleteBtn.textContent = '🗑️ Delete Selected';
+        bulkCapacityBtn.disabled = true;
+        bulkCapacityBtn.textContent = '📊 Update Capacity';
     }
 }
 function toggleGroupSelection(selectAllCheckbox, groupIndex) {
@@ -387,4 +445,98 @@ function toggleCopyOptions() {
         daySelection.classList.remove('hidden');
     }
 }
+
+// Bulk Delete Functions
+function openBulkDeleteModal() {
+    const selectedCheckboxes = document.querySelectorAll('.template-checkbox:checked');
+    if (selectedCheckboxes.length === 0) return;
+
+    const modal = document.getElementById('bulkDeleteModal');
+    const templateInfo = document.getElementById('deleteTemplatesInfo');
+    const templateIds = document.getElementById('deleteTemplateIds');
+
+    let infoHtml = '<strong>Templates to delete:</strong><br>';
+    let ids = [];
+
+    selectedCheckboxes.forEach(cb => {
+        const template = JSON.parse(cb.dataset.template);
+        ids.push(template.id);
+        infoHtml += `• ${template.depot} - ${template.day} ${template.start}-${template.end}<br>`;
+    });
+
+    templateInfo.innerHTML = infoHtml;
+
+    // Clear previous template IDs and add new ones
+    templateIds.innerHTML = '';
+    ids.forEach(id => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'template_ids[]';
+        input.value = id;
+        templateIds.appendChild(input);
+    });
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeBulkDeleteModal() {
+    const modal = document.getElementById('bulkDeleteModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+// Close delete modal when clicking outside
+document.getElementById('bulkDeleteModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeBulkDeleteModal();
+    }
+});
+
+// Bulk Capacity Update Functions
+function openBulkCapacityModal() {
+    const selectedCheckboxes = document.querySelectorAll('.template-checkbox:checked');
+    if (selectedCheckboxes.length === 0) return;
+
+    const modal = document.getElementById('bulkCapacityModal');
+    const templateInfo = document.getElementById('capacityTemplatesInfo');
+    const templateIds = document.getElementById('capacityTemplateIds');
+
+    let infoHtml = '<strong>Templates to update:</strong><br>';
+    let ids = [];
+
+    selectedCheckboxes.forEach(cb => {
+        const template = JSON.parse(cb.dataset.template);
+        ids.push(template.id);
+        infoHtml += `• ${template.depot} - ${template.day} ${template.start}-${template.end}<br>`;
+    });
+
+    templateInfo.innerHTML = infoHtml;
+
+    // Clear previous template IDs and add new ones
+    templateIds.innerHTML = '';
+    ids.forEach(id => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'template_ids[]';
+        input.value = id;
+        templateIds.appendChild(input);
+    });
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeBulkCapacityModal() {
+    const modal = document.getElementById('bulkCapacityModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+// Close capacity modal when clicking outside
+document.getElementById('bulkCapacityModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeBulkCapacityModal();
+    }
+});
 </script>

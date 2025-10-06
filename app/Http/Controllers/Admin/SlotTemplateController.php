@@ -220,4 +220,30 @@ class SlotTemplateController extends Controller
 
         return back()->with('success', $message);
     }
+
+    public function bulkDelete(Request $request)
+    {
+        $data = $request->validate([
+            'template_ids' => 'required|array|min:1',
+            'template_ids.*' => 'exists:slot_templates,id',
+        ]);
+
+        $deleted = SlotTemplate::whereIn('id', $data['template_ids'])->delete();
+
+        return back()->with('success', "Deleted {$deleted} template(s).");
+    }
+
+    public function bulkUpdateCapacity(Request $request)
+    {
+        $data = $request->validate([
+            'template_ids' => 'required|array|min:1',
+            'template_ids.*' => 'exists:slot_templates,id',
+            'capacity' => 'required|integer|min:1|max:20',
+        ]);
+
+        $updated = SlotTemplate::whereIn('id', $data['template_ids'])
+            ->update(['capacity' => $data['capacity']]);
+
+        return back()->with('success', "Updated capacity to {$data['capacity']} for {$updated} template(s).");
+    }
 }

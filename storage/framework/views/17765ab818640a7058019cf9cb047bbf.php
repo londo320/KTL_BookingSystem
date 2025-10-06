@@ -108,6 +108,21 @@ if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>
             </div>
+            <div>
+                <label class="block font-medium">Capacity (bookings per hour)</label>
+                <input type="number" name="capacity" min="1" max="20"
+                       value="<?php echo e(old('capacity', $slotTemplate->capacity ?? 4)); ?>"
+                       class="border p-2 w-full" placeholder="e.g., 4">
+                <?php $__errorArgs = ['capacity'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><p class="text-red-600 text-sm"><?php echo e($message); ?></p><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                <p class="text-xs text-gray-500 mt-1">Total bookings allowed in this time slot (all types combined)</p>
+            </div>
             <div class="text-right">
                 <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Update</button>
                 <a href="<?php echo e(route('app.slot-templates.index')); ?>" class="ml-2 text-sm text-gray-600 hover:underline">Cancel</a>

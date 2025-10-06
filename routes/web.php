@@ -247,6 +247,8 @@ Route::middleware('auth')->group(function () {
         Route::resource('slot-templates', SlotTemplateController::class);
         Route::post('slot-templates/{slotTemplate}/duplicate', [SlotTemplateController::class, 'duplicate'])->name('slot-templates.duplicate');
         Route::post('slot-templates/bulk-duplicate', [SlotTemplateController::class, 'bulkDuplicate'])->name('slot-templates.bulk-duplicate');
+        Route::post('slot-templates/bulk-delete', [SlotTemplateController::class, 'bulkDelete'])->name('slot-templates.bulk-delete');
+        Route::post('slot-templates/bulk-update-capacity', [SlotTemplateController::class, 'bulkUpdateCapacity'])->name('slot-templates.bulk-update-capacity');
         Route::resource('booking-rules', BookingRulesController::class)->only(['index', 'store']);
         
         // Settings management
@@ -499,6 +501,8 @@ Route::middleware('auth')->group(function () {
 
         Route::post('slot-templates/{slotTemplate}/duplicate', [SlotTemplateController::class, 'duplicate'])->name('slot-templates.duplicate');
         Route::post('slot-templates/bulk-duplicate', [SlotTemplateController::class, 'bulkDuplicate'])->name('slot-templates.bulk-duplicate');
+        Route::post('slot-templates/bulk-delete', [SlotTemplateController::class, 'bulkDelete'])->name('slot-templates.bulk-delete');
+        Route::post('slot-templates/bulk-update-capacity', [SlotTemplateController::class, 'bulkUpdateCapacity'])->name('slot-templates.bulk-update-capacity');
 
         // ─── Slot Generation ──────────────────────────────────────────
         Route::get('slots/generate', [SlotGeneratorController::class, 'index'])->name('slots.generate.form');
