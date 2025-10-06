@@ -179,13 +179,13 @@ class BookingController extends Controller
         if (empty($sessionFilters) && !$request->hasAny(['depot_id', 'customer_id', 'booking_type_id', 'from', 'to', 'arrival', 'quick_filter', 'filter', 'week_number', 'year', 'search', 'status'])) {
             $request->merge([
                 'filter' => 'today',
-                'status' => 'outstanding'
+                'status' => 'all'
             ]);
         }
-        
-        // If no status is specified, default to outstanding
+
+        // If no status is specified, default to all
         if (!$request->has('status')) {
-            $request->merge(['status' => 'outstanding']);
+            $request->merge(['status' => 'all']);
         }
 
         // Store current filters in session for persistence
@@ -200,6 +200,7 @@ class BookingController extends Controller
             'movements.tippingBay',
             'poNumbers.lines.expectedPalletType',
             'poNumbers.lines.actualPalletType',
+            'poNumbers.lines.actualPallets.palletType',
         ])
             ->whereHas('slot', fn ($q) => $q->whereIn('depot_id', $allowedDepotIds))
             // Exclude bookings that were cancelled due to rebooking (only show active + directly cancelled bookings)
@@ -691,7 +692,7 @@ class BookingController extends Controller
         if (empty($sessionFilters) && !$request->hasAny(['depot_id', 'customer_id', 'booking_type_id', 'from', 'to', 'arrival', 'filter', 'week_number', 'search', 'status'])) {
             $request->merge([
                 'filter' => 'today',
-                'status' => 'outstanding'
+                'status' => 'all'
             ]);
         }
         
