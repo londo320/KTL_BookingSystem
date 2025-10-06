@@ -34,6 +34,7 @@ class SlotTemplateController extends Controller
             'day_of_week' => 'required|integer|between:0,6',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i',
+            'capacity' => 'nullable|integer|min:1|max:20',
         ]);
 
         $start = \Carbon\Carbon::createFromFormat('H:i', $data['start_time']);
@@ -79,6 +80,7 @@ class SlotTemplateController extends Controller
             'day_of_week' => 'required|integer|between:0,6',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i',
+            'capacity' => 'nullable|integer|min:1|max:20',
         ]);
 
         $start = \Carbon\Carbon::createFromFormat('H:i', $data['start_time']);
