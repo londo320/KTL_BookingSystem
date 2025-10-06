@@ -15,9 +15,10 @@ class SlotBookingService
      * @param Slot $primarySlot The slot the customer is trying to book
      * @param int $bookingTypeId The booking type ID
      * @param int|null $customerId The customer ID (optional, for customer-specific durations)
+     * @param int|null $excludeBookingId Exclude this booking ID when checking capacity (for updates)
      * @return array ['can_book' => bool, 'slots' => Collection, 'message' => string]
      */
-    public function checkAvailability(Slot $primarySlot, int $bookingTypeId, ?int $customerId = null)
+    public function checkAvailability(Slot $primarySlot, int $bookingTypeId, ?int $customerId = null, ?int $excludeBookingId = null)
     {
         $bookingType = BookingType::findOrFail($bookingTypeId);
         $depotId = $primarySlot->depot_id;
@@ -66,11 +67,20 @@ class SlotBookingService
 
         // Check if all slots have capacity
         foreach ($slots as $slot) {
-            if (!$slot->hasCapacity()) {
+            // Count occupying bookings, excluding the current booking if this is an update
+            $occupiedCount = $slot->occupyingBookings()
+                ->when($excludeBookingId, function ($query) use ($excludeBookingId) {
+                    return $query->where('bookings.id', '!=', $excludeBookingId);
+                })
+                ->count();
+
+            $hasCapacity = $occupiedCount < $slot->capacity;
+
+            if (!$hasCapacity) {
                 return [
                     'can_book' => false,
                     'slots' => collect(),
-                    'message' => "Slot at {$slot->start_at->format('H:i')} is fully booked. Capacity: {$slot->capacity}, Currently occupied: " . $slot->occupyingBookings()->count()
+                    'message' => "Slot at {$slot->start_at->format('H:i')} is fully booked. Capacity: {$slot->capacity}, Currently occupied: {$occupiedCount}"
                 ];
             }
         }
@@ -148,8 +158,9 @@ class SlotBookingService
             $targetTypeId = $newBookingTypeId ?? $booking->booking_type_id;
 
             // Check new slot availability (use customer_id from booking)
+            // Exclude current booking from capacity check since we're updating it
             $customerId = $updateData['customer_id'] ?? $booking->customer_id;
-            $availability = $this->checkAvailability($targetSlot, $targetTypeId, $customerId);
+            $availability = $this->checkAvailability($targetSlot, $targetTypeId, $customerId, $booking->id);
 
             if (!$availability['can_book']) {
                 throw new \Exception($availability['message']);
