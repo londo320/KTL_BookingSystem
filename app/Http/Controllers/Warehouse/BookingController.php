@@ -577,10 +577,18 @@ class BookingController extends Controller
                     'late_duration_minutes' => 0, // total late minutes for depot/customer group
                 ];
             }
-            $data['expected_cases'] += $b->expected_cases ?? 0;
-            $data['actual_cases'] += $b->actual_cases ?? 0;
-            $data['expected_pallets'] += $b->expected_pallets ?? 0;
-            $data['actual_pallets'] += $b->actual_pallets ?? 0;
+            // Get expected/actual from PO numbers if available, otherwise from booking fields
+            if ($b->poNumbers && $b->poNumbers->count() > 0) {
+                $data['expected_cases'] += $b->poNumbers->sum('total_expected_cases');
+                $data['actual_cases'] += $b->poNumbers->sum('total_actual_cases');
+                $data['expected_pallets'] += $b->poNumbers->sum('total_expected_pallets');
+                $data['actual_pallets'] += $b->poNumbers->sum('total_actual_pallets');
+            } else {
+                $data['expected_cases'] += $b->expected_cases ?? 0;
+                $data['actual_cases'] += $b->actual_cases ?? 0;
+                $data['expected_pallets'] += $b->expected_pallets ?? 0;
+                $data['actual_pallets'] += $b->actual_pallets ?? 0;
+            }
 
             $now = Carbon::now();
             $slotStart = Carbon::parse($b->slot->start_at);
@@ -2824,10 +2832,18 @@ class BookingController extends Controller
                 ];
             }
 
-            $data['expected_cases'] += $b->expected_cases ?? 0;
-            $data['actual_cases'] += $b->actual_cases ?? 0;
-            $data['expected_pallets'] += $b->expected_pallets ?? 0;
-            $data['actual_pallets'] += $b->actual_pallets ?? 0;
+            // Get expected/actual from PO numbers if available, otherwise from booking fields
+            if ($b->poNumbers && $b->poNumbers->count() > 0) {
+                $data['expected_cases'] += $b->poNumbers->sum('total_expected_cases');
+                $data['actual_cases'] += $b->poNumbers->sum('total_actual_cases');
+                $data['expected_pallets'] += $b->poNumbers->sum('total_expected_pallets');
+                $data['actual_pallets'] += $b->poNumbers->sum('total_actual_pallets');
+            } else {
+                $data['expected_cases'] += $b->expected_cases ?? 0;
+                $data['actual_cases'] += $b->actual_cases ?? 0;
+                $data['expected_pallets'] += $b->expected_pallets ?? 0;
+                $data['actual_pallets'] += $b->actual_pallets ?? 0;
+            }
 
             $now = Carbon::now();
             $slotStart = Carbon::parse($b->slot->start_at);
