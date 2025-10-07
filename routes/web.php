@@ -749,7 +749,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/select-map-file/{depot?}', [\App\Http\Controllers\Admin\DepotMapController::class, 'selectMapFile'])->name('select-map-file');
             Route::post('/update-map-file', [\App\Http\Controllers\Admin\DepotMapController::class, 'updateMapFile'])->name('update-map-file');
             Route::post('/upload-map-file', [\App\Http\Controllers\Admin\DepotMapController::class, 'uploadMapFile'])->name('upload-map-file');
-            Route::delete('/delete-map-file', [\App\Http\Controllers\Admin\DepotMapController::class, 'deleteMapFile'])->name('delete-map-file');
+            Route::post('/delete-map-file', [\App\Http\Controllers\Admin\DepotMapController::class, 'deleteMapFile'])->name('delete-map-file');
             Route::get('/depot-debug', function () {
                 $user = Auth::user();
                 $depots = \App\Models\Depot::all();
@@ -928,7 +928,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/select-map-file/{depot?}', [\App\Http\Controllers\Admin\DepotMapController::class, 'selectMapFile'])->name('select-map-file');
             Route::post('/update-map-file', [\App\Http\Controllers\Admin\DepotMapController::class, 'updateMapFile'])->name('update-map-file');
             Route::post('/upload-map-file', [\App\Http\Controllers\Admin\DepotMapController::class, 'uploadMapFile'])->name('upload-map-file');
-            Route::delete('/delete-map-file', [\App\Http\Controllers\Admin\DepotMapController::class, 'deleteMapFile'])->name('delete-map-file');
+            Route::post('/delete-map-file', [\App\Http\Controllers\Admin\DepotMapController::class, 'deleteMapFile'])->name('delete-map-file');
             Route::get('/depot-debug', function () {
                 $user = Auth::user();
                 $depots = \App\Models\Depot::all();
