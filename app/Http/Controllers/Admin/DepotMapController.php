@@ -362,29 +362,42 @@ class DepotMapController extends Controller
                 $depot = Depot::first();
             }
         }
-        
+
         if (!$depot) {
             return redirect()->route('admin.depots.index')
                 ->with('error', 'No depot found for map file selection');
         }
-        
+
         // Get available map files
         $mapPath = storage_path('app/public/depot-maps');
         $availableFiles = [];
-        
+
+        \Log::info('Scanning for map files', [
+            'path' => $mapPath,
+            'exists' => is_dir($mapPath),
+            'readable' => is_readable($mapPath),
+            'writable' => is_writable($mapPath)
+        ]);
+
         if (is_dir($mapPath)) {
             $files = scandir($mapPath);
+            \Log::info('Found files in depot-maps', ['files' => $files]);
+
             foreach ($files as $file) {
-                if (in_array(pathinfo($file, PATHINFO_EXTENSION), ['svg', 'png', 'jpg', 'jpeg', 'gif'])) {
+                $ext = pathinfo($file, PATHINFO_EXTENSION);
+                if (in_array($ext, ['svg', 'png', 'jpg', 'jpeg', 'gif'])) {
                     $availableFiles[] = $file;
                 }
             }
+        } else {
+            \Log::warning('Depot maps directory does not exist', ['path' => $mapPath]);
         }
-        
-        
+
+        \Log::info('Available map files', ['count' => count($availableFiles), 'files' => $availableFiles]);
+
         // Get all depots for the dropdown
         $allDepots = Depot::orderBy('name')->get();
-        
+
         return view('warehouse.depot-map.select-map-file', compact('depot', 'availableFiles', 'allDepots'));
     }
     
@@ -424,38 +437,67 @@ class DepotMapController extends Controller
             'map_file_upload' => 'required|file|mimes:svg,png,jpg,jpeg,gif|max:10240', // 10MB max
             'map_notes' => 'nullable|string'
         ]);
-        
+
         $depot = Depot::findOrFail($request->depot_id);
-        
+
         try {
             // Handle file upload
             $file = $request->file('map_file_upload');
-            
+
             // Generate a clean filename
             $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
             $extension = $file->getClientOriginalExtension();
             $cleanName = preg_replace('/[^A-Za-z0-9_-]/', '_', $originalName);
             $filename = $cleanName . '_' . time() . '.' . $extension;
-            
+
             // Create directory if it doesn't exist
             $uploadPath = storage_path('app/public/depot-maps');
             if (!is_dir($uploadPath)) {
-                mkdir($uploadPath, 0755, true);
+                \Log::info('Creating depot-maps directory: ' . $uploadPath);
+                mkdir($uploadPath, 0777, true);
+                chmod($uploadPath, 0777);
             }
-            
+
+            \Log::info('Uploading map file', [
+                'original_name' => $file->getClientOriginalName(),
+                'filename' => $filename,
+                'upload_path' => $uploadPath,
+                'depot_id' => $depot->id,
+                'depot_name' => $depot->name,
+                'directory_writable' => is_writable($uploadPath),
+                'directory_exists' => is_dir($uploadPath)
+            ]);
+
             // Move the uploaded file
             $file->move($uploadPath, $filename);
-            
+
+            // Verify file was created
+            $finalPath = $uploadPath . '/' . $filename;
+            if (!file_exists($finalPath)) {
+                throw new \Exception("File was not created at: {$finalPath}");
+            }
+
+            // Set proper permissions
+            chmod($finalPath, 0644);
+
+            \Log::info('Map file uploaded successfully', [
+                'filename' => $filename,
+                'path' => $finalPath,
+                'size' => filesize($finalPath)
+            ]);
+
             // Update depot with new map file
             $depot->update([
                 'map_file' => $filename,
                 'map_notes' => $request->map_notes
             ]);
-            
+
             return back()->with('success', "Map file '{$filename}' uploaded and set for {$depot->name}!");
-            
+
         } catch (\Exception $e) {
-            \Log::error('Map file upload error: ' . $e->getMessage());
+            \Log::error('Map file upload error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
             return back()->with('error', 'Error uploading map file: ' . $e->getMessage());
         }
     }
