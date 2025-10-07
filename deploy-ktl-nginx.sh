@@ -112,7 +112,8 @@ docker exec "$APP_CONTAINER" apt-get install -y -qq libpng-dev libjpeg-dev libfr
 
 echo "📦 Installing PHP extensions..."
 docker exec "$APP_CONTAINER" docker-php-ext-configure gd --with-freetype --with-jpeg
-docker exec "$APP_CONTAINER" docker-php-ext-install -j$(nproc) gd zip pdo pdo_mysql mbstring xml opcache
+docker exec "$APP_CONTAINER" docker-php-ext-install -j$(nproc) gd zip pdo_mysql mbstring xml opcache
+docker exec "$APP_CONTAINER" docker-php-ext-enable pdo_mysql
 
 echo "📦 Configuring PHP OPcache for performance..."
 docker exec "$APP_CONTAINER" bash -c 'cat > /usr/local/etc/php/conf.d/opcache.ini <<EOF
