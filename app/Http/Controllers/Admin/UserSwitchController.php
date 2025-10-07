@@ -12,16 +12,19 @@ class UserSwitchController extends Controller
 {
     public function __construct()
     {
-        // Only allow in non-production environments
-        if (app()->isProduction()) {
-            abort(404);
-        }
-
         // Apply auth middleware to all methods
         $this->middleware('auth');
 
         // Apply admin role only to switchTo method
         $this->middleware('role:admin')->only('switchTo');
+
+        // Only allow in non-production environments - check in middleware, not constructor
+        $this->middleware(function ($request, $next) {
+            if (app()->isProduction()) {
+                abort(404);
+            }
+            return $next($request);
+        });
     }
 
     /**
