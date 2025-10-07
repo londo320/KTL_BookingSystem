@@ -170,7 +170,15 @@ echo "🔒 Final permission verification..."
 docker exec -w /var/www/html "$APP_CONTAINER" chown -R www-data:www-data storage bootstrap/cache
 docker exec -w /var/www/html "$APP_CONTAINER" chmod -R 775 storage bootstrap/cache
 
-echo "🌐 Starting web server..."
+echo "🌐 Configuring and starting web server..."
+# Reconfigure Apache to ensure DocumentRoot is correct
+docker exec "$APP_CONTAINER" bash -c 'echo "<VirtualHost *:80>" > /etc/apache2/sites-available/000-default.conf'
+docker exec "$APP_CONTAINER" bash -c 'echo "    DocumentRoot /var/www/html/public" >> /etc/apache2/sites-available/000-default.conf'
+docker exec "$APP_CONTAINER" bash -c 'echo "    <Directory /var/www/html/public>" >> /etc/apache2/sites-available/000-default.conf'
+docker exec "$APP_CONTAINER" bash -c 'echo "        AllowOverride All" >> /etc/apache2/sites-available/000-default.conf'
+docker exec "$APP_CONTAINER" bash -c 'echo "        Require all granted" >> /etc/apache2/sites-available/000-default.conf'
+docker exec "$APP_CONTAINER" bash -c 'echo "    </Directory>" >> /etc/apache2/sites-available/000-default.conf'
+docker exec "$APP_CONTAINER" bash -c 'echo "</VirtualHost>" >> /etc/apache2/sites-available/000-default.conf'
 docker exec "$APP_CONTAINER" service apache2 restart
 
 echo "🔍 Testing application..."
