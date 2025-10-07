@@ -136,7 +136,7 @@ docker exec -w /var/www/html "$APP_CONTAINER" composer install --no-interaction 
 echo "🔧 Applying Laravel permission fixes..."
 # AGGRESSIVE: Remove and recreate directories to eliminate permission issues
 docker exec -w /var/www/html "$APP_CONTAINER" rm -rf storage/framework/views storage/framework/cache bootstrap/cache || true
-docker exec -w /var/www/html "$APP_CONTAINER" mkdir -p storage/framework/views storage/framework/cache storage/framework/sessions storage/logs bootstrap/cache
+docker exec -w /var/www/html "$APP_CONTAINER" mkdir -p storage/framework/views storage/framework/cache storage/framework/sessions storage/logs bootstrap/cache storage/app/public/depot-maps
 
 # Set permissions BEFORE anything creates files
 docker exec -w /var/www/html "$APP_CONTAINER" chmod -R 777 storage bootstrap/cache
