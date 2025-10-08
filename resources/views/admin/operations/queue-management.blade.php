@@ -492,8 +492,8 @@
     function shuntToBay(bookingId) {
       selectedBookingId = bookingId;
       selectedBayId = null;
-      // Load available bays - pass current depot_id
-      const depotId = new URLSearchParams(window.location.search).get('depot_id');
+      // Load available bays - pass current depot_id from backend
+      const depotId = {{ $currentDepotId ?? 'null' }};
       const url = depotId ? `/admin/operations/available-bays?depot_id=${depotId}` : '/admin/operations/available-bays';
       fetch(url)
         .then(response => response.json())
