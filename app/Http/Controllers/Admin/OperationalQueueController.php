@@ -29,7 +29,7 @@ class OperationalQueueController extends Controller
         
         // Allow viewing all depots but note which is default for actions
         $selectedDepotId = $request->get('depot_id');
-        
+
         // Show all allowed depots for viewing, but track default for actions
         if ($selectedDepotId && in_array($selectedDepotId, $allowedDepotIds)) {
             $currentDepotId = $selectedDepotId;
@@ -37,7 +37,8 @@ class OperationalQueueController extends Controller
             // Explicitly selected "All Depots"
             $currentDepotId = null;
         } else {
-            $currentDepotId = null; // Show all depots
+            // Default to user's depot if not specified
+            $currentDepotId = $defaultDepotId;
         }
         
         // Filter movements by selected depot or show all allowed depots
