@@ -338,9 +338,15 @@ class OperationsController extends Controller
      */
     public function getAvailableBays(Request $request)
     {
-        $bays = TippingBay::where('is_active', true)
-            ->available()
-            ->get(['id', 'name', 'code']);
+        $query = TippingBay::where('is_active', true)
+            ->available();
+
+        // Filter by depot if specified
+        if ($request->has('depot_id') && $request->depot_id) {
+            $query->where('depot_id', $request->depot_id);
+        }
+
+        $bays = $query->get(['id', 'name', 'code']);
 
         return response()->json($bays);
     }
