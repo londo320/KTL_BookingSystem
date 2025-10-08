@@ -165,40 +165,66 @@ document.getElementById('departureModal').addEventListener('click', function(e) 
 });
 
 // Form submission
-document.getElementById('departureForm').addEventListener('submit', function(e) {
-  e.preventDefault();
-  
-  // Quick validation
-  const scenario = document.querySelector('input[name="departure_scenario"]:checked');
-  
-  if (!scenario) {
-    alert('Please select what happened with the vehicle');
-    return;
-  }
-  
-  // Submit form
-  const formData = new FormData(this);
-  
-  fetch(this.action, {
-    method: 'POST',
-    body: formData,
-    headers: {
-      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+const departureForm = document.getElementById('departureForm');
+if (departureForm) {
+  console.log('✅ Departure form found, attaching submit listener');
+
+  departureForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    console.log('🚀 Form submit triggered');
+    console.log('📍 Form action:', this.action);
+
+    // Quick validation
+    const scenario = document.querySelector('input[name="departure_scenario"]:checked');
+
+    if (!scenario) {
+      alert('Please select what happened with the vehicle');
+      return;
     }
-  })
-  .then(response => {
-    if (response.ok) {
-      closeDepartureModal();
-      showNotification('✅ Vehicle departure recorded', 'success');
-      // Refresh the page to show updated status
-      setTimeout(() => window.location.reload(), 1000);
-    } else {
-      throw new Error('Failed to process departure');
+
+    console.log('✓ Selected scenario:', scenario.value);
+
+    // Submit form
+    const formData = new FormData(this);
+
+    console.log('📦 Form data being sent:');
+    for (let [key, value] of formData.entries()) {
+      console.log(`  ${key}: ${value}`);
     }
-  })
-  .catch(error => {
-    console.error('Departure processing failed:', error);
-    showNotification('❌ Failed to process departure', 'error');
+
+    console.log('🌐 Sending fetch request to:', this.action);
+
+    fetch(this.action, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      }
+    })
+    .then(response => {
+      console.log('📥 Response received:', response.status, response.statusText);
+
+      if (response.ok) {
+        console.log('✅ Success! Closing modal and reloading...');
+        closeDepartureModal();
+        showNotification('✅ Vehicle departure recorded', 'success');
+        // Refresh the page to show updated status
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        console.error('❌ Response not OK:', response.status);
+        return response.text().then(text => {
+          console.error('Error response body:', text);
+          throw new Error('Failed to process departure: ' + response.status);
+        });
+      }
+    })
+    .catch(error => {
+      console.error('❌ Departure processing failed:', error);
+      showNotification('❌ Failed to process departure', 'error');
+    });
   });
-});
+} else {
+  console.error('❌ CRITICAL: Departure form element not found!');
+}
 </script>

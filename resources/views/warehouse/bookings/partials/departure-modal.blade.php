@@ -117,7 +117,7 @@ function openDepartureModal(bookingId, bookingRef, customer, vehicleReg, current
   // Update form action - determine correct prefix and route type
   let routePrefix = '/admin'; // default
   let routeSuffix = '/departure';
-  
+
   if (window.location.pathname.includes('/app/')) {
     routePrefix = '/app';
   } else if (window.location.pathname.includes('/depot-admin/')) {
@@ -125,13 +125,15 @@ function openDepartureModal(bookingId, bookingRef, customer, vehicleReg, current
   } else if (window.location.pathname.includes('/admin/')) {
     routePrefix = '/admin';
   }
-  
+
   // Check if this is a factory booking workflow
   if (window.location.pathname.includes('factory-booking-workflow')) {
     document.getElementById('departureForm').action = `${routePrefix}/factory-booking-workflow/${bookingId}/trailer-depart`;
   } else {
     document.getElementById('departureForm').action = `${routePrefix}/bookings/${bookingId}/departure`;
   }
+
+  console.log('Departure form action set to:', document.getElementById('departureForm').action);
 
   // Update departure time display
   updateDepartureTime();
@@ -173,69 +175,71 @@ document.getElementById('departureModal').addEventListener('click', function(e) 
 });
 
 // Form submission with better error handling
-document.addEventListener('DOMContentLoaded', function() {
-  const form = document.getElementById('departureForm');
-  if (form) {
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      console.log('Form submit triggered');
-      console.log('Form action:', this.action);
-      
-      // Quick validation
-      const scenario = document.querySelector('input[name="departure_scenario"]:checked');
-      
-      if (!scenario) {
-        alert('Please select what happened with the vehicle');
-        return;
+// Note: DOMContentLoaded not needed as script runs after modal is in DOM
+const departureForm = document.getElementById('departureForm');
+if (departureForm) {
+  console.log('Departure form found, attaching event listener');
+  departureForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    console.log('Form submit triggered');
+    console.log('Form action:', this.action);
+
+    // Quick validation
+    const scenario = document.querySelector('input[name="departure_scenario"]:checked');
+
+    if (!scenario) {
+      alert('Please select what happened with the vehicle');
+      return;
+    }
+
+    console.log('Selected scenario:', scenario.value);
+
+    // Disable submit button to prevent double submission
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '🔄 Processing...';
+
+    // Submit form
+    const formData = new FormData(this);
+    console.log('Form data entries:');
+    for (let [key, value] of formData.entries()) {
+      console.log(key, value);
+    }
+
+    fetch(this.action, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
       }
-      
-      console.log('Selected scenario:', scenario.value);
-      
-      // Disable submit button to prevent double submission
-      const submitBtn = this.querySelector('button[type="submit"]');
-      const originalText = submitBtn.innerHTML;
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = '🔄 Processing...';
-      
-      // Submit form
-      const formData = new FormData(this);
-      console.log('Form data entries:');
-      for (let [key, value] of formData.entries()) {
-        console.log(key, value);
+    })
+    .then(response => {
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
+      if (response.ok) {
+        closeDepartureModal();
+        alert('✅ Vehicle departure recorded successfully');
+        window.location.reload();
+      } else {
+        return response.text().then(text => {
+          console.error('Response error text:', text);
+          alert('❌ Failed to process departure. Status: ' + response.status);
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalText;
+        });
       }
-      
-      fetch(this.action, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-      })
-      .then(response => {
-        console.log('Response status:', response.status);
-        console.log('Response ok:', response.ok);
-        
-        if (response.ok) {
-          closeDepartureModal();
-          alert('✅ Vehicle departure recorded successfully');
-          window.location.reload();
-        } else {
-          return response.text().then(text => {
-            console.error('Response error text:', text);
-            alert('❌ Failed to process departure. Status: ' + response.status);
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalText;
-          });
-        }
-      })
-      .catch(error => {
-        console.error('Departure processing failed:', error);
-        alert('❌ Failed to process departure: ' + error.message);
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
-      });
+    })
+    .catch(error => {
+      console.error('Departure processing failed:', error);
+      alert('❌ Failed to process departure: ' + error.message);
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalText;
     });
-  }
-});
+  });
+} else {
+  console.error('Departure form not found!');
+}
 </script>

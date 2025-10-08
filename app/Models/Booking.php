@@ -399,6 +399,9 @@ class Booking extends Model
             return false; // Already cancelled
         }
 
+        // Release occupied slots
+        $this->occupiedSlots()->detach();
+
         \App\Models\BookingHistory::recordAction($this, 'cancelled', $reason, $this->slot);
 
         return $this->update([
@@ -680,7 +683,7 @@ class Booking extends Model
     {
         $movement = $this->getOrCreateMovement();
 
-        if (! in_array($movement->current_status, ['empty', 'at_bay', 'in_parking'])) {
+        if (! in_array($movement->current_status, ['empty', 'at_bay', 'in_parking', 'back_to_parking', 'trailer_collected'])) {
             return false;
         }
 
@@ -698,10 +701,10 @@ class Booking extends Model
             if ($trailerLeftOnSite) {
                 // Unit departed, trailer dropped on site
                 $newStatus = $movement->custom_fields['trailer_status'] === 'empty_available' ? 'empty' : 'in_parking';
-                
+
                 $movement->update([
                     'current_status' => $newStatus,
-                    'actual_departure' => $departureTime,
+                    // actual_departure stays NULL - trailer still on site
                     // trailer_collected_at stays NULL - trailer still on site
                     'operation_notes' => $notes ? ($movement->operation_notes ? $movement->operation_notes."\n".$notes : $notes) : $movement->operation_notes,
                 ]);

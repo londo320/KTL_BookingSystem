@@ -288,27 +288,42 @@ class FactoryBookingWorkflowController extends Controller
         ]);
 
         $movement = $factoryBooking->getOrCreateMovement();
-        
+
         // Build operation notes
         $operationNotes = $movement->operation_notes ?: '';
-        $scenarioText = $request->departure_scenario === 'completed_with_trailer' 
-            ? 'Departed with trailer' 
-            : 'Departed - trailer dropped';
-        
+        $trailerLeftOnSite = $request->departure_scenario === 'completed_dropped_trailer';
+        $scenarioText = $trailerLeftOnSite
+            ? 'Departed - trailer dropped'
+            : 'Departed with trailer';
+
         if ($request->departure_notes) {
             $operationNotes .= ($operationNotes ? "\n" : '') . $scenarioText . ': ' . $request->departure_notes;
         } else {
             $operationNotes .= ($operationNotes ? "\n" : '') . $scenarioText;
         }
-        
-        $movement->update([
-            'current_status' => 'departed',
-            'departed_at' => now(),
-            'operation_notes' => $operationNotes,
-        ]);
+
+        // Determine status based on whether trailer is dropped
+        if ($trailerLeftOnSite) {
+            // Unit departed, trailer dropped on site
+            $newStatus = $movement->unloading_completed_at ? 'empty' : 'in_parking';
+
+            $movement->update([
+                'current_status' => $newStatus,
+                // actual_departure stays NULL - trailer still on site
+                'operation_notes' => $operationNotes,
+            ]);
+        } else {
+            // Unit and trailer departed together
+            $movement->update([
+                'current_status' => 'departed',
+                'actual_departure' => now(),
+                'trailer_collected_at' => now(),
+                'operation_notes' => $operationNotes,
+            ]);
+        }
 
         $factoryBooking->update([
-            'status' => 'departed', 
+            'status' => $trailerLeftOnSite ? 'completed' : 'departed',
             'departed_at' => now()
         ]);
 

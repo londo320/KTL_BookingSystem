@@ -834,7 +834,9 @@ class BookingController extends Controller
         } elseif ($status === 'confirmed') {
             $query->where('status', 'confirmed');
         } elseif ($status === 'in_progress') {
-            $query->whereNotNull('arrived_at')->whereNull('trailer_collected_at');
+            $query->whereNotNull('arrived_at')->whereDoesntHave('movements', function ($q) {
+                $q->whereNotNull('trailer_collected_at');
+            });
         }
         // For 'all' status, don't add any additional filter
 
@@ -1417,6 +1419,9 @@ class BookingController extends Controller
 
     public function destroy(Request $request, Booking $booking)
     {
+        // Release occupied slots before deleting
+        $booking->occupiedSlots()->detach();
+
         $booking->delete();
 
         return $this->redirectWithFilters($request, 'Booking deleted.');
@@ -1698,7 +1703,10 @@ class BookingController extends Controller
 
         // TIPPING WORKFLOW ENFORCEMENT
         // Check if tipping is required and has been completed
-        if ($this->isTippingRequired($booking) && ! $this->isTippingCompleted($booking)) {
+        // ONLY for scenarios where vehicle leaves WITH trailer (not dropped trailers)
+        $leavingWithTrailer = in_array($validated['departure_scenario'], ['completed_with_trailer']);
+
+        if ($leavingWithTrailer && $this->isTippingRequired($booking) && ! $this->isTippingCompleted($booking)) {
             // Allow emergency departures but warn
             if ($validated['departure_scenario'] === 'emergency_departure') {
                 // Emergency departure allowed - log warning
@@ -1708,9 +1716,9 @@ class BookingController extends Controller
                     'Emergency departure authorized without tipping completion - requires follow-up'
                 );
             } else {
-                // Standard departures require tipping completion
+                // Standard departures WITH trailer require tipping completion
                 return back()->withErrors([
-                    'tipping' => 'Vehicle cannot depart - tipping process must be completed first. Use emergency departure if absolutely necessary.',
+                    'tipping' => 'Vehicle cannot depart with trailer - tipping process must be completed first. Use emergency departure if absolutely necessary.',
                 ])->withInput();
             }
         }

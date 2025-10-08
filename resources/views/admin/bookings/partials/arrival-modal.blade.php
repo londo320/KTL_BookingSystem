@@ -204,10 +204,13 @@ function openArrivalModal(bookingId, bookingRef, customer, depot, scheduledTime,
   
   // Focus on vehicle registration if empty, otherwise carrier
   setTimeout(() => {
-    if (!vehicleReg) {
-      document.getElementById('vehicleRegistration').focus();
-    } else {
-      document.getElementById('carrierCompany').focus();
+    const vehicleRegInput = document.getElementById('vehicleRegistration');
+    const carrierInput = document.getElementById('carrierCompany');
+
+    if (!vehicleReg && vehicleRegInput) {
+      vehicleRegInput.focus();
+    } else if (carrierInput) {
+      carrierInput.focus();
     }
   }, 100);
 }
@@ -262,13 +265,15 @@ document.getElementById('arrivalForm').addEventListener('submit', function(e) {
   
   if (!vehicleReg) {
     alert('Vehicle registration is required');
-    document.getElementById('vehicleRegistration').focus();
+    const vehicleRegInput = document.getElementById('vehicleRegistration');
+    if (vehicleRegInput) vehicleRegInput.focus();
     return;
   }
-  
+
   if (!carrier) {
     alert('Carrier company is required');
-    document.getElementById('carrierCompany').focus();
+    const carrierInput = document.getElementById('carrierCompany');
+    if (carrierInput) carrierInput.focus();
     return;
   }
   

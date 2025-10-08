@@ -639,7 +639,9 @@ class BookingController extends Controller
         } elseif ($status === 'confirmed') {
             $query->where('status', 'confirmed');
         } elseif ($status === 'in_progress') {
-            $query->whereNotNull('arrived_at')->whereNull('trailer_collected_at');
+            $query->whereNotNull('arrived_at')->whereDoesntHave('movements', function ($q) {
+                $q->whereNotNull('trailer_collected_at');
+            });
         }
         // For 'all' status, don't add any additional filter
 
@@ -1160,6 +1162,9 @@ class BookingController extends Controller
 
     public function destroy(Request $request, Booking $booking)
     {
+        // Release occupied slots before deleting
+        $booking->occupiedSlots()->detach();
+
         $booking->delete();
 
         return $this->redirectWithFilters($request, 'Booking deleted.');

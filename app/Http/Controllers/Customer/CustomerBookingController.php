@@ -938,6 +938,9 @@ class CustomerBookingController extends Controller
 
         try {
             DB::transaction(function () use ($booking, $request) {
+                // Release occupied slots
+                $booking->occupiedSlots()->detach();
+
                 // Mark booking as cancelled
                 $booking->update([
                     'cancelled_at' => now(),
