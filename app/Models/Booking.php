@@ -774,10 +774,14 @@ class Booking extends Model
             }
 
             // Note: trailer_collected_at is tracked in movements table, just update booking status
-            $this->update([
-                'status' => 'completed',
-                'departure_vehicle_registration' => $collectionVehicle,
-            ]);
+            $updateData = ['status' => 'completed'];
+
+            // Only set departure_vehicle_registration if the column exists in the database
+            if (\Schema::hasColumn('bookings', 'departure_vehicle_registration')) {
+                $updateData['departure_vehicle_registration'] = $collectionVehicle;
+            }
+
+            $this->update($updateData);
         });
 
         BookingHistory::recordAction(

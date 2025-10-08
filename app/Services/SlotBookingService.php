@@ -53,7 +53,18 @@ class SlotBookingService
                 ->where('released_at', '<=', now())
                 ->first();
 
+            \Log::info('Looking for next slot', [
+                'iteration' => $i,
+                'depot_id' => $depotId,
+                'looking_for_start_at' => $currentSlotEnd->toDateTimeString(),
+                'found' => $nextSlot ? 'yes' : 'no',
+            ]);
+
             if (!$nextSlot) {
+                // Debug: Show what slots exist
+                $allSlots = Slot::where('depot_id', $depotId)->get(['id', 'start_at', 'end_at', 'released_at']);
+                \Log::info('All slots in depot', ['slots' => $allSlots->toArray()]);
+
                 return [
                     'can_book' => false,
                     'slots' => collect(),

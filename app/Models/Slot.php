@@ -16,6 +16,8 @@ class Slot extends Model
         'end_at',
         'capacity',
         'is_blocked',
+        'released_at',
+        'locked_at',
     ];
 
     protected $casts = [
