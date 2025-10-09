@@ -93,7 +93,8 @@ class WarehouseController extends Controller
         $todaysBookingsQuery = Booking::whereHas('slot', function ($q) use ($allowedDepotIds, $today, $tomorrow) {
             $q->whereIn('depot_id', $allowedDepotIds)
                 ->whereBetween('start_at', [$today, $tomorrow]);
-        });
+        })
+        ->whereNull('cancelled_at');
 
         if ($allowedCustomerIds !== null) {
             $todaysBookingsQuery->whereIn('customer_id', $allowedCustomerIds)->whereNotNull('customer_id');
@@ -106,6 +107,7 @@ class WarehouseController extends Controller
             $q->whereIn('depot_id', $allowedDepotIds);
         })
             ->whereNotNull('arrived_at')
+            ->whereNull('cancelled_at')
             ->whereDoesntHave('movements', function ($q) {
                 $q->whereNotNull('trailer_collected_at'); // Simple: if trailer collected, not on site
             });
@@ -134,6 +136,7 @@ class WarehouseController extends Controller
         })
             ->whereNotNull('arrived_at')
             ->whereNotNull('departed_at')        // Unit has departed
+            ->whereNull('cancelled_at')
             ->whereDoesntHave('movements', function ($q) {
                 $q->whereNotNull('trailer_collected_at'); // But trailer not collected yet
             });
@@ -147,7 +150,9 @@ class WarehouseController extends Controller
         // Today's arrivals
         $todaysArrivalsQuery = Booking::whereHas('slot', function ($q) use ($allowedDepotIds) {
             $q->whereIn('depot_id', $allowedDepotIds);
-        })->whereDate('arrived_at', $today);
+        })
+        ->whereDate('arrived_at', $today)
+        ->whereNull('cancelled_at');
 
         if ($allowedCustomerIds !== null) {
             $todaysArrivalsQuery->whereIn('customer_id', $allowedCustomerIds)->whereNotNull('customer_id');
@@ -159,7 +164,9 @@ class WarehouseController extends Controller
         $lateRunnersQuery = Booking::whereHas('slot', function ($q) use ($allowedDepotIds) {
             $q->whereIn('depot_id', $allowedDepotIds)
                 ->where('start_at', '<', now());
-        })->whereNull('arrived_at');
+        })
+        ->whereNull('arrived_at')
+        ->whereNull('cancelled_at');
 
         if ($allowedCustomerIds !== null) {
             $lateRunnersQuery->whereIn('customer_id', $allowedCustomerIds)->whereNotNull('customer_id');
@@ -172,6 +179,7 @@ class WarehouseController extends Controller
             $q->whereIn('depot_id', $allowedDepotIds);
         })
         ->whereNotNull('arrived_at')
+        ->whereNull('cancelled_at')
         ->whereHas('movements', function ($q) {
             $q->where('current_status', 'empty')
               ->whereNotNull('unloading_completed_at')
@@ -201,15 +209,16 @@ class WarehouseController extends Controller
         $droppedTrailersQuery = Booking::whereHas('slot', function ($q) use ($allowedDepotIds) {
             $q->whereIn('depot_id', $allowedDepotIds);
         })
+        ->whereNull('cancelled_at')
         ->whereHas('movements', function ($q) {
             $q->whereIn('current_status', ['in_parking', 'empty'])
               ->whereNotNull('unloading_completed_at');
         });
-        
+
         if ($allowedCustomerIds !== null) {
             $droppedTrailersQuery->whereIn('customer_id', $allowedCustomerIds)->whereNotNull('customer_id');
         }
-        
+
         $droppedTrailers = $droppedTrailersQuery->count();
 
         $stats = [
@@ -227,7 +236,9 @@ class WarehouseController extends Controller
         $upcomingBookingsQuery = Booking::whereHas('slot', function ($q) use ($allowedDepotIds) {
             $q->whereIn('depot_id', $allowedDepotIds)
                 ->whereBetween('start_at', [now(), now()->addHours(3)]);
-        })->whereNull('arrived_at');
+        })
+        ->whereNull('arrived_at')
+        ->whereNull('cancelled_at');
 
         if ($allowedCustomerIds !== null) {
             $upcomingBookingsQuery->whereIn('customer_id', $allowedCustomerIds)->whereNotNull('customer_id');
@@ -245,6 +256,7 @@ class WarehouseController extends Controller
             $q->whereIn('depot_id', $allowedDepotIds);
         })
             ->whereNotNull('arrived_at')
+            ->whereNull('cancelled_at')
             ->whereDoesntHave('movements', function ($q) {
                 $q->whereNotNull('trailer_collected_at'); // Simple: if trailer collected, not on site
             });
@@ -296,7 +308,9 @@ class WarehouseController extends Controller
         $lateRunnersDataQuery = Booking::whereHas('slot', function ($q) use ($allowedDepotIds) {
             $q->whereIn('depot_id', $allowedDepotIds)
                 ->where('start_at', '<', now());
-        })->whereNull('arrived_at');
+        })
+        ->whereNull('arrived_at')
+        ->whereNull('cancelled_at');
 
         if ($allowedCustomerIds !== null) {
             $lateRunnersDataQuery->whereIn('customer_id', $allowedCustomerIds)->whereNotNull('customer_id');
