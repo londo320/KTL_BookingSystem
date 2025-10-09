@@ -80,44 +80,44 @@
         @error('booking_type_id')<p class="text-red-600 text-sm">{{ $message }}</p>@enderror
       </div>
 
-      {{-- Carrier Company --}}
+      {{-- Haulier --}}
       <div>
-        <label class="block text-sm font-medium text-blue-800">Carrier Company <span class="text-red-500">*</span></label>
+        <label class="block text-sm font-medium text-blue-800">Haulier <span class="text-red-500">*</span></label>
         <div class="relative">
-          <input type="text" 
-                 id="admin-carrier-search" 
+          <input type="text"
+                 id="admin-carrier-search"
                  name="carrier_name"
                  value="{{ old('carrier_name', $booking->carrier?->name ?? $booking->carrier_company) }}"
-                 placeholder="Search or type carrier name..."
+                 placeholder="Search or type haulier name..."
                  required
                  autocomplete="off"
                  class="mt-1 block w-full border-blue-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10">
-          
+
           {{-- Hidden carrier_id field --}}
-          <input type="hidden" 
-                 id="admin-carrier-id" 
-                 name="carrier_id" 
+          <input type="hidden"
+                 id="admin-carrier-id"
+                 name="carrier_id"
                  value="{{ old('carrier_id', $booking->carrier_id) }}">
-          
+
           {{-- Search dropdown --}}
-          <div id="admin-carrier-dropdown" 
+          <div id="admin-carrier-dropdown"
                class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
             {{-- Results will be populated by JavaScript --}}
           </div>
-          
+
           {{-- Status indicators --}}
           <div class="absolute inset-y-0 right-0 flex items-center pr-3">
             <span id="admin-carrier-status" class="text-xs"></span>
           </div>
         </div>
-        
+
         <div class="mt-2">
           <a href="{{ route('app.carriers.create') }}" target="_blank"
              class="text-xs text-blue-600 hover:text-blue-800 underline">
-            🏢 Manage carriers
+            🚚 Manage hauliers
           </a>
         </div>
-        
+
         @error('carrier_id')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
         @error('carrier_name')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
       </div>
@@ -176,18 +176,6 @@
                placeholder="Enter supplier name..."
                class="mt-1 block w-full border-gray-300 rounded-lg">
         @error('supplier')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
-      </div>
-
-      {{-- Haulier --}}
-      <div>
-        <label class="block text-sm font-medium text-gray-600">Haulier</label>
-        <input type="text"
-               id="admin-haulier-input"
-               name="haulier"
-               value="{{ old('haulier', $booking->haulier) }}"
-               placeholder="Enter haulier name..."
-               class="mt-1 block w-full border-gray-300 rounded-lg">
-        @error('haulier')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
       </div>
 
       {{-- Contact Name with autocomplete --}}
@@ -592,7 +580,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const contactDropdown = document.getElementById('admin-contact-dropdown');
     const contactStatus = document.getElementById('admin-contact-status');
     const supplierInput = document.getElementById('admin-supplier-input');
-    const haulierInput = document.getElementById('admin-haulier-input');
+    const haulierInput = document.getElementById('admin-carrier-search'); // Carrier field is now Haulier
     const slotSelect = document.querySelector('select[name="slot_id"]');
 
     if (contactNameInput) {
