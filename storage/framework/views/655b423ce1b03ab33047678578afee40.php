@@ -228,6 +228,112 @@ endif;
 unset($__errorArgs, $__bag); ?>
       </div>
 
+      
+      <div>
+        <label class="block text-sm font-medium text-gray-600">Seal Number</label>
+        <input type="text" name="seal_number"
+               value="<?php echo e(old('seal_number', $booking->seal_number)); ?>"
+               placeholder="e.g., SEAL123456"
+               class="mt-1 block w-full border-gray-300 rounded-lg">
+        <?php $__errorArgs = ['seal_number'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><p class="text-red-600 text-xs"><?php echo e($message); ?></p><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+      </div>
+
+      
+      <div>
+        <label class="block text-sm font-medium text-gray-600">Supplier</label>
+        <input type="text"
+               id="admin-supplier-input"
+               name="supplier"
+               value="<?php echo e(old('supplier', $booking->supplier)); ?>"
+               placeholder="Enter supplier name..."
+               class="mt-1 block w-full border-gray-300 rounded-lg">
+        <?php $__errorArgs = ['supplier'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><p class="text-red-600 text-xs"><?php echo e($message); ?></p><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+      </div>
+
+      
+      <div>
+        <label class="block text-sm font-medium text-gray-600">Haulier</label>
+        <input type="text"
+               id="admin-haulier-input"
+               name="haulier"
+               value="<?php echo e(old('haulier', $booking->haulier)); ?>"
+               placeholder="Enter haulier name..."
+               class="mt-1 block w-full border-gray-300 rounded-lg">
+        <?php $__errorArgs = ['haulier'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><p class="text-red-600 text-xs"><?php echo e($message); ?></p><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+      </div>
+
+      
+      <div>
+        <label class="block text-sm font-medium text-gray-600">Contact Name</label>
+        <div class="relative">
+          <input type="text"
+                 id="admin-contact-name-input"
+                 name="contact_name"
+                 value="<?php echo e(old('contact_name', $booking->contact_name)); ?>"
+                 placeholder="Search or type contact name..."
+                 autocomplete="off"
+                 class="mt-1 block w-full border-gray-300 rounded-lg pr-10">
+
+          
+          <div id="admin-contact-dropdown"
+               class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+            
+          </div>
+
+          
+          <div class="absolute inset-y-0 right-0 flex items-center pr-3 mt-1">
+            <span id="admin-contact-status" class="text-xs"></span>
+          </div>
+        </div>
+        <?php $__errorArgs = ['contact_name'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><p class="text-red-600 text-xs"><?php echo e($message); ?></p><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+      </div>
+
+      
+      <div>
+        <label class="block text-sm font-medium text-gray-600">Contact Phone</label>
+        <input type="text"
+               id="admin-contact-phone-input"
+               name="contact_phone"
+               value="<?php echo e(old('contact_phone', $booking->contact_phone)); ?>"
+               placeholder="e.g., 07123456789"
+               class="mt-1 block w-full border-gray-300 rounded-lg">
+        <?php $__errorArgs = ['contact_phone'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><p class="text-red-600 text-xs"><?php echo e($message); ?></p><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+      </div>
 
       
       <div>

@@ -474,7 +474,7 @@
                 </div>
               <?php endif; ?>
 
-                <?php echo e($slotStart->format('d-M H:i')); ?> → <?php echo e($booking->slot->end_at->format('d-M H:i')); ?>
+                <?php echo e($slotStart->format('d-M H:i')); ?> → <?php echo e(($booking->getScheduledEndTime() ?? $booking->slot->end_at)->format('d-M H:i')); ?>
 
               <?php endif; ?>
             </td>

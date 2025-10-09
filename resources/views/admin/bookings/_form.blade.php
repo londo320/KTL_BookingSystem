@@ -156,6 +156,77 @@
         @error('container_number')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
       </div>
 
+      {{-- Seal Number --}}
+      <div>
+        <label class="block text-sm font-medium text-gray-600">Seal Number</label>
+        <input type="text" name="seal_number"
+               value="{{ old('seal_number', $booking->seal_number) }}"
+               placeholder="e.g., SEAL123456"
+               class="mt-1 block w-full border-gray-300 rounded-lg">
+        @error('seal_number')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
+      </div>
+
+      {{-- Supplier --}}
+      <div>
+        <label class="block text-sm font-medium text-gray-600">Supplier</label>
+        <input type="text"
+               id="admin-supplier-input"
+               name="supplier"
+               value="{{ old('supplier', $booking->supplier) }}"
+               placeholder="Enter supplier name..."
+               class="mt-1 block w-full border-gray-300 rounded-lg">
+        @error('supplier')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
+      </div>
+
+      {{-- Haulier --}}
+      <div>
+        <label class="block text-sm font-medium text-gray-600">Haulier</label>
+        <input type="text"
+               id="admin-haulier-input"
+               name="haulier"
+               value="{{ old('haulier', $booking->haulier) }}"
+               placeholder="Enter haulier name..."
+               class="mt-1 block w-full border-gray-300 rounded-lg">
+        @error('haulier')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
+      </div>
+
+      {{-- Contact Name with autocomplete --}}
+      <div>
+        <label class="block text-sm font-medium text-gray-600">Contact Name</label>
+        <div class="relative">
+          <input type="text"
+                 id="admin-contact-name-input"
+                 name="contact_name"
+                 value="{{ old('contact_name', $booking->contact_name) }}"
+                 placeholder="Search or type contact name..."
+                 autocomplete="off"
+                 class="mt-1 block w-full border-gray-300 rounded-lg pr-10">
+
+          {{-- Search dropdown --}}
+          <div id="admin-contact-dropdown"
+               class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+            {{-- Results will be populated by JavaScript --}}
+          </div>
+
+          {{-- Status indicator --}}
+          <div class="absolute inset-y-0 right-0 flex items-center pr-3 mt-1">
+            <span id="admin-contact-status" class="text-xs"></span>
+          </div>
+        </div>
+        @error('contact_name')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
+      </div>
+
+      {{-- Contact Phone --}}
+      <div>
+        <label class="block text-sm font-medium text-gray-600">Contact Phone</label>
+        <input type="text"
+               id="admin-contact-phone-input"
+               name="contact_phone"
+               value="{{ old('contact_phone', $booking->contact_phone) }}"
+               placeholder="e.g., 07123456789"
+               class="mt-1 block w-full border-gray-300 rounded-lg">
+        @error('contact_phone')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
+      </div>
 
       {{-- Trailer Type --}}
       <div>
@@ -512,5 +583,164 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initial status update
     updateStatus();
+
+    // ============================================
+    // Contact Name Autocomplete with Phone Lookup
+    // ============================================
+    const contactNameInput = document.getElementById('admin-contact-name-input');
+    const contactPhoneInput = document.getElementById('admin-contact-phone-input');
+    const contactDropdown = document.getElementById('admin-contact-dropdown');
+    const contactStatus = document.getElementById('admin-contact-status');
+    const supplierInput = document.getElementById('admin-supplier-input');
+    const haulierInput = document.getElementById('admin-haulier-input');
+    const slotSelect = document.querySelector('select[name="slot_id"]');
+
+    if (contactNameInput) {
+        let contactSearchTimeout;
+
+        // Search contacts as user types
+        contactNameInput.addEventListener('input', function() {
+            const query = this.value.trim();
+
+            clearTimeout(contactSearchTimeout);
+
+            if (query.length < 2) {
+                contactDropdown.classList.add('hidden');
+                return;
+            }
+
+            contactStatus.textContent = '⏳';
+            contactStatus.className = 'text-xs text-gray-400';
+
+            contactSearchTimeout = setTimeout(() => {
+                searchContacts(query);
+            }, 300);
+        });
+
+        // Search contacts via API
+        function searchContacts(query) {
+            const depot_id = slotSelect?.value ? getDepotFromSlot(slotSelect.value) : null;
+            const supplier = supplierInput?.value || '';
+            const haulier = haulierInput?.value || '';
+
+            const params = new URLSearchParams({
+                query: query,
+                ...(depot_id && { depot_id }),
+                ...(supplier && { supplier }),
+                ...(haulier && { haulier })
+            });
+
+            fetch(`{{ route('api.contacts.search') }}?${params}`)
+                .then(response => response.json())
+                .then(contacts => {
+                    populateContactDropdown(contacts);
+                    contactStatus.textContent = '';
+                })
+                .catch(error => {
+                    console.error('Contact search failed:', error);
+                    contactDropdown.classList.add('hidden');
+                    contactStatus.textContent = '';
+                });
+        }
+
+        // Populate contact dropdown
+        function populateContactDropdown(contacts) {
+            contactDropdown.innerHTML = '';
+
+            if (contacts.length === 0) {
+                contactDropdown.classList.add('hidden');
+                return;
+            }
+
+            contacts.forEach(contact => {
+                const item = document.createElement('div');
+                item.className = 'px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100';
+                item.innerHTML = `
+                    <div class="font-medium text-gray-900">${contact.name}</div>
+                    <div class="text-xs text-gray-600">${contact.phone}</div>
+                    ${contact.supplier || contact.haulier ? `
+                        <div class="text-xs text-gray-500">
+                            ${contact.supplier ? 'Supplier: ' + contact.supplier : ''}
+                            ${contact.haulier ? ' Haulier: ' + contact.haulier : ''}
+                        </div>
+                    ` : ''}
+                `;
+                item.onclick = () => selectContact(contact);
+                contactDropdown.appendChild(item);
+            });
+
+            contactDropdown.classList.remove('hidden');
+        }
+
+        // Select a contact from dropdown
+        function selectContact(contact) {
+            contactNameInput.value = contact.name;
+            contactPhoneInput.value = contact.phone;
+
+            // Optionally fill supplier/haulier if they're empty
+            if (!supplierInput.value && contact.supplier) {
+                supplierInput.value = contact.supplier;
+            }
+            if (!haulierInput.value && contact.haulier) {
+                haulierInput.value = contact.haulier;
+            }
+
+            contactDropdown.classList.add('hidden');
+            contactStatus.textContent = '✓';
+            contactStatus.className = 'text-xs text-green-600';
+        }
+
+        // Lookup phone when contact name loses focus
+        contactNameInput.addEventListener('blur', function() {
+            setTimeout(() => {
+                if (this.value.trim() && !contactPhoneInput.value) {
+                    lookupContactPhone(this.value.trim());
+                }
+                contactDropdown.classList.add('hidden');
+            }, 200);
+        });
+
+        // Lookup contact phone by name
+        function lookupContactPhone(name) {
+            const depot_id = slotSelect?.value ? getDepotFromSlot(slotSelect.value) : null;
+            const supplier = supplierInput?.value || '';
+            const haulier = haulierInput?.value || '';
+
+            const params = new URLSearchParams({
+                name: name,
+                ...(depot_id && { depot_id }),
+                ...(supplier && { supplier }),
+                ...(haulier && { haulier })
+            });
+
+            fetch(`{{ route('api.contacts.phone') }}?${params}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.phone) {
+                        contactPhoneInput.value = data.phone;
+                        contactStatus.textContent = '✓';
+                        contactStatus.className = 'text-xs text-green-600';
+                        contactStatus.title = 'Phone number found';
+                    }
+                })
+                .catch(error => {
+                    console.error('Phone lookup failed:', error);
+                });
+        }
+
+        // Helper function to extract depot ID from slot select
+        function getDepotFromSlot(slotId) {
+            // This would need to be implemented based on your slot data structure
+            // For now, we'll return null and rely on supplier/haulier filtering
+            return null;
+        }
+
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!contactNameInput.contains(e.target) && !contactDropdown.contains(e.target)) {
+                contactDropdown.classList.add('hidden');
+            }
+        });
+    }
 });
 </script>

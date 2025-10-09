@@ -119,6 +119,8 @@ Route::middleware('auth')->group(function () {
     Route::get('api/carriers/search', [CarrierController::class, 'search'])->name('api.carriers.search');
     Route::post('api/carriers/quick-create', [CarrierController::class, 'quickCreate'])->name('api.carriers.quick-create');
     Route::get('api/products/search', [ProductController::class, 'search'])->name('api.products.search');
+    Route::get('api/contacts/search', [\App\Http\Controllers\Api\ContactLookupController::class, 'search'])->name('api.contacts.search');
+    Route::get('api/contacts/phone', [\App\Http\Controllers\Api\ContactLookupController::class, 'getPhone'])->name('api.contacts.phone');
 
     /**
      * ───── Main Application Routes (Unified Function-Based Access) ─────

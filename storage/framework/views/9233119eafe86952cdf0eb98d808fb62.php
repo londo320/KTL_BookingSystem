@@ -190,7 +190,7 @@
                 <?php endif; ?>
                 
                 <?php echo e(\Carbon\Carbon::parse($booking->slot->start_at)->format('d-M H:i')); ?> →
-                <?php echo e(\Carbon\Carbon::parse($booking->slot->end_at)->format('d-M H:i')); ?>
+                <?php echo e(($booking->getScheduledEndTime() ?? $booking->slot->end_at)->format('d-M H:i')); ?>
 
               </td>
               <td class="px-4 py-2"><?php echo e(optional($booking->bookingType)->name ?? '-'); ?></td>

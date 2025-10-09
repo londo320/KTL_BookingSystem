@@ -88,7 +88,7 @@
 <td class="px-4 py-2"><?php echo e(\Carbon\Carbon::parse($slot->start_at)->format('d-M H:i')); ?></td>
 <td class="px-4 py-2"><?php echo e(\Carbon\Carbon::parse($slot->end_at)->format('d-M H:i')); ?></td>
             <td class="px-4 py-2"><?php echo e($slot->capacity); ?></td>
-            <td class="px-4 py-2"><?php echo e($slot->bookings_count); ?> / <?php echo e($slot->capacity); ?></td>
+            <td class="px-4 py-2"><?php echo e($slot->occupying_bookings_count); ?> / <?php echo e($slot->capacity); ?></td>
             <td class="px-4 py-2 space-x-2">
               <?php $canTakeAction = $slot->depot_id == $defaultDepotId; ?>
               <?php if($canTakeAction): ?>

@@ -12,8 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Add 'factory_delivery' to the movement_type ENUM
-        DB::statement("ALTER TABLE movements MODIFY COLUMN movement_type ENUM('inbound_booked','inbound_unbooked','outbound','internal_transfer','factory_delivery')");
+        // SQLite doesn't support MODIFY COLUMN with ENUM
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            // Add 'factory_delivery' to the movement_type ENUM
+            DB::statement("ALTER TABLE movements MODIFY COLUMN movement_type ENUM('inbound_booked','inbound_unbooked','outbound','internal_transfer','factory_delivery')");
+        }
     }
 
     /**
@@ -21,7 +24,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Remove 'factory_delivery' from the movement_type ENUM
-        DB::statement("ALTER TABLE movements MODIFY COLUMN movement_type ENUM('inbound_booked','inbound_unbooked','outbound','internal_transfer')");
+        // SQLite doesn't support MODIFY COLUMN with ENUM
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            // Remove 'factory_delivery' from the movement_type ENUM
+            DB::statement("ALTER TABLE movements MODIFY COLUMN movement_type ENUM('inbound_booked','inbound_unbooked','outbound','internal_transfer')");
+        }
     }
 };
