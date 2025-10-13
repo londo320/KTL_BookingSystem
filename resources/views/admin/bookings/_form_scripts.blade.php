@@ -427,7 +427,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Search contacts via API
         function searchContacts(query) {
             const depot_id = slotSelect?.value ? getDepotFromSlot(slotSelect.value) : null;
-            const supplier = supplierInput?.value || '';
+            const supplier = contactSupplierInput?.value || '';
             const haulier = haulierInput?.value || '';
 
             const params = new URLSearchParams({
@@ -510,7 +510,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Lookup contact phone by name
         function lookupContactPhone(name) {
             const depot_id = slotSelect?.value ? getDepotFromSlot(slotSelect.value) : null;
-            const supplier = supplierInput?.value || '';
+            const supplier = contactSupplierInput?.value || '';
             const haulier = haulierInput?.value || '';
 
             const params = new URLSearchParams({
