@@ -233,7 +233,7 @@
                                         <!-- SKU and Description Row -->
                                         <div class="grid grid-cols-12 gap-2 mb-3">
                                             <!-- SKU -->
-                                            <div class="col-span-3 relative">
+                                            <div class="col-span-2 relative">
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">SKU *</label>
                                                 <input type="text" x-model="line.sku"
                                                        :id="`sku-input-${poIndex}-${lineIndex}`"
@@ -263,7 +263,7 @@
                                             </div>
 
                                             <!-- Description -->
-                                            <div class="col-span-9">
+                                            <div class="col-span-10">
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
                                                 <input type="text" x-model="line.description"
                                                        :name="`po_numbers[${poIndex}][lines][${lineIndex}][description]`"

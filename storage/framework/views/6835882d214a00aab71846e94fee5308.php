@@ -258,6 +258,50 @@ unset($__defined_vars, $__key, $__value); ?>
                                             <?php endif; ?>
                                         </div>
                                     <?php else: ?>
+                                        <!-- SKU and Description Row -->
+                                        <div class="grid grid-cols-12 gap-2 mb-3">
+                                            <!-- SKU -->
+                                            <div class="col-span-3 relative">
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">SKU *</label>
+                                                <input type="text" x-model="line.sku"
+                                                       :id="`sku-input-${poIndex}-${lineIndex}`"
+                                                       :name="`po_numbers[${poIndex}][lines][${lineIndex}][sku]`"
+                                                       @input="searchProducts(poIndex, lineIndex, $event.target.value); line.product_id = null;"
+                                                       placeholder="SKU123"
+                                                       autocomplete="off"
+                                                       class="block w-full border-gray-300 rounded text-xs <?php echo e($readonly ? 'bg-gray-100' : ''); ?>"
+                                                       <?php echo e($readonly ? 'readonly' : ''); ?> required>
+                                                <div x-show="showSkuDropdown[`${poIndex}-${lineIndex}`]"
+                                                     x-ref="skuDropdown"
+                                                     @click.away="showSkuDropdown[`${poIndex}-${lineIndex}`] = false"
+                                                     class="absolute z-10 w-96 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                                    <template x-for="product in skuSearchResults[`${poIndex}-${lineIndex}`] || []" :key="product.id">
+                                                        <button type="button"
+                                                                @click="selectProduct(poIndex, lineIndex, product)"
+                                                                class="w-full text-left px-3 py-2 hover:bg-gray-100 border-b last:border-b-0">
+                                                            <div class="font-medium text-sm" x-text="product.sku"></div>
+                                                            <div class="text-xs text-gray-600" x-text="product.description"></div>
+                                                        </button>
+                                                    </template>
+                                                    <div x-show="(skuSearchResults[`${poIndex}-${lineIndex}`] || []).length === 0 && skuSearchLoading[`${poIndex}-${lineIndex}`]"
+                                                         class="px-3 py-2 text-sm text-gray-500">
+                                                        Searching...
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Description -->
+                                            <div class="col-span-9">
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                                                <input type="text" x-model="line.description"
+                                                       :name="`po_numbers[${poIndex}][lines][${lineIndex}][description]`"
+                                                       placeholder="Product description"
+                                                       :readonly="line.product_id ? true : false"
+                                                       :class="line.product_id ? 'block w-full border-gray-300 rounded text-xs bg-gray-100' : 'block w-full border-gray-300 rounded text-xs <?php echo e($readonly ? 'bg-gray-100' : ''); ?>'"
+                                                       <?php echo e($readonly ? 'readonly' : ''); ?>>
+                                            </div>
+                                        </div>
+
                                         <div class="grid grid-cols-2 gap-4">
                                             <!-- Expected Quantities -->
                                             <div>
@@ -325,6 +369,16 @@ unset($__defined_vars, $__key, $__value); ?>
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <!-- Remove Button for Edit Layout -->
+                                        <?php if (! ($readonly)): ?>
+                                            <div class="mt-2 flex justify-end">
+                                                <button type="button" @click="removePoLine(poIndex, lineIndex)"
+                                                        class="text-red-500 hover:text-red-700 text-xs">
+                                                    Remove Line
+                                                </button>
+                                            </div>
+                                        <?php endif; ?>
                                     <?php endif; ?>
 
                                     <!-- Variance Display -->
