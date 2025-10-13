@@ -706,50 +706,27 @@ function poNumbersManager(customerId = null) {
             let totalPallets = 0;
             const palletTypes = @json($palletTypes->keyBy('id'));
 
-            // For expected quantities - check both pallet_entries and direct fields
+            // For expected quantities - use direct fields only (edit layout)
             if (type === 'expected') {
                 po.lines.forEach(line => {
-                    // Check if using pallet_entries structure (compact layout)
-                    if (line.pallet_entries && line.pallet_entries.length > 0 && line.pallet_entries[0].cases) {
-                        line.pallet_entries.forEach(entry => {
-                            const cases = parseInt(entry.cases) || 0;
-                            const pallets = parseInt(entry.pallets) || 0;
-                            const typeId = entry.type_id;
+                    const cases = parseInt(line.expected_cases) || 0;
+                    const pallets = parseInt(line.expected_pallets) || 0;
+                    const typeId = line.expected_pallet_type_id;
 
-                            totalCases += cases;
-                            totalPallets += pallets;
+                    totalCases += cases;
+                    totalPallets += pallets;
 
-                            if (pallets > 0) {
-                                if (typeId && palletTypes[typeId]) {
-                                    const typeName = palletTypes[typeId].name;
-                                    palletBreakdown[typeName] = (palletBreakdown[typeName] || 0) + pallets;
-                                } else {
-                                    palletBreakdown['Unspecified'] = (palletBreakdown['Unspecified'] || 0) + pallets;
-                                }
-                            }
-                        });
-                    }
-                    // Otherwise use direct fields (edit layout)
-                    else {
-                        const cases = parseInt(line.expected_cases) || 0;
-                        const pallets = parseInt(line.expected_pallets) || 0;
-                        const typeId = line.expected_pallet_type_id;
-
-                        totalCases += cases;
-                        totalPallets += pallets;
-
-                        if (pallets > 0) {
-                            if (typeId && palletTypes[typeId]) {
-                                const typeName = palletTypes[typeId].name;
-                                palletBreakdown[typeName] = (palletBreakdown[typeName] || 0) + pallets;
-                            } else {
-                                palletBreakdown['Unspecified'] = (palletBreakdown['Unspecified'] || 0) + pallets;
-                            }
+                    if (pallets > 0) {
+                        if (typeId && palletTypes[typeId]) {
+                            const typeName = palletTypes[typeId].name;
+                            palletBreakdown[typeName] = (palletBreakdown[typeName] || 0) + pallets;
+                        } else {
+                            palletBreakdown['Unspecified'] = (palletBreakdown['Unspecified'] || 0) + pallets;
                         }
                     }
                 });
-            } else {
-                // For actual quantities - use direct fields
+            } else if (type === 'actual') {
+                // For actual quantities - use direct fields only
                 po.lines.forEach(line => {
                     const cases = parseInt(line.actual_cases) || 0;
                     const pallets = parseInt(line.actual_pallets) || 0;
@@ -770,20 +747,24 @@ function poNumbersManager(customerId = null) {
             }
             
             const parts = [];
-            
-            if (totalCases > 0) {
-                parts.push(`<strong>${totalCases} cases</strong>`);
-            }
-            
+
             if (totalPallets > 0) {
+                parts.push(`<strong>${totalPallets} pallets</strong>`);
+            }
+
+            if (totalCases > 0) {
+                parts.push(`<strong>${totalCases} units</strong>`);
+            }
+
+            // Show pallet type breakdown if types are specified
+            if (totalPallets > 0 && Object.keys(palletBreakdown).length > 0) {
                 const palletParts = Object.entries(palletBreakdown).map(([typeName, count]) => {
                     return `${count} ${typeName}`;
                 });
-                
-                parts.push(`${palletParts.join(', ')} <em>(total: ${totalPallets} pallets)</em>`);
+                parts.push(`<em>(${palletParts.join(', ')})</em>`);
             }
-            
-            return parts.length > 0 ? parts.join('<br>') : '<em>No quantities specified</em>';
+
+            return parts.length > 0 ? parts.join(' ') : '<em>No quantities specified</em>';
         },
         
         validatePoNumbers() {
