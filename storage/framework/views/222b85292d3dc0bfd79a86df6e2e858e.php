@@ -49,6 +49,13 @@
                                         <div class="text-xs text-gray-500 mt-0.5">Streamlined with live updates</div>
                                     </a>
                                 <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('bookings.view') || auth()->user()->hasFunction('bookings.create')): ?>
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <a href="<?php echo e(route('app.bookings.bulk-upload')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 <?php echo e(request()->routeIs('app.bookings.bulk-upload') ? 'bg-indigo-50 text-indigo-600 font-medium' : ''); ?>">
+                                        📤 Bulk PO Upload
+                                        <div class="text-xs text-gray-500 mt-0.5">Upload CSV to multiple bookings</div>
+                                    </a>
+                                <?php endif; ?>
                                 <?php if(auth()->user()->hasFunction('slots.view')): ?>
                                     <div class="border-t border-gray-100 my-1"></div>
                                     <a href="<?php echo e(route('app.slots.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">

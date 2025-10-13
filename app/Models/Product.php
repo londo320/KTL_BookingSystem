@@ -10,8 +10,11 @@ class Product extends Model
     use HasFactory;
 
     protected $fillable = [
+        'customer_id',
         'sku',
         'description',
+        'product_type',
+        'cases_per_pallet',
         'default_case_count',
         'default_pallets',
     ];

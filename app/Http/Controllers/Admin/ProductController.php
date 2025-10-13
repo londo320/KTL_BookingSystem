@@ -28,15 +28,27 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'sku' => 'required|string|max:255|unique:products,sku',
+            'customer_id' => 'required|exists:customers,id',
+            'sku' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'product_type' => 'required|in:raw_material,finished_product',
+            'cases_per_pallet' => 'nullable|integer|min:1',
             'default_case_count' => 'nullable|integer|min:0',
             'default_pallets' => 'nullable|integer|min:0',
         ]);
 
+        // Check for duplicate SKU for this customer
+        $existing = Product::where('customer_id', $data['customer_id'])
+            ->where('sku', $data['sku'])
+            ->first();
+
+        if ($existing) {
+            return back()->withErrors(['sku' => 'This SKU already exists for the selected customer.'])->withInput();
+        }
+
         Product::create($data);
 
-        return redirect()->route('admin.products.index')
+        return redirect()->route('app.products.index')
             ->with('success', 'Product created successfully');
     }
 
@@ -105,7 +117,7 @@ class ProductController extends Controller
             ->orderBy('sku');
 
         $total = $productsQuery->count();
-        $products = $productsQuery->skip($offset)->take($perPage)->get(['id', 'sku', 'description', 'customer_id']);
+        $products = $productsQuery->skip($offset)->take($perPage)->get(['id', 'sku', 'description', 'customer_id', 'cases_per_pallet', 'product_type']);
 
         // Check for exact SKU match
         $exactMatch = Product::where('customer_id', $customerId)

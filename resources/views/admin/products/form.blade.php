@@ -1,39 +1,63 @@
 @csrf
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  {{-- Customer --}}
+  <div>
+    <label for="customer_id" class="block text-sm font-medium">Customer <span class="text-red-500">*</span></label>
+    <select name="customer_id" id="customer_id" required
+            class="mt-1 block w-full border rounded p-2">
+      <option value="">– Select Customer –</option>
+      @foreach(\App\Models\Customer::orderBy('name')->get() as $customer)
+        <option value="{{ $customer->id }}"
+                @selected(old('customer_id', $product->customer_id ?? '') == $customer->id)>
+          {{ $customer->name }}
+        </option>
+      @endforeach
+    </select>
+    @error('customer_id') <p class="text-red-600 text-sm">{{ $message }}</p> @enderror
+  </div>
+
   {{-- SKU --}}
   <div>
-    <label for="sku" class="block text-sm font-medium">SKU</label>
-    <input type="text" name="sku" id="sku"
+    <label for="sku" class="block text-sm font-medium">SKU <span class="text-red-500">*</span></label>
+    <input type="text" name="sku" id="sku" required
            value="{{ old('sku', $product->sku ?? '') }}"
            class="mt-1 block w-full border rounded p-2" />
     @error('sku') <p class="text-red-600 text-sm">{{ $message }}</p> @enderror
   </div>
 
   {{-- Description --}}
-  <div>
+  <div class="md:col-span-2">
     <label for="description" class="block text-sm font-medium">Description</label>
-    <textarea name="description" id="description" rows="3"
+    <textarea name="description" id="description" rows="2"
               class="mt-1 block w-full border rounded p-2">{{ old('description', $product->description ?? '') }}</textarea>
     @error('description') <p class="text-red-600 text-sm">{{ $message }}</p> @enderror
   </div>
 
-  {{-- Default Case Count --}}
+  {{-- Product Type --}}
   <div>
-    <label for="default_case_count" class="block text-sm font-medium">Default Case Count</label>
-    <input type="number" name="default_case_count" id="default_case_count"
-           value="{{ old('default_case_count', $product->default_case_count ?? '') }}"
-           class="mt-1 block w-full border rounded p-2" />
-    @error('default_case_count') <p class="text-red-600 text-sm">{{ $message }}</p> @enderror
+    <label for="product_type" class="block text-sm font-medium">Product Type <span class="text-red-500">*</span></label>
+    <select name="product_type" id="product_type" required
+            class="mt-1 block w-full border rounded p-2">
+      <option value="finished_product" @selected(old('product_type', $product->product_type ?? 'finished_product') == 'finished_product')>
+        Finished Product
+      </option>
+      <option value="raw_material" @selected(old('product_type', $product->product_type ?? '') == 'raw_material')>
+        Raw Material
+      </option>
+    </select>
+    @error('product_type') <p class="text-red-600 text-sm">{{ $message }}</p> @enderror
   </div>
 
-  {{-- Default Pallets --}}
+  {{-- Cases Per Pallet --}}
   <div>
-    <label for="default_pallets" class="block text-sm font-medium">Default Pallets</label>
-    <input type="number" name="default_pallets" id="default_pallets"
-           value="{{ old('default_pallets', $product->default_pallets ?? '') }}"
+    <label for="cases_per_pallet" class="block text-sm font-medium">Cases Per Pallet</label>
+    <input type="number" name="cases_per_pallet" id="cases_per_pallet"
+           value="{{ old('cases_per_pallet', $product->cases_per_pallet ?? '') }}"
+           placeholder="e.g., 60"
            class="mt-1 block w-full border rounded p-2" />
-    @error('default_pallets') <p class="text-red-600 text-sm">{{ $message }}</p> @enderror
+    <p class="text-xs text-gray-500 mt-1">Auto-calculates total cases when entering pallets in bookings</p>
+    @error('cases_per_pallet') <p class="text-red-600 text-sm">{{ $message }}</p> @enderror
   </div>
 </div>
 

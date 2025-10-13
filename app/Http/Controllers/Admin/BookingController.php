@@ -776,6 +776,8 @@ class BookingController extends Controller
             'po_numbers.*.po_number' => 'required|string|max:255',
             'po_numbers.*.lines' => 'required|array|min:1',
             'po_numbers.*.lines.*.line_number' => 'required|integer|min:1',
+            'po_numbers.*.lines.*.sku' => 'nullable|string|max:255',
+            'po_numbers.*.lines.*.description' => 'nullable|string|max:255',
             // Support new pallet_entries structure
             'po_numbers.*.lines.*.pallet_entries' => 'nullable|array',
             'po_numbers.*.lines.*.pallet_entries.*.cases' => 'nullable|integer|min:0',
@@ -887,13 +889,29 @@ class BookingController extends Controller
 
                 if (! empty($poData['lines'])) {
                     foreach ($poData['lines'] as $lineData) {
+                        // Debug: Log what we're receiving
+                        \Log::info('PO Line Data:', $lineData);
+
+                        // Auto-create product if SKU is provided and doesn't exist
+                        if (!empty($lineData['sku']) && !empty($lineData['description'])) {
+                            \App\Models\Product::updateOrCreate(
+                                [
+                                    'customer_id' => $booking->customer_id,
+                                    'sku' => $lineData['sku']
+                                ],
+                                [
+                                    'description' => $lineData['description']
+                                ]
+                            );
+                        }
+
                         // Transform new pallet_entries structure to legacy format for database storage
                         if (!empty($lineData['pallet_entries'])) {
                             // Calculate totals from pallet_entries
                             $totalCases = 0;
                             $totalPallets = 0;
                             $firstPalletTypeId = null;
-                            
+
                             foreach ($lineData['pallet_entries'] as $entry) {
                                 $totalCases += intval($entry['cases'] ?? 0);
                                 $totalPallets += intval($entry['pallets'] ?? 0);
@@ -901,18 +919,18 @@ class BookingController extends Controller
                                     $firstPalletTypeId = $entry['type_id'];
                                 }
                             }
-                            
+
                             // Set legacy fields for database compatibility
                             $lineData['expected_cases'] = $totalCases;
                             $lineData['expected_pallets'] = $totalPallets;
                             if ($firstPalletTypeId) {
                                 $lineData['expected_pallet_type_id'] = $firstPalletTypeId;
                             }
-                            
+
                             // Remove pallet_entries as it's not a database field
                             unset($lineData['pallet_entries']);
                         }
-                        
+
                         $po->lines()->create($lineData);
                     }
                 }
@@ -1009,6 +1027,14 @@ class BookingController extends Controller
             'po_numbers.*.lines.*.actual_pallets' => 'nullable|integer|min:0',
             'po_numbers.*.lines.*.actual_pallet_type_id' => 'nullable|exists:pallet_types,id',
         ]);
+
+        // Validate that booking has at least one PO number with products
+        $existingPoCount = $booking->poNumbers()->count();
+        $newPoCount = !empty($data['po_numbers']) ? count($data['po_numbers']) : 0;
+
+        if ($existingPoCount == 0 && $newPoCount == 0) {
+            return back()->withErrors(['po_numbers' => 'At least one PO number with product details is required to complete the booking.'])->withInput();
+        }
 
         // Normalize input data
         if (!empty($data['vehicle_registration'])) {
@@ -1158,6 +1184,201 @@ class BookingController extends Controller
         $this->recalculateSlot($booking);
 
         return $this->redirectWithFilters($request, 'Booking updated.');
+    }
+
+    public function downloadCsvTemplate(Booking $booking)
+    {
+        // Ensure user has access to this booking's customer
+        if (!auth()->user()->hasRole('admin')) {
+            $allowedCustomerIds = auth()->user()->customers()->pluck('customers.id')->toArray();
+            if (!in_array($booking->customer_id, $allowedCustomerIds)) {
+                abort(403, 'Unauthorized access to this booking');
+            }
+        }
+
+        $filename = "booking_{$booking->id}_po_template.csv";
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($booking) {
+            $file = fopen('php://output', 'w');
+
+            // Header row with instructions
+            fputcsv($file, ['# Booking PO Template - Booking ID: ' . $booking->id]);
+            fputcsv($file, ['# Customer: ' . $booking->customer->name]);
+            fputcsv($file, ['# DO NOT modify this header information']);
+            fputcsv($file, ['# Fill in your PO details below:']);
+            fputcsv($file, []); // Empty row
+
+            // Column headers
+            fputcsv($file, ['Customer ID', 'Booking ID', 'PO Number', 'SKU', 'Product Description', 'Expected Cases', 'Expected Pallets']);
+
+            // Add 5 example rows pre-filled with customer and booking IDs
+            for ($i = 1; $i <= 5; $i++) {
+                fputcsv($file, [
+                    $booking->customer_id,
+                    $booking->id,
+                    '', // PO Number - user fills this
+                    '', // SKU - user fills this
+                    '', // Product Description - user fills this
+                    '', // Expected Cases - user fills this
+                    ''  // Expected Pallets - user fills this
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function uploadCsv(Request $request)
+    {
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:2048',
+            'booking_id' => 'required|exists:bookings,id'
+        ]);
+
+        $booking = Booking::findOrFail($request->booking_id);
+
+        // Ensure user has access to this booking's customer
+        if (!auth()->user()->hasRole('admin')) {
+            $allowedCustomerIds = auth()->user()->customers()->pluck('customers.id')->toArray();
+            if (!in_array($booking->customer_id, $allowedCustomerIds)) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized access to this booking'], 403);
+            }
+        }
+
+        $file = $request->file('csv_file');
+        $handle = fopen($file->getRealPath(), 'r');
+
+        if ($handle === false) {
+            return response()->json(['success' => false, 'message' => 'Could not read CSV file'], 400);
+        }
+
+        $rowsProcessed = 0;
+        $productsAdded = 0;
+        $errors = [];
+        $header = null;
+
+        DB::beginTransaction();
+
+        try {
+            while (($row = fgetcsv($handle)) !== false) {
+                // Skip empty rows
+                if (empty(array_filter($row))) {
+                    continue;
+                }
+
+                // Skip comment rows (starting with #)
+                if (!empty($row[0]) && strpos(trim($row[0]), '#') === 0) {
+                    continue;
+                }
+
+                // First non-comment row is header
+                if ($header === null) {
+                    $header = array_map('trim', $row);
+                    continue;
+                }
+
+                $rowsProcessed++;
+
+                // Map CSV columns (expecting: Customer ID, Booking ID, PO Number, SKU, Product Description, Expected Cases, Expected Pallets)
+                $data = array_combine($header, $row);
+
+                $csvCustomerId = intval($data['Customer ID'] ?? 0);
+                $csvBookingId = intval($data['Booking ID'] ?? 0);
+                $poNumber = trim($data['PO Number'] ?? '');
+                $sku = trim($data['SKU'] ?? '');
+                $description = trim($data['Product Description'] ?? '');
+                $expectedCases = intval($data['Expected Cases'] ?? 0);
+                $expectedPallets = intval($data['Expected Pallets'] ?? 0);
+
+                // Validate Customer ID and Booking ID match
+                if ($csvCustomerId != $booking->customer_id) {
+                    $errors[] = "Row $rowsProcessed: Customer ID mismatch (expected {$booking->customer_id}, got {$csvCustomerId})";
+                    continue;
+                }
+
+                if ($csvBookingId != $booking->id) {
+                    $errors[] = "Row $rowsProcessed: Booking ID mismatch (expected {$booking->id}, got {$csvBookingId})";
+                    continue;
+                }
+
+                if (empty($poNumber)) {
+                    $errors[] = "Row $rowsProcessed: Missing PO Number";
+                    continue;
+                }
+
+                if (empty($sku)) {
+                    $errors[] = "Row $rowsProcessed: Missing SKU";
+                    continue;
+                }
+
+                // Try to find product by SKU for this customer
+                $product = \App\Models\Product::where('customer_id', $booking->customer_id)
+                    ->where('sku', $sku)
+                    ->first();
+
+                // If product doesn't exist and we have a description, create it
+                if (!$product && !empty($description)) {
+                    $product = \App\Models\Product::create([
+                        'customer_id' => $booking->customer_id,
+                        'sku' => $sku,
+                        'description' => $description,
+                        'product_type' => 'finished_product', // default
+                    ]);
+                    $errors[] = "Row $rowsProcessed: Created new product '$sku' - $description";
+                } elseif (!$product) {
+                    $errors[] = "Row $rowsProcessed: Product '$sku' not found and no description provided - skipped";
+                    continue;
+                }
+
+                // Create or update BookingPoNumber entry
+                $bookingPoNumber = $booking->poNumbers()
+                    ->where('po_number', $poNumber)
+                    ->where('product_id', $product->id)
+                    ->first();
+
+                if ($bookingPoNumber) {
+                    $bookingPoNumber->update([
+                        'expected_cases' => $expectedCases,
+                        'expected_pallets' => $expectedPallets,
+                    ]);
+                } else {
+                    $booking->poNumbers()->create([
+                        'po_number' => $poNumber,
+                        'product_id' => $product->id,
+                        'expected_cases' => $expectedCases,
+                        'expected_pallets' => $expectedPallets,
+                    ]);
+                    $productsAdded++;
+                }
+            }
+
+            DB::commit();
+            fclose($handle);
+
+            return response()->json([
+                'success' => true,
+                'rows_processed' => $rowsProcessed,
+                'products_added' => $productsAdded,
+                'errors' => $errors,
+                'message' => "Successfully processed $rowsProcessed rows"
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            fclose($handle);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error processing CSV: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function destroy(Request $request, Booking $booking)

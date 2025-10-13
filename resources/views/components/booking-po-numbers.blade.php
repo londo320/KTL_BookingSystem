@@ -66,7 +66,9 @@
     }
 @endphp
 
-<div x-data="poNumbersManager({{ $customer_id ?? 'null' }})" x-init="init({{ $existingData->toJson() }}); window.poNumbersManagerInstance = this;" @if($readonly) data-readonly="true" @endif>
+<div x-data="poNumbersManager({{ $customer_id ?? 'null' }})"
+     x-init="init({{ $existingData->toJson() }}); window.poNumbersManagerInstance = this; watchCustomerField();"
+     @if($readonly) data-readonly="true" @endif>
     <div class="bg-white border rounded-lg p-4">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-medium text-gray-900">PO Numbers & Lines</h3>
@@ -113,40 +115,38 @@
                             @endunless
                         </div>
 
-                        <div class="space-y-4">
+                        <div class="space-y-2">
                             <template x-for="(line, lineIndex) in po.lines" :key="lineIndex">
-                                <div class="border border-gray-300 rounded p-3 bg-white">
-                                    <div class="flex justify-between items-center mb-2">
-                                        <span class="text-sm font-medium text-gray-600">Line <span x-text="lineIndex + 1"></span></span>
-                                        @unless($readonly)
-                                            <button type="button" @click="removePoLine(poIndex, lineIndex)" 
-                                                    class="text-red-500 hover:text-red-700 text-xs">
-                                                Remove
-                                            </button>
-                                        @endunless
-                                    </div>
-
+                                <div class="bg-white border border-gray-200 rounded p-1.5">
                                     <input type="hidden" :name="`po_numbers[${poIndex}][lines][${lineIndex}][line_number]`"
                                            :value="lineIndex + 1">
 
                                     @if($hide_actuals)
-                                        <!-- SKU and Description Fields -->
-                                        <div class="mb-3 grid grid-cols-2 gap-3">
-                                            <div class="relative">
-                                                <label class="block text-sm font-medium text-gray-700 mb-1">SKU / Product Number</label>
+                                        <!-- Single Line Layout: Line# | SKU | Description | Pallets | Cases | Type | Remove -->
+                                        <div class="flex gap-1.5 items-end">
+                                            <!-- Line Number -->
+                                            <div class="w-8 flex-shrink-0">
+                                                <label class="block text-[10px] font-medium text-gray-600 mb-0.5">Line</label>
+                                                <div class="h-7 flex items-center">
+                                                    <span class="text-xs font-medium text-gray-700" x-text="lineIndex + 1"></span>
+                                                </div>
+                                            </div>
+
+                                            <!-- SKU -->
+                                            <div class="w-24 flex-shrink-0 relative">
+                                                <label class="block text-[10px] font-medium text-gray-600 mb-0.5">SKU</label>
                                                 <input type="text" x-model="line.sku"
                                                        :id="`sku-input-${poIndex}-${lineIndex}`"
                                                        :name="`po_numbers[${poIndex}][lines][${lineIndex}][sku]`"
-                                                       @input="searchProducts(poIndex, lineIndex, $event.target.value)"
-                                                       @focus="showSkuDropdown[`${poIndex}-${lineIndex}`] = false"
-                                                       placeholder="e.g., SKU123"
+                                                       @input="searchProducts(poIndex, lineIndex, $event.target.value); line.product_id = null;"
+                                                       placeholder="SKU123"
                                                        autocomplete="off"
-                                                       class="w-full border-gray-300 rounded {{ $readonly ? 'bg-gray-100' : '' }}"
+                                                       class="h-7 w-full border-gray-300 rounded text-xs px-2 {{ $readonly ? 'bg-gray-100' : '' }}"
                                                        {{ $readonly ? 'readonly' : '' }}>
                                                 <div x-show="showSkuDropdown[`${poIndex}-${lineIndex}`]"
                                                      x-ref="skuDropdown"
                                                      @click.away="showSkuDropdown[`${poIndex}-${lineIndex}`] = false"
-                                                     class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                                     class="absolute z-10 w-96 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                                                     <template x-for="product in skuSearchResults[`${poIndex}-${lineIndex}`] || []" :key="product.id">
                                                         <button type="button"
                                                                 @click="selectProduct(poIndex, lineIndex, product)"
@@ -161,100 +161,73 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-700 mb-1">Product Description</label>
+
+                                            <!-- Description -->
+                                            <div class="flex-1 min-w-0">
+                                                <label class="block text-[10px] font-medium text-gray-600 mb-0.5">Description</label>
                                                 <input type="text" x-model="line.description"
                                                        :name="`po_numbers[${poIndex}][lines][${lineIndex}][description]`"
                                                        placeholder="Product description"
-                                                       class="w-full border-gray-300 rounded {{ $readonly ? 'bg-gray-100' : '' }}"
+                                                       :readonly="line.product_id ? true : false"
+                                                       :class="line.product_id ? 'h-7 w-full border-gray-300 rounded text-xs px-2 bg-gray-100' : 'h-7 w-full border-gray-300 rounded text-xs px-2 {{ $readonly ? 'bg-gray-100' : '' }}'"
                                                        {{ $readonly ? 'readonly' : '' }}>
                                             </div>
-                                        </div>
 
-                                        <!-- Simplified Three-Box Layout -->
-                                        <div>
-                                            <h6 class="text-sm font-medium text-gray-700 mb-3">Pallet & Case Details</h6>
-                                            
-                                            <!-- Multiple pallet type entries for the same line -->
-                                            <div class="space-y-3">
-                                                <template x-for="(palletEntry, palletIndex) in (line.pallet_entries || [{cases: '', pallets: '', type_id: ''}])" :key="palletIndex">
-                                                    <div class="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                                                        <div class="flex justify-between items-center mb-2">
-                                                            <span class="text-sm font-medium text-gray-600">
-                                                                <span x-show="(line.pallet_entries || []).length > 1">Entry <span x-text="palletIndex + 1"></span></span>
-                                                                <span x-show="(line.pallet_entries || []).length <= 1">Expected Quantities</span>
-                                                            </span>
-                                                            @unless($readonly)
-                                                                <button x-show="palletIndex > 0 || (line.pallet_entries || []).length > 1" type="button" @click="removePalletEntry(poIndex, lineIndex, palletIndex)" 
-                                                                        class="text-red-500 hover:text-red-700 text-xs">
-                                                                    Remove
-                                                                </button>
-                                                            @endunless
-                                                        </div>
-                                                        
-                                                        <div class="grid grid-cols-3 gap-3">
-                                                            <!-- Cases (Required) -->
-                                                            <div>
-                                                                <label class="block text-sm font-medium text-gray-700 mb-1">
-                                                                    Cases <span class="text-red-500">*</span>
-                                                                </label>
-                                                                <input type="number" x-model="palletEntry.cases" 
-                                                                       :name="`po_numbers[${poIndex}][lines][${lineIndex}][pallet_entries][${palletIndex}][cases]`"
-                                                                       placeholder="0"
-                                                                       required
-                                                                       class="w-full border-gray-300 rounded {{ $readonly ? 'bg-gray-100' : '' }}"
-                                                                       {{ $readonly ? 'readonly' : '' }}>
-                                                            </div>
-                                                            
-                                                            <!-- Pallets (Required) -->
-                                                            <div>
-                                                                <label class="block text-sm font-medium text-gray-700 mb-1">
-                                                                    Pallets <span class="text-red-500">*</span>
-                                                                </label>
-                                                                <input type="number" x-model="palletEntry.pallets" 
-                                                                       :name="`po_numbers[${poIndex}][lines][${lineIndex}][pallet_entries][${palletIndex}][pallets]`"
-                                                                       placeholder="0"
-                                                                       required
-                                                                       class="w-full border-gray-300 rounded {{ $readonly ? 'bg-gray-100' : '' }}"
-                                                                       {{ $readonly ? 'readonly' : '' }}>
-                                                            </div>
-                                                            
-                                                            <!-- Pallet Type (Optional) -->
-                                                            <div>
-                                                                <label class="block text-sm font-medium text-gray-700 mb-1">Pallet Type</label>
-                                                                <select x-model="palletEntry.type_id" 
-                                                                        :name="`po_numbers[${poIndex}][lines][${lineIndex}][pallet_entries][${palletIndex}][type_id]`"
-                                                                        class="w-full border-gray-300 rounded {{ $readonly ? 'bg-gray-100' : '' }}"
-                                                                        {{ $readonly ? 'disabled' : '' }}>
-                                                                    <option value="">Optional</option>
-                                                                    @foreach($palletTypes as $type)
-                                                                        <option value="{{ $type->id }}">{{ $type->display_name }}</option>
-                                                                    @endforeach
-                                                                </select>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </template>
-                                                
-                                                <!-- Add Another Pallet Type Button -->
-                                                @unless($readonly)
-                                                    <div class="text-center">
-                                                        <button type="button" @click="addPalletEntry(poIndex, lineIndex)" 
-                                                                class="text-blue-600 hover:text-blue-800 text-sm border border-blue-300 hover:border-blue-500 rounded px-3 py-2">
-                                                            + Add Another Pallet Type
-                                                        </button>
-                                                    </div>
-                                                @endunless
-                                                
-                                                <!-- Line Summary -->
-                                                <div x-show="(line.pallet_entries || []).length > 1" class="bg-blue-50 border border-blue-200 rounded p-2">
-                                                    <div class="text-sm font-medium text-blue-800">Line Total:</div>
-                                                    <div class="text-sm text-blue-700">
-                                                        Cases: <span x-text="getLineTotalCases(line)"></span> | 
-                                                        Pallets: <span x-text="getLineTotalPallets(line)"></span>
-                                                    </div>
-                                                </div>
+                                            <!-- Pallets -->
+                                            <div class="w-16 flex-shrink-0">
+                                                <label class="block text-[10px] font-medium text-gray-600 mb-0.5">
+                                                    Plts <span class="text-red-500">*</span>
+                                                </label>
+                                                <input type="number"
+                                                       x-model="(line.pallet_entries && line.pallet_entries[0]) ? line.pallet_entries[0].pallets : ''"
+                                                       :name="`po_numbers[${poIndex}][lines][${lineIndex}][pallet_entries][0][pallets]`"
+                                                       @input="if(line.cases_per_pallet && $event.target.value) { if(!line.pallet_entries) line.pallet_entries = [{}]; line.pallet_entries[0].cases = $event.target.value * line.cases_per_pallet; }"
+                                                       placeholder="0"
+                                                       maxlength="4"
+                                                       required
+                                                       class="h-7 w-full border-gray-300 rounded text-xs px-2 {{ $readonly ? 'bg-gray-100' : '' }}"
+                                                       {{ $readonly ? 'readonly' : '' }}>
                                             </div>
+
+                                            <!-- Cases -->
+                                            <div class="w-20 flex-shrink-0">
+                                                <label class="block text-[10px] font-medium text-gray-600 mb-0.5">
+                                                    Cases <span class="text-red-500">*</span>
+                                                    <span x-show="line.cases_per_pallet" class="text-[9px] text-green-600">(auto)</span>
+                                                </label>
+                                                <input type="number"
+                                                       x-model="(line.pallet_entries && line.pallet_entries[0]) ? line.pallet_entries[0].cases : ''"
+                                                       :name="`po_numbers[${poIndex}][lines][${lineIndex}][pallet_entries][0][cases]`"
+                                                       placeholder="0"
+                                                       maxlength="6"
+                                                       required
+                                                       class="h-7 w-full border-gray-300 rounded text-xs px-2 {{ $readonly ? 'bg-gray-100' : '' }}"
+                                                       {{ $readonly ? 'readonly' : '' }}>
+                                            </div>
+
+                                            <!-- Pallet Type -->
+                                            <div class="w-40 flex-shrink-0">
+                                                <label class="block text-[10px] font-medium text-gray-600 mb-0.5">Pallet Type</label>
+                                                <select x-model="(line.pallet_entries && line.pallet_entries[0]) ? line.pallet_entries[0].type_id : ''"
+                                                        :name="`po_numbers[${poIndex}][lines][${lineIndex}][pallet_entries][0][type_id]`"
+                                                        class="h-7 w-full border-gray-300 rounded text-xs px-2 {{ $readonly ? 'bg-gray-100' : '' }}"
+                                                        {{ $readonly ? 'disabled' : '' }}>
+                                                    <option value="">-</option>
+                                                    @foreach($palletTypes as $type)
+                                                        <option value="{{ $type->id }}">{{ $type->display_name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+
+                                            <!-- Remove Button -->
+                                            @unless($readonly)
+                                                <div class="w-16 flex-shrink-0 flex items-end">
+                                                    <button type="button" @click="removePoLine(poIndex, lineIndex)"
+                                                            class="h-7 text-red-500 hover:text-red-700 text-[10px] whitespace-nowrap">
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            @endunless
                                         </div>
                                     @else
                                         <div class="grid grid-cols-2 gap-4">
@@ -415,6 +388,28 @@ function poNumbersManager(customerId = null) {
             }
         },
 
+        watchCustomerField() {
+            // Watch for changes in the customer select field
+            const customerSelect = document.querySelector('select[name="customer_id"]');
+            if (customerSelect) {
+                customerSelect.addEventListener('change', (e) => {
+                    this.customerId = e.target.value || null;
+                    // Clear all SKU search results when customer changes
+                    this.skuSearchResults = {};
+                    this.showSkuDropdown = {};
+                });
+            }
+        },
+
+        getCurrentCustomerId() {
+            // Get customer ID from the form field (in case it changed)
+            const customerSelect = document.querySelector('select[name="customer_id"]');
+            if (customerSelect) {
+                return customerSelect.value || null;
+            }
+            return this.customerId;
+        },
+
         searchProducts(poIndex, lineIndex, query) {
             const key = `${poIndex}-${lineIndex}`;
 
@@ -430,19 +425,28 @@ function poNumbersManager(customerId = null) {
                 return;
             }
 
-            // Set loading state
-            this.skuSearchLoading[key] = true;
-            this.showSkuDropdown[key] = true;
+            // Get current customer ID
+            const currentCustomerId = this.getCurrentCustomerId();
 
-            if (!this.customerId) {
-                console.error('Customer ID not found');
+            // Check if customer is selected
+            if (!currentCustomerId) {
+                this.showSkuDropdown[key] = true;
+                this.skuSearchResults[key] = [{
+                    id: 'error',
+                    sku: '',
+                    description: '⚠️ Please select a customer first'
+                }];
                 this.skuSearchLoading[key] = false;
                 return;
             }
 
+            // Set loading state
+            this.skuSearchLoading[key] = true;
+            this.showSkuDropdown[key] = true;
+
             // Debounce the search
             this.skuSearchTimeout = setTimeout(() => {
-                fetch(`/api/products/search?q=${encodeURIComponent(query)}&customer_id=${this.customerId}`)
+                fetch(`/api/products/search?q=${encodeURIComponent(query)}&customer_id=${currentCustomerId}`)
                     .then(response => response.json())
                     .then(data => {
                         this.skuSearchResults[key] = data.products || [];
@@ -463,6 +467,8 @@ function poNumbersManager(customerId = null) {
             // Update the line with selected product
             this.poNumbers[poIndex].lines[lineIndex].sku = product.sku;
             this.poNumbers[poIndex].lines[lineIndex].description = product.description;
+            this.poNumbers[poIndex].lines[lineIndex].product_id = product.id; // Mark as existing product
+            this.poNumbers[poIndex].lines[lineIndex].cases_per_pallet = product.cases_per_pallet; // Store for calculation
 
             // Hide dropdown
             this.showSkuDropdown[key] = false;
@@ -484,6 +490,7 @@ function poNumbersManager(customerId = null) {
                 line_number: this.poNumbers[poIndex].lines.length + 1,
                 sku: '',
                 description: '',
+                product_id: null,
                 expected_cases: null,
                 expected_pallets: null,
                 expected_pallet_type_id: '',
