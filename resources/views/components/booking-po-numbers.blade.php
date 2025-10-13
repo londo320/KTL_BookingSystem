@@ -318,28 +318,33 @@
                                                         <input type="number" x-model="line.actual_pallets"
                                                                :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_pallets]`"
                                                                @input="calculateActualCases(poIndex, lineIndex)"
-                                                               class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
+                                                               :disabled="!line.sku || line.sku.trim() === ''"
+                                                               :class="(!line.sku || line.sku.trim() === '') ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'"
                                                                {{ $readonly ? 'readonly' : '' }}>
                                                     </div>
                                                     <div>
                                                         <label class="block text-xs text-gray-500">Units</label>
                                                         <input type="number" x-model="line.actual_cases"
                                                                :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_cases]`"
-                                                               class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
+                                                               :disabled="!line.sku || line.sku.trim() === ''"
+                                                               :class="(!line.sku || line.sku.trim() === '') ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'"
                                                                {{ $readonly ? 'readonly' : '' }}>
                                                     </div>
                                                     <div>
                                                         <label class="block text-xs text-gray-500">Type</label>
                                                         <select x-model="line.actual_pallet_type_id"
                                                                 :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_pallet_type_id]`"
-                                                                class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
-                                                                {{ $readonly ? 'disabled' : '' }}>
+                                                                :disabled="!line.sku || line.sku.trim() === '' {{ $readonly ? '|| true' : '' }}"
+                                                                :class="(!line.sku || line.sku.trim() === '') ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'">
                                                             <option value="">Select</option>
                                                             @foreach($palletTypes as $type)
                                                                 <option value="{{ $type->id }}">{{ $type->display_name }}</option>
                                                             @endforeach
                                                         </select>
                                                     </div>
+                                                </div>
+                                                <div x-show="!line.sku || line.sku.trim() === ''" class="mt-2 text-xs text-amber-600 italic">
+                                                    ⚠️ Please select a SKU first to enter actual quantities
                                                 </div>
                                             </div>
                                         </div>
@@ -681,21 +686,21 @@ function poNumbersManager(customerId = null) {
             let totalCases = 0;
             let palletBreakdown = {};
             let totalPallets = 0;
-            
-            // For expected quantities with new pallet_entries structure
+            const palletTypes = @json($palletTypes->keyBy('id'));
+
+            // For expected quantities - check both pallet_entries and direct fields
             if (type === 'expected') {
-                const palletTypes = @json($palletTypes->keyBy('id'));
-                
                 po.lines.forEach(line => {
-                    if (line.pallet_entries && line.pallet_entries.length > 0) {
+                    // Check if using pallet_entries structure (compact layout)
+                    if (line.pallet_entries && line.pallet_entries.length > 0 && line.pallet_entries[0].cases) {
                         line.pallet_entries.forEach(entry => {
                             const cases = parseInt(entry.cases) || 0;
                             const pallets = parseInt(entry.pallets) || 0;
                             const typeId = entry.type_id;
-                            
+
                             totalCases += cases;
                             totalPallets += pallets;
-                            
+
                             if (pallets > 0) {
                                 if (typeId && palletTypes[typeId]) {
                                     const typeName = palletTypes[typeId].name;
@@ -706,18 +711,44 @@ function poNumbersManager(customerId = null) {
                             }
                         });
                     }
-                    
-                    // Fallback to old structure if no pallet_entries
-                    if ((!line.pallet_entries || line.pallet_entries.length === 0) && line.expected_cases) {
-                        totalCases += parseInt(line.expected_cases) || 0;
+                    // Otherwise use direct fields (edit layout)
+                    else {
+                        const cases = parseInt(line.expected_cases) || 0;
+                        const pallets = parseInt(line.expected_pallets) || 0;
+                        const typeId = line.expected_pallet_type_id;
+
+                        totalCases += cases;
+                        totalPallets += pallets;
+
+                        if (pallets > 0) {
+                            if (typeId && palletTypes[typeId]) {
+                                const typeName = palletTypes[typeId].name;
+                                palletBreakdown[typeName] = (palletBreakdown[typeName] || 0) + pallets;
+                            } else {
+                                palletBreakdown['Unspecified'] = (palletBreakdown['Unspecified'] || 0) + pallets;
+                            }
+                        }
                     }
                 });
             } else {
-                // Fall back to old structure for actual quantities
-                const unitsField = type === 'actual' ? 'actual_cases' : 'expected_cases';
-                totalCases = po.lines.reduce((sum, line) => sum + (parseInt(line[unitsField]) || 0), 0);
-                palletBreakdown = this.getPalletBreakdown(po, type);
-                totalPallets = Object.values(palletBreakdown).reduce((sum, count) => sum + count, 0);
+                // For actual quantities - use direct fields
+                po.lines.forEach(line => {
+                    const cases = parseInt(line.actual_cases) || 0;
+                    const pallets = parseInt(line.actual_pallets) || 0;
+                    const typeId = line.actual_pallet_type_id;
+
+                    totalCases += cases;
+                    totalPallets += pallets;
+
+                    if (pallets > 0) {
+                        if (typeId && palletTypes[typeId]) {
+                            const typeName = palletTypes[typeId].name;
+                            palletBreakdown[typeName] = (palletBreakdown[typeName] || 0) + pallets;
+                        } else {
+                            palletBreakdown['Unspecified'] = (palletBreakdown['Unspecified'] || 0) + pallets;
+                        }
+                    }
+                });
             }
             
             const parts = [];
