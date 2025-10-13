@@ -377,6 +377,9 @@ unset($__errorArgs, $__bag); ?>
       <div class="flex justify-between items-center mb-3">
         <h3 class="text-base font-semibold text-green-900">📦 PO Numbers & Expected Quantities <span class="text-red-500">*</span></h3>
         <div class="flex gap-2">
+          <button type="button" onclick="document.getElementById('manual-entry-section').classList.toggle('hidden')" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm font-medium">
+            ✏️ Manual Entry
+          </button>
           <a href="<?php echo e(route('app.bookings.download-csv-template', $booking)); ?>" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm">
             📥 Download CSV Template
           </a>
@@ -386,6 +389,30 @@ unset($__errorArgs, $__bag); ?>
           <a href="<?php echo e(route('app.products.index')); ?>" target="_blank" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
             📦 Manage Products
           </a>
+        </div>
+      </div>
+
+      
+      <div id="manual-entry-section" class="hidden mb-4 p-4 bg-indigo-50 rounded-lg border border-indigo-300">
+        <h4 class="text-sm font-semibold text-indigo-900 mb-2">✏️ Manual PO Entry</h4>
+        <div class="space-y-2 text-sm text-indigo-800">
+          <p><strong>To manually add PO details:</strong></p>
+          <ol class="list-decimal list-inside ml-2 space-y-1">
+            <li>Scroll down to the "PO Numbers & Lines" section below</li>
+            <li>Click the <span class="inline-block px-2 py-0.5 bg-blue-500 text-white rounded text-xs">+ Add PO Number</span> button</li>
+            <li>Fill in:
+              <ul class="list-disc list-inside ml-6 mt-1">
+                <li>PO Number</li>
+                <li>Click "+ Add Line" to add products</li>
+                <li>For each line: SKU/Product, Expected Cases, Expected Pallets</li>
+              </ul>
+            </li>
+            <li>Add multiple PO numbers or lines as needed</li>
+            <li>Save the booking when done</li>
+          </ol>
+          <p class="text-xs mt-3 text-indigo-700">
+            💡 <strong>Tip:</strong> Products must exist in the system first. Use the "📦 Manage Products" button above to add new products if needed.
+          </p>
         </div>
       </div>
 

@@ -282,27 +282,30 @@
         </div>
       </div>
 
-      {{-- Manual Entry Instructions (hidden by default) --}}
-      <div id="manual-entry-section" class="hidden mb-4 p-4 bg-indigo-50 rounded-lg border border-indigo-300">
-        <h4 class="text-sm font-semibold text-indigo-900 mb-2">✏️ Manual PO Entry</h4>
+      {{-- Manual Entry Highlight --}}
+      <div id="manual-entry-section" class="hidden mb-4 p-4 bg-indigo-50 rounded-lg border-2 border-indigo-400">
+        <h4 class="text-sm font-semibold text-indigo-900 mb-2">✏️ Manual PO Entry Active</h4>
         <div class="space-y-2 text-sm text-indigo-800">
-          <p><strong>To manually add PO details:</strong></p>
+          <p><strong>The manual entry form is displayed below.</strong> To add PO details:</p>
           <ol class="list-decimal list-inside ml-2 space-y-1">
-            <li>Scroll down to the "PO Numbers & Lines" section below</li>
-            <li>Click the <span class="inline-block px-2 py-0.5 bg-blue-500 text-white rounded text-xs">+ Add PO Number</span> button</li>
-            <li>Fill in:
+            <li>Scroll down to the "PO Numbers & Lines" section</li>
+            <li>Click <span class="inline-block px-2 py-0.5 bg-blue-500 text-white rounded text-xs">+ Add PO Number</span> to add a new PO</li>
+            <li>Fill in the PO Number, then click <span class="inline-block px-2 py-0.5 bg-blue-600 text-white rounded text-xs">+ Add Line</span></li>
+            <li>For each line enter:
               <ul class="list-disc list-inside ml-6 mt-1">
-                <li>PO Number</li>
-                <li>Click "+ Add Line" to add products</li>
-                <li>For each line: SKU/Product, Expected Cases, Expected Pallets</li>
+                <li><strong>SKU</strong> - Start typing to search existing products</li>
+                <li><strong>Expected:</strong> Cases, Pallets, Pallet Type</li>
+                <li><strong>Actual:</strong> Cases, Pallets (filled when goods arrive)</li>
               </ul>
             </li>
-            <li>Add multiple PO numbers or lines as needed</li>
-            <li>Save the booking when done</li>
+            <li>Click <span class="inline-block px-2 py-0.5 bg-blue-600 text-white rounded text-xs">+ Add Line</span> to add more products to the same PO</li>
+            <li>Click <span class="inline-block px-2 py-0.5 bg-blue-500 text-white rounded text-xs">+ Add PO Number</span> to add additional POs</li>
           </ol>
-          <p class="text-xs mt-3 text-indigo-700">
-            💡 <strong>Tip:</strong> Products must exist in the system first. Use the "📦 Manage Products" button above to add new products if needed.
-          </p>
+          <div class="mt-3 p-2 bg-white rounded border border-indigo-200">
+            <p class="text-xs text-indigo-700">
+              💡 <strong>Tip:</strong> Products must exist before you can select them. Use the <strong>"📦 Manage Products"</strong> button above to add new products if needed.
+            </p>
+          </div>
         </div>
       </div>
 
