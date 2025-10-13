@@ -163,7 +163,7 @@
                                             </div>
 
                                             <!-- Description -->
-                                            <div class="flex-1 min-w-0">
+                                            <div class="flex-1 min-w-[200px]">
                                                 <label class="block text-[10px] font-medium text-gray-600 mb-0.5">Description</label>
                                                 <input type="text" x-model="line.description"
                                                        :name="`po_numbers[${poIndex}][lines][${lineIndex}][description]`"
@@ -174,7 +174,7 @@
                                             </div>
 
                                             <!-- Pallets -->
-                                            <div class="w-16 flex-shrink-0">
+                                            <div class="w-14 flex-shrink-0">
                                                 <label class="block text-[10px] font-medium text-gray-600 mb-0.5">
                                                     Plts <span class="text-red-500">*</span>
                                                 </label>
@@ -206,7 +206,7 @@
                                             </div>
 
                                             <!-- Pallet Type -->
-                                            <div class="w-40 flex-shrink-0">
+                                            <div class="w-32 flex-shrink-0">
                                                 <label class="block text-[10px] font-medium text-gray-600 mb-0.5">Pallet Type</label>
                                                 <select x-model="(line.pallet_entries && line.pallet_entries[0]) ? line.pallet_entries[0].type_id : ''"
                                                         :name="`po_numbers[${poIndex}][lines][${lineIndex}][pallet_entries][0][type_id]`"
