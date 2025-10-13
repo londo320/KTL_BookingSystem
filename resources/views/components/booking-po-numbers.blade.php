@@ -412,12 +412,12 @@
                             <div class="space-y-2 text-sm">
                                 <div>
                                     <span class="text-gray-600 font-medium">Expected:</span>
-                                    <div class="ml-4" x-html="summaryUpdateCounter, getPoSummaryText(po, 'expected')"></div>
+                                    <div class="ml-4" x-html="(summaryUpdateCounter || true) && getPoSummaryText(po, 'expected')"></div>
                                 </div>
                                 @unless($hide_actuals)
                                     <div>
                                         <span class="text-gray-600 font-medium">Actual:</span>
-                                        <div class="ml-4" x-html="summaryUpdateCounter, getPoSummaryText(po, 'actual')"></div>
+                                        <div class="ml-4" x-html="(summaryUpdateCounter || true) && getPoSummaryText(po, 'actual')"></div>
                                     </div>
                                 @endunless
                             </div>
@@ -745,26 +745,26 @@ function poNumbersManager(customerId = null) {
                     }
                 });
             }
-            
+
             const parts = [];
 
             if (totalPallets > 0) {
-                parts.push(`<strong>${totalPallets} pallets</strong>`);
+                parts.push(`${totalPallets} pallet${totalPallets !== 1 ? 's' : ''}`);
             }
 
             if (totalCases > 0) {
-                parts.push(`<strong>${totalCases} units</strong>`);
+                parts.push(`${totalCases} unit${totalCases !== 1 ? 's' : ''}`);
             }
 
             // Show pallet type breakdown if types are specified
-            if (totalPallets > 0 && Object.keys(palletBreakdown).length > 0) {
+            if (totalPallets > 0 && Object.keys(palletBreakdown).length > 0 && palletBreakdown['Unspecified'] !== totalPallets) {
                 const palletParts = Object.entries(palletBreakdown).map(([typeName, count]) => {
                     return `${count} ${typeName}`;
                 });
-                parts.push(`<em>(${palletParts.join(', ')})</em>`);
+                parts.push(`<span class="text-gray-500">(${palletParts.join(', ')})</span>`);
             }
 
-            return parts.length > 0 ? parts.join(' ') : '<em>No quantities specified</em>';
+            return parts.length > 0 ? parts.join(' ') : '<span class="text-gray-400 italic">No quantities specified</span>';
         },
         
         validatePoNumbers() {
