@@ -13,9 +13,16 @@ class ProductController extends Controller
         $this->middleware(['auth', 'role:admin']);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::orderBy('sku')->paginate(25);
+        $query = Product::with('customer')->orderBy('sku');
+
+        // Filter by customer if provided
+        if ($request->filled('customer_id')) {
+            $query->where('customer_id', $request->customer_id);
+        }
+
+        $products = $query->paginate(25)->appends($request->query());
 
         return view('admin.products.index', compact('products'));
     }
