@@ -87,15 +87,19 @@
           
           {{-- Quick Actions --}}
           <div class="xl:col-span-1 flex justify-center gap-2 flex-wrap">
-            <a href="{{ route('app.factory-bookings.index') }}" 
+            <a href="{{ route('app.bookings.bulk-upload') }}"
+               class="px-3 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm font-medium">
+              📤 Bulk PO Upload
+            </a>
+            <a href="{{ route('app.factory-bookings.index') }}"
                class="px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm font-medium">
               🏭 Factory Inbound
             </a>
-            <button onclick="openTrailerCollectionModal()" 
+            <button onclick="openTrailerCollectionModal()"
                     class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium">
               🚛 Trailer Collection
             </button>
-            <a href="{{ route('app.trailer-location-report') }}" 
+            <a href="{{ route('app.trailer-location-report') }}"
                class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
               📍 Trailers on Site
             </a>

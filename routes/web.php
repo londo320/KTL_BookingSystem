@@ -118,6 +118,8 @@ Route::middleware('auth')->group(function () {
     // API routes accessible to all authenticated users
     Route::get('api/carriers/search', [CarrierController::class, 'search'])->name('api.carriers.search');
     Route::post('api/carriers/quick-create', [CarrierController::class, 'quickCreate'])->name('api.carriers.quick-create');
+    Route::get('api/suppliers/search', [\App\Http\Controllers\Admin\SupplierController::class, 'search'])->name('api.suppliers.search');
+    Route::post('api/suppliers/quick-create', [\App\Http\Controllers\Admin\SupplierController::class, 'quickCreate'])->name('api.suppliers.quick-create');
     Route::get('api/products/search', [ProductController::class, 'search'])->name('api.products.search');
     Route::get('api/contacts/search', [\App\Http\Controllers\Api\ContactLookupController::class, 'search'])->name('api.contacts.search');
     Route::get('api/contacts/phone', [\App\Http\Controllers\Api\ContactLookupController::class, 'getPhone'])->name('api.contacts.phone');
@@ -137,13 +139,19 @@ Route::middleware('auth')->group(function () {
         Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
         Route::get('/bookings-streamlined', [BookingController::class, 'indexStreamlined'])->name('bookings.streamlined');
         Route::get('/bookings/create', [BookingController::class, 'create'])->name('bookings.create');
+        Route::get('/bookings/bulk-upload', [BookingController::class, 'bulkUploadForm'])->name('bookings.bulk-upload');
+        Route::post('/bookings/bulk-upload', [BookingController::class, 'processBulkUpload'])->name('bookings.bulk-upload.process');
+        Route::get('/bookings/download-generic-csv-template', [BookingController::class, 'downloadGenericCsvTemplate'])->name('bookings.download-generic-csv-template');
+        Route::post('/bookings/upload-csv', [BookingController::class, 'uploadCsv'])->name('bookings.upload-csv');
+        Route::post('/bookings/preview-csv', [BookingController::class, 'previewCsv'])->name('bookings.preview-csv');
         Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
         Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
         Route::get('/bookings/{booking}/edit', [BookingController::class, 'edit'])->name('bookings.edit');
         Route::put('/bookings/{booking}', [BookingController::class, 'update'])->name('bookings.update');
         Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])->name('bookings.destroy');
-        
+
         // Booking specific actions
+        Route::get('/bookings/{booking}/download-csv-template', [BookingController::class, 'downloadCsvTemplate'])->name('bookings.download-csv-template');
         Route::post('/bookings/{booking}/arrived', [BookingController::class, 'markArrived'])->name('bookings.arrived');
         Route::post('/bookings/{booking}/departed', [BookingController::class, 'markDeparted'])->name('bookings.departed');
         Route::patch('/bookings/{booking}/departure', [BookingController::class, 'markDeparted'])->name('bookings.departure');
@@ -198,7 +206,14 @@ Route::middleware('auth')->group(function () {
             Route::post('/execute', [CarrierMergeController::class, 'merge'])->name('execute');
             Route::get('/history', [CarrierMergeController::class, 'history'])->name('history');
         });
-        
+
+        // ──── Suppliers ────
+        Route::resource('suppliers', SupplierController::class);
+        Route::post('/suppliers/{supplier}/toggle', [SupplierController::class, 'toggle'])->name('suppliers.toggle');
+        Route::post('/suppliers/bulk-action', [SupplierController::class, 'bulkAction'])->name('suppliers.bulk-action');
+        Route::get('/suppliers/cleanup', [SupplierController::class, 'cleanup'])->name('suppliers.cleanup');
+        Route::post('/suppliers/{id}/restore', [SupplierController::class, 'restore'])->name('suppliers.restore');
+
         // ──── Depots ────
         Route::resource('depots', DepotController::class);
         

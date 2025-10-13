@@ -1417,6 +1417,609 @@ class BookingController extends Controller
         return $this->redirectWithFilters($request, 'Booking updated.');
     }
 
+    public function downloadCsvTemplate(Booking $booking)
+    {
+        // Ensure user has access to this booking's customer
+        if (!auth()->user()->hasRole('admin')) {
+            $allowedCustomerIds = auth()->user()->customers()->pluck('customers.id')->toArray();
+            if (!in_array($booking->customer_id, $allowedCustomerIds)) {
+                abort(403, 'Unauthorized access to this booking');
+            }
+        }
+
+        $filename = "booking_{$booking->id}_po_template.csv";
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($booking) {
+            $file = fopen('php://output', 'w');
+
+            // Header row with instructions
+            fputcsv($file, ['# Booking PO Template - Booking ID: ' . $booking->id]);
+            fputcsv($file, ['# Customer: ' . $booking->customer->name]);
+            fputcsv($file, ['# DO NOT modify this header information']);
+            fputcsv($file, ['# Fill in your PO details below:']);
+            fputcsv($file, []); // Empty row
+
+            // Column headers
+            fputcsv($file, ['Customer ID', 'Booking Reference', 'PO Number', 'SKU', 'Product Description', 'Expected Cases', 'Expected Pallets']);
+
+            // Add 5 example rows pre-filled with customer ID
+            for ($i = 1; $i <= 5; $i++) {
+                fputcsv($file, [
+                    $booking->customer_id,
+                    '', // Booking Reference - user fills this (e.g., "MON-AM", "Weekly-Delivery-1")
+                    '', // PO Number - user fills this
+                    '', // SKU - user fills this
+                    '', // Product Description - user fills this
+                    '', // Expected Cases - user fills this
+                    ''  // Expected Pallets - user fills this
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function downloadGenericCsvTemplate()
+    {
+        $filename = "po_upload_template.csv";
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() {
+            $file = fopen('php://output', 'w');
+
+            // Header row with instructions
+            fputcsv($file, ['# PO Upload Template - Reusable for Multiple Bookings']);
+            fputcsv($file, ['# Instructions:']);
+            fputcsv($file, ['# 1. Fill in your Customer ID (get this from your account)']);
+            fputcsv($file, ['# 2. Use unique Booking Reference for each delivery (e.g., MON-AM, TUE-PM, WEEK-1, etc.)']);
+            fputcsv($file, ['# 3. Add all your PO details for each delivery']);
+            fputcsv($file, ['# 4. Upload to individual booking OR use Bulk Upload to assign references to bookings']);
+            fputcsv($file, []); // Empty row
+
+            // Column headers
+            fputcsv($file, ['Customer ID', 'Booking Reference', 'PO Number', 'SKU', 'Product Description', 'Expected Cases', 'Expected Pallets']);
+
+            // Add example rows
+            fputcsv($file, ['123', 'MON-AM', 'PO-001', 'SKU-001', 'Product A', '100', '5']);
+            fputcsv($file, ['123', 'MON-AM', 'PO-002', 'SKU-002', 'Product B', '200', '10']);
+            fputcsv($file, ['123', 'TUE-PM', 'PO-003', 'SKU-001', 'Product A', '150', '8']);
+
+            // Add blank rows for user to fill
+            for ($i = 1; $i <= 10; $i++) {
+                fputcsv($file, ['', '', '', '', '', '', '']);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function previewCsv(Request $request)
+    {
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:2048',
+            'booking_id' => 'required|exists:bookings,id'
+        ]);
+
+        $booking = Booking::findOrFail($request->booking_id);
+
+        // Ensure user has access to this booking's customer
+        if (!auth()->user()->hasRole('admin')) {
+            $allowedCustomerIds = auth()->user()->customers()->pluck('customers.id')->toArray();
+            if (!in_array($booking->customer_id, $allowedCustomerIds)) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized access to this booking'], 403);
+            }
+        }
+
+        $file = $request->file('csv_file');
+        $handle = fopen($file->getRealPath(), 'r');
+
+        if ($handle === false) {
+            return response()->json(['success' => false, 'message' => 'Could not read CSV file'], 400);
+        }
+
+        $references = [];
+        $header = null;
+        $totalRows = 0;
+
+        try {
+            while (($row = fgetcsv($handle)) !== false) {
+                // Skip empty rows
+                if (empty(array_filter($row))) {
+                    continue;
+                }
+
+                // Skip comment rows
+                if (!empty($row[0]) && strpos(trim($row[0]), '#') === 0) {
+                    continue;
+                }
+
+                // First non-comment row is header
+                if ($header === null) {
+                    $header = array_map('trim', $row);
+                    continue;
+                }
+
+                $totalRows++;
+                $data = array_combine($header, $row);
+
+                $csvCustomerId = intval($data['Customer ID'] ?? 0);
+                $csvBookingReference = trim($data['Booking Reference'] ?? '');
+
+                // Only collect references for this customer
+                if ($csvCustomerId == $booking->customer_id && !empty($csvBookingReference)) {
+                    if (!isset($references[$csvBookingReference])) {
+                        $references[$csvBookingReference] = [
+                            'reference' => $csvBookingReference,
+                            'row_count' => 0,
+                            'po_numbers' => []
+                        ];
+                    }
+                    $references[$csvBookingReference]['row_count']++;
+
+                    $poNumber = trim($data['PO Number'] ?? '');
+                    if ($poNumber && !in_array($poNumber, $references[$csvBookingReference]['po_numbers'])) {
+                        $references[$csvBookingReference]['po_numbers'][] = $poNumber;
+                    }
+                }
+            }
+
+            fclose($handle);
+
+            return response()->json([
+                'success' => true,
+                'total_rows' => $totalRows,
+                'references' => array_values($references),
+                'message' => 'CSV preview loaded successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            fclose($handle);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error reading CSV: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function uploadCsv(Request $request)
+    {
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:2048',
+            'booking_id' => 'required|exists:bookings,id',
+            'booking_reference' => 'nullable|string|max:255'
+        ]);
+
+        $booking = Booking::findOrFail($request->booking_id);
+        $filterByReference = $request->input('booking_reference');
+
+        // Ensure user has access to this booking's customer
+        if (!auth()->user()->hasRole('admin')) {
+            $allowedCustomerIds = auth()->user()->customers()->pluck('customers.id')->toArray();
+            if (!in_array($booking->customer_id, $allowedCustomerIds)) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized access to this booking'], 403);
+            }
+        }
+
+        $file = $request->file('csv_file');
+        $handle = fopen($file->getRealPath(), 'r');
+
+        if ($handle === false) {
+            return response()->json(['success' => false, 'message' => 'Could not read CSV file'], 400);
+        }
+
+        $rowsProcessed = 0;
+        $productsAdded = 0;
+        $errors = [];
+        $header = null;
+
+        DB::beginTransaction();
+
+        try {
+            while (($row = fgetcsv($handle)) !== false) {
+                // Skip empty rows
+                if (empty(array_filter($row))) {
+                    continue;
+                }
+
+                // Skip comment rows (starting with #)
+                if (!empty($row[0]) && strpos(trim($row[0]), '#') === 0) {
+                    continue;
+                }
+
+                // First non-comment row is header
+                if ($header === null) {
+                    $header = array_map('trim', $row);
+                    continue;
+                }
+
+                $rowsProcessed++;
+
+                // Map CSV columns
+                $data = array_combine($header, $row);
+
+                $csvCustomerId = intval($data['Customer ID'] ?? 0);
+                $csvBookingReference = trim($data['Booking Reference'] ?? '');
+                $poNumber = trim($data['PO Number'] ?? '');
+                $sku = trim($data['SKU'] ?? '');
+                $description = trim($data['Product Description'] ?? '');
+                $expectedCases = intval($data['Expected Cases'] ?? 0);
+                $expectedPallets = intval($data['Expected Pallets'] ?? 0);
+
+                // Validate Customer ID matches
+                if ($csvCustomerId != $booking->customer_id) {
+                    $errors[] = "Row $rowsProcessed: Customer ID mismatch (expected {$booking->customer_id}, got {$csvCustomerId})";
+                    continue;
+                }
+
+                // If filtering by booking reference, skip rows that don't match
+                if ($filterByReference && $csvBookingReference !== $filterByReference) {
+                    continue; // Skip this row silently
+                }
+
+                if (empty($poNumber)) {
+                    $errors[] = "Row $rowsProcessed: Missing PO Number";
+                    continue;
+                }
+
+                if (empty($sku)) {
+                    $errors[] = "Row $rowsProcessed: Missing SKU";
+                    continue;
+                }
+
+                // Try to find product by SKU for this customer
+                $product = \App\Models\Product::where('customer_id', $booking->customer_id)
+                    ->where('sku', $sku)
+                    ->first();
+
+                // If product doesn't exist and we have a description, create it
+                if (!$product && !empty($description)) {
+                    $product = \App\Models\Product::create([
+                        'customer_id' => $booking->customer_id,
+                        'sku' => $sku,
+                        'description' => $description,
+                        'product_type' => 'finished_product', // default
+                    ]);
+                    $errors[] = "Row $rowsProcessed: Created new product '$sku' - $description";
+                } elseif (!$product) {
+                    $errors[] = "Row $rowsProcessed: Product '$sku' not found and no description provided - skipped";
+                    continue;
+                }
+
+                // Create or update BookingPoNumber entry
+                $bookingPoNumber = $booking->poNumbers()
+                    ->where('po_number', $poNumber)
+                    ->where('product_id', $product->id)
+                    ->first();
+
+                if ($bookingPoNumber) {
+                    $bookingPoNumber->update([
+                        'expected_cases' => $expectedCases,
+                        'expected_pallets' => $expectedPallets,
+                    ]);
+                } else {
+                    $booking->poNumbers()->create([
+                        'po_number' => $poNumber,
+                        'product_id' => $product->id,
+                        'expected_cases' => $expectedCases,
+                        'expected_pallets' => $expectedPallets,
+                    ]);
+                    $productsAdded++;
+                }
+            }
+
+            DB::commit();
+            fclose($handle);
+
+            return response()->json([
+                'success' => true,
+                'rows_processed' => $rowsProcessed,
+                'products_added' => $productsAdded,
+                'errors' => $errors,
+                'message' => "Successfully processed $rowsProcessed rows"
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            fclose($handle);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error processing CSV: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function bulkUploadForm()
+    {
+        // Get accessible customers with their IDs
+        $accessibleCustomers = collect();
+        if (auth()->user()->hasRole('admin')) {
+            $accessibleCustomers = Customer::orderBy('name')->get(['id', 'name']);
+        } else {
+            $allowedCustomerIds = auth()->user()->customers()->pluck('customers.id')->toArray();
+            $accessibleCustomers = Customer::whereIn('id', $allowedCustomerIds)->orderBy('name')->get(['id', 'name']);
+        }
+
+        // Get bookings without PO numbers that need attention
+        $bookingsNeedingPOs = Booking::with(['customer', 'slot.depot', 'bookingType'])
+            ->whereDoesntHave('poNumbers')  // No PO numbers yet
+            ->whereNull('arrived_at')        // Not yet processed/arrived
+            ->whereHas('slot', function($query) {
+                $query->where('start_at', '>', now()); // Slot hasn't passed
+            })
+            ->orderBy('created_at', 'desc');
+
+        // Filter by customer access if not admin
+        if (!auth()->user()->hasRole('admin')) {
+            $allowedCustomerIds = auth()->user()->customers()->pluck('customers.id')->toArray();
+            $bookingsNeedingPOs->whereIn('customer_id', $allowedCustomerIds);
+        }
+
+        $bookingsNeedingPOs = $bookingsNeedingPOs->get()->map(function($booking) {
+            return [
+                'id' => $booking->id,
+                'reference' => $booking->reference ?? 'N/A',
+                'customer_id' => $booking->customer_id,
+                'customer_name' => $booking->customer->name,
+                'slot_time' => $booking->slot ? $booking->slot->start_at->format('D d-M H:i') : 'No slot',
+                'booking_type' => $booking->bookingType->name ?? 'N/A',
+                'created_at' => $booking->created_at->diffForHumans()
+            ];
+        });
+
+        // Get recent bookings for the current user's customer(s)
+        $query = Booking::with(['customer', 'slot.depot', 'bookingType'])
+            ->whereNull('arrived_at')
+            ->orderBy('created_at', 'desc');
+
+        // Filter by customer access if not admin
+        if (!auth()->user()->hasRole('admin')) {
+            $allowedCustomerIds = auth()->user()->customers()->pluck('customers.id')->toArray();
+            $query->whereIn('customer_id', $allowedCustomerIds);
+        }
+
+        $recentBookings = $query->take(20)->get()->map(function($booking) {
+            return [
+                'id' => $booking->id,
+                'customer_name' => $booking->customer->name,
+                'slot_time' => $booking->slot ? $booking->slot->start_at->format('D d-M H:i') : 'No slot',
+                'booking_type' => $booking->bookingType->name ?? 'N/A'
+            ];
+        });
+
+        return view('admin.bookings.bulk-upload', compact('recentBookings', 'accessibleCustomers', 'bookingsNeedingPOs'));
+    }
+
+    public function processBulkUpload(Request $request)
+    {
+        $action = $request->query('action', 'analyze');
+
+        if ($action === 'analyze') {
+            return $this->analyzeBulkCsv($request);
+        } elseif ($action === 'process') {
+            return $this->processBulkAssignments($request);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Invalid action'], 400);
+    }
+
+    private function analyzeBulkCsv(Request $request)
+    {
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:2048'
+        ]);
+
+        $file = $request->file('csv_file');
+        $handle = fopen($file->getRealPath(), 'r');
+
+        if ($handle === false) {
+            return response()->json(['success' => false, 'message' => 'Could not read CSV file'], 400);
+        }
+
+        $references = [];
+        $header = null;
+        $totalRows = 0;
+
+        try {
+            while (($row = fgetcsv($handle)) !== false) {
+                if (empty(array_filter($row))) continue;
+                if (!empty($row[0]) && strpos(trim($row[0]), '#') === 0) continue;
+
+                if ($header === null) {
+                    $header = array_map('trim', $row);
+                    continue;
+                }
+
+                $totalRows++;
+                $data = array_combine($header, $row);
+
+                $csvBookingReference = trim($data['Booking Reference'] ?? '');
+                if (empty($csvBookingReference)) continue;
+
+                if (!isset($references[$csvBookingReference])) {
+                    $references[$csvBookingReference] = [
+                        'reference' => $csvBookingReference,
+                        'row_count' => 0,
+                        'po_numbers' => []
+                    ];
+                }
+                $references[$csvBookingReference]['row_count']++;
+
+                $poNumber = trim($data['PO Number'] ?? '');
+                if ($poNumber && !in_array($poNumber, $references[$csvBookingReference]['po_numbers'])) {
+                    $references[$csvBookingReference]['po_numbers'][] = $poNumber;
+                }
+            }
+
+            fclose($handle);
+
+            return response()->json([
+                'success' => true,
+                'total_rows' => $totalRows,
+                'references' => array_values($references)
+            ]);
+
+        } catch (\Exception $e) {
+            fclose($handle);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    private function processBulkAssignments(Request $request)
+    {
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:2048',
+            'assignments' => 'required|json'
+        ]);
+
+        $assignments = json_decode($request->input('assignments'), true);
+        $file = $request->file('csv_file');
+
+        $results = [];
+
+        foreach ($assignments as $assignment) {
+            $reference = $assignment['reference'];
+            $bookingId = $assignment['booking_id'];
+
+            try {
+                $booking = Booking::findOrFail($bookingId);
+
+                // Ensure user has access
+                if (!auth()->user()->hasRole('admin')) {
+                    $allowedCustomerIds = auth()->user()->customers()->pluck('customers.id')->toArray();
+                    if (!in_array($booking->customer_id, $allowedCustomerIds)) {
+                        $results[] = [
+                            'success' => false,
+                            'reference' => $reference,
+                            'booking_id' => $bookingId,
+                            'error' => 'Unauthorized access'
+                        ];
+                        continue;
+                    }
+                }
+
+                // Process CSV for this specific reference
+                $importResult = $this->importCsvForBooking($file, $booking, $reference);
+
+                $results[] = [
+                    'success' => true,
+                    'reference' => $reference,
+                    'booking_id' => $bookingId,
+                    'products_added' => $importResult['products_added']
+                ];
+
+            } catch (\Exception $e) {
+                $results[] = [
+                    'success' => false,
+                    'reference' => $reference,
+                    'booking_id' => $bookingId,
+                    'error' => $e->getMessage()
+                ];
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'results' => $results
+        ]);
+    }
+
+    private function importCsvForBooking($file, $booking, $filterByReference)
+    {
+        $handle = fopen($file->getRealPath(), 'r');
+        $header = null;
+        $productsAdded = 0;
+
+        DB::beginTransaction();
+
+        try {
+            while (($row = fgetcsv($handle)) !== false) {
+                if (empty(array_filter($row))) continue;
+                if (!empty($row[0]) && strpos(trim($row[0]), '#') === 0) continue;
+
+                if ($header === null) {
+                    $header = array_map('trim', $row);
+                    continue;
+                }
+
+                $data = array_combine($header, $row);
+
+                $csvCustomerId = intval($data['Customer ID'] ?? 0);
+                $csvBookingReference = trim($data['Booking Reference'] ?? '');
+                $poNumber = trim($data['PO Number'] ?? '');
+                $sku = trim($data['SKU'] ?? '');
+                $description = trim($data['Product Description'] ?? '');
+                $expectedCases = intval($data['Expected Cases'] ?? 0);
+                $expectedPallets = intval($data['Expected Pallets'] ?? 0);
+
+                // Filter by customer and reference
+                if ($csvCustomerId != $booking->customer_id) continue;
+                if ($csvBookingReference !== $filterByReference) continue;
+                if (empty($poNumber) || empty($sku)) continue;
+
+                // Find or create product
+                $product = \App\Models\Product::where('customer_id', $booking->customer_id)
+                    ->where('sku', $sku)
+                    ->first();
+
+                if (!$product && !empty($description)) {
+                    $product = \App\Models\Product::create([
+                        'customer_id' => $booking->customer_id,
+                        'sku' => $sku,
+                        'description' => $description,
+                        'product_type' => 'finished_product',
+                    ]);
+                } elseif (!$product) {
+                    continue;
+                }
+
+                // Create or update PO entry
+                $bookingPoNumber = $booking->poNumbers()
+                    ->where('po_number', $poNumber)
+                    ->where('product_id', $product->id)
+                    ->first();
+
+                if ($bookingPoNumber) {
+                    $bookingPoNumber->update([
+                        'expected_cases' => $expectedCases,
+                        'expected_pallets' => $expectedPallets,
+                    ]);
+                } else {
+                    $booking->poNumbers()->create([
+                        'po_number' => $poNumber,
+                        'product_id' => $product->id,
+                        'expected_cases' => $expectedCases,
+                        'expected_pallets' => $expectedPallets,
+                    ]);
+                    $productsAdded++;
+                }
+            }
+
+            DB::commit();
+            fclose($handle);
+
+            return ['products_added' => $productsAdded];
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            fclose($handle);
+            throw $e;
+        }
+    }
+
     public function destroy(Request $request, Booking $booking)
     {
         // Release occupied slots before deleting

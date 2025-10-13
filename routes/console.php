@@ -32,3 +32,11 @@ Schedule::command('bays:sync-occupancy')
     ->timezone('Europe/London')
     ->appendOutputTo(storage_path('logs/bay_sync.log'))
     ->description('Sync tipping bay occupancy based on active bookings');
+
+// Cleanup incomplete bookings without PO details every 15 minutes
+Schedule::command('bookings:cleanup-incomplete', ['--minutes' => 30])
+    ->everyFifteenMinutes()
+    ->withoutOverlapping()
+    ->timezone('Europe/London')
+    ->appendOutputTo(storage_path('logs/booking_cleanup.log'))
+    ->description('Delete bookings older than 30 minutes without PO details');

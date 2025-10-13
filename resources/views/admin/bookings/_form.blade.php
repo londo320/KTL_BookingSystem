@@ -1,39 +1,50 @@
-<div class="space-y-6">
-  {{-- REQUIRED FIELDS --}}
-  <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
-    <h3 class="text-lg font-medium text-blue-900 mb-3">📋 Required Information</h3>
-    
-    <div class="grid grid-cols-2 gap-4">
+{{-- FULL-WIDTH GRID LAYOUT --}}
+<div class="space-y-4">
+  {{-- ROW 1: Customer, Booking Type, Slot (3 columns) --}}
+  <div class="bg-blue-50 rounded-lg border border-blue-200 p-4">
+    <h3 class="text-sm font-semibold text-blue-900 mb-3">📋 Required Information</h3>
+    <div class="grid grid-cols-3 gap-4">
       {{-- Customer --}}
       @if(auth()->user()->hasRole('admin') || auth()->user()->hasFunction('customers.view') || auth()->user()->hasFunction('bookings.create') || request()->routeIs('app.*'))
-        <div class="col-span-2">
-          <label class="block text-sm font-medium text-blue-800">Customer <span class="text-red-500">*</span></label>
-          <select name="customer_id" required class="mt-1 block w-full border-blue-300 rounded bg-white">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Customer <span class="text-red-500">*</span></label>
+          <select name="customer_id" required class="block w-full border-gray-300 rounded bg-white text-sm py-2">
             <option value="">– Choose customer –</option>
             @foreach($customers as $customer)
-              <option value="{{ $customer->id }}"
-                @selected(old('customer_id', $booking->customer_id) == $customer->id)
-              >
+              <option value="{{ $customer->id }}" @selected(old('customer_id', $booking->customer_id) == $customer->id)>
                 {{ $customer->name }}
               </option>
             @endforeach
           </select>
-          @error('customer_id')<p class="text-red-600 text-sm">{{ $message }}</p>@enderror
+          @error('customer_id')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
         </div>
       @endif
 
+      {{-- Booking Type --}}
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Booking Type <span class="text-red-500">*</span></label>
+        <select name="booking_type_id" required class="block w-full border-gray-300 rounded bg-white text-sm py-2">
+          <option value="">– Choose type –</option>
+          @foreach($types as $type)
+            <option value="{{ $type->id }}" @selected(old('booking_type_id', $booking->booking_type_id) == $type->id)>
+              {{ $type->name }}
+            </option>
+          @endforeach
+        </select>
+        @error('booking_type_id')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+      </div>
+
       {{-- Slot --}}
-      <div class="col-span-2">
-        <label class="block text-sm font-medium text-blue-800">Slot <span class="text-red-500">*</span>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Slot <span class="text-red-500">*</span>
           @if($booking->exists)
-            <span class="text-xs text-red-600 ml-2">⚠️ Slot changes disabled - Use Rebook button instead</span>
+            <span class="text-xs text-red-600 ml-1">⚠️ Use Rebook</span>
           @endif
         </label>
-        <select name="slot_id" required @if($booking->exists) disabled @endif class="mt-1 block w-full border-blue-300 rounded @if($booking->exists) bg-gray-100 text-gray-500 cursor-not-allowed @else bg-white @endif">
+        <select name="slot_id" required @if($booking->exists) disabled @endif class="block w-full border-gray-300 rounded text-sm py-2 @if($booking->exists) bg-gray-100 text-gray-500 cursor-not-allowed @else bg-white @endif">
           @if($booking->exists && $booking->slot)
             <option value="{{ $booking->slot->id }}" selected>
-              {{ $booking->slot->depot->name }} - 
-              {{ $booking->slot->start_at->format('D d-M H:i') }} → {{ $booking->slot->end_at->format('H:i') }}
+              {{ $booking->slot->depot->name }} - {{ $booking->slot->start_at->format('D d-M H:i') }} → {{ $booking->slot->end_at->format('H:i') }}
             </option>
           @else
             <option value="">– Choose slot –</option>
@@ -46,8 +57,7 @@
                   @php
                     $isRestricted = $slot->allowed_customers->count() > 0;
                   @endphp
-                  <option value="{{ $slot->id }}"
-                    @selected(old('slot_id', $booking->slot_id) == $slot->id)>
+                  <option value="{{ $slot->id }}" @selected(old('slot_id', $booking->slot_id) == $slot->id)>
                     {{ $isRestricted ? '🔒' : '🌐' }} {{ $slot->start_at->format('D d-M H:i') }} → {{ $slot->end_at->format('H:i') }}
                   </option>
                 @endforeach
@@ -55,265 +65,295 @@
             @endforeach
           @endif
         </select>
-        
-        {{-- Hidden input to preserve slot_id when editing existing booking --}}
         @if($booking->exists && $booking->slot)
           <input type="hidden" name="slot_id" value="{{ $booking->slot->id }}">
         @endif
-        
-        @error('slot_id')<p class="text-red-600 text-sm">{{ $message }}</p>@enderror
-      </div>
-
-      {{-- Booking Type --}}
-      <div>
-        <label class="block text-sm font-medium text-blue-800">Booking Type <span class="text-red-500">*</span></label>
-        <select name="booking_type_id" required class="mt-1 block w-full border-blue-300 rounded bg-white">
-          <option value="">– Choose type –</option>
-          @foreach($types as $type)
-            <option value="{{ $type->id }}"
-              @selected(old('booking_type_id', $booking->booking_type_id) == $type->id)
-            >
-              {{ $type->name }}
-            </option>
-          @endforeach
-        </select>
-        @error('booking_type_id')<p class="text-red-600 text-sm">{{ $message }}</p>@enderror
-      </div>
-
-      {{-- Haulier --}}
-      <div>
-        <label class="block text-sm font-medium text-blue-800">Haulier <span class="text-red-500">*</span></label>
-        <div class="relative">
-          <input type="text"
-                 id="admin-carrier-search"
-                 name="carrier_name"
-                 value="{{ old('carrier_name', $booking->carrier?->name ?? $booking->carrier_company) }}"
-                 placeholder="Search or type haulier name..."
-                 required
-                 autocomplete="off"
-                 class="mt-1 block w-full border-blue-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10">
-
-          {{-- Hidden carrier_id field --}}
-          <input type="hidden"
-                 id="admin-carrier-id"
-                 name="carrier_id"
-                 value="{{ old('carrier_id', $booking->carrier_id) }}">
-
-          {{-- Search dropdown --}}
-          <div id="admin-carrier-dropdown"
-               class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-            {{-- Results will be populated by JavaScript --}}
-          </div>
-
-          {{-- Status indicators --}}
-          <div class="absolute inset-y-0 right-0 flex items-center pr-3">
-            <span id="admin-carrier-status" class="text-xs"></span>
-          </div>
-        </div>
-
-        <div class="mt-2">
-          <a href="{{ route('app.carriers.create') }}" target="_blank"
-             class="text-xs text-blue-600 hover:text-blue-800 underline">
-            🚚 Manage hauliers
-          </a>
-        </div>
-
-        @error('carrier_id')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
-        @error('carrier_name')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
+        @error('slot_id')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
       </div>
     </div>
   </div>
 
-  {{-- PO NUMBERS SECTION --}}
-  <div class="bg-green-50 p-4 rounded-lg border border-green-200">
-    <h3 class="text-lg font-medium text-green-900 mb-3">📦 PO Numbers & Expected Quantities</h3>
-    <p class="text-sm text-green-700 mb-3">At least one PO with expected quantities is required</p>
-    <x-booking-po-numbers :booking="$booking" :hide_actuals="!$booking->exists" />
-  </div>
-
-  {{-- OPTIONAL TRANSPORTATION DETAILS --}}
-  <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-    <h3 class="text-lg font-medium text-gray-700 mb-3">🚛 Transportation Details <span class="text-sm font-normal text-gray-500">(Optional - can be added later)</span></h3>
-    
-    <div class="grid grid-cols-2 gap-4">
-      {{-- Vehicle Registration --}}
-      <div>
-        <label class="block text-sm font-medium text-gray-600">Vehicle Registration</label>
-        <input type="text" name="vehicle_registration"
-               value="{{ old('vehicle_registration', $booking->vehicle_registration) }}"
-               placeholder="e.g., AB12 CDE"
-               class="mt-1 block w-full border-gray-300 rounded-lg">
-        @error('vehicle_registration')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
-      </div>
-
-      {{-- Container Number --}}
-      <div>
-        <label class="block text-sm font-medium text-gray-600">Vehicle/Trailer Number</label>
-        <input type="text" name="container_number"
-               value="{{ old('container_number', $booking->container_number) }}"
-               placeholder="e.g., CONT123456"
-               class="mt-1 block w-full border-gray-300 rounded-lg">
-        @error('container_number')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
-      </div>
-
-      {{-- Seal Number --}}
-      <div>
-        <label class="block text-sm font-medium text-gray-600">Seal Number</label>
-        <input type="text" name="seal_number"
-               value="{{ old('seal_number', $booking->seal_number) }}"
-               placeholder="e.g., SEAL123456"
-               class="mt-1 block w-full border-gray-300 rounded-lg">
-        @error('seal_number')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
-      </div>
-
+  {{-- ROW 2: Supplier Section (3 columns) --}}
+  <div class="bg-blue-50 rounded-lg border border-blue-200 p-4">
+    <h3 class="text-sm font-semibold text-blue-900 mb-3">📦 Supplier & Contact</h3>
+    <div class="grid grid-cols-3 gap-4">
       {{-- Supplier --}}
       <div>
-        <label class="block text-sm font-medium text-gray-600">Supplier</label>
-        <input type="text"
-               id="admin-supplier-input"
-               name="supplier"
-               value="{{ old('supplier', $booking->supplier) }}"
-               placeholder="Enter supplier name..."
-               class="mt-1 block w-full border-gray-300 rounded-lg">
-        @error('supplier')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
+        <label class="block text-sm font-medium text-gray-700 mb-1">Supplier <span class="text-red-500">*</span></label>
+        <div class="relative">
+          <input type="text" id="admin-supplier-search" name="supplier_name"
+                 value="{{ old('supplier_name', $booking->supplier?->name ?? $booking->supplier) }}"
+                 placeholder="Search or type supplier..." required autocomplete="off"
+                 class="block w-full border-gray-300 rounded bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10 text-sm py-2">
+          <input type="hidden" id="admin-supplier-id" name="supplier_id" value="{{ old('supplier_id', $booking->supplier_id) }}">
+          <div id="admin-supplier-dropdown" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"></div>
+          <div class="absolute inset-y-0 right-0 flex items-center pr-2">
+            <span id="admin-supplier-status" class="text-xs"></span>
+          </div>
+        </div>
+        <div class="mt-1">
+          <a href="{{ route('app.suppliers.index') }}" target="_blank" class="text-[10px] text-blue-600 hover:text-blue-800 underline">📦 Manage suppliers</a>
+        </div>
+        @error('supplier_id')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+        @error('supplier_name')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
       </div>
 
-      {{-- Contact Name with autocomplete --}}
+      {{-- Contact Name --}}
       <div>
-        <label class="block text-sm font-medium text-gray-600">Contact Name</label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
         <div class="relative">
-          <input type="text"
-                 id="admin-contact-name-input"
-                 name="contact_name"
+          <input type="text" id="admin-contact-name-input" name="contact_name"
                  value="{{ old('contact_name', $booking->contact_name) }}"
-                 placeholder="Search or type contact name..."
-                 autocomplete="off"
-                 class="mt-1 block w-full border-gray-300 rounded-lg pr-10">
-
-          {{-- Search dropdown --}}
-          <div id="admin-contact-dropdown"
-               class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-            {{-- Results will be populated by JavaScript --}}
-          </div>
-
-          {{-- Status indicator --}}
-          <div class="absolute inset-y-0 right-0 flex items-center pr-3 mt-1">
+                 placeholder="Search or type contact..." autocomplete="off"
+                 class="block w-full border-gray-300 rounded pr-10 text-sm py-2">
+          <div id="admin-contact-dropdown" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"></div>
+          <div class="absolute inset-y-0 right-0 flex items-center pr-2">
             <span id="admin-contact-status" class="text-xs"></span>
           </div>
         </div>
-        @error('contact_name')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
+        @error('contact_name')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
       </div>
 
       {{-- Contact Phone --}}
       <div>
-        <label class="block text-sm font-medium text-gray-600">Contact Phone</label>
-        <input type="text"
-               id="admin-contact-phone-input"
-               name="contact_phone"
+        <label class="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
+        <input type="text" id="admin-contact-phone-input" name="contact_phone"
                value="{{ old('contact_phone', $booking->contact_phone) }}"
                placeholder="e.g., 07123456789"
-               class="mt-1 block w-full border-gray-300 rounded-lg">
-        @error('contact_phone')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
+               class="block w-full border-gray-300 rounded text-sm py-2">
+        @error('contact_phone')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+      </div>
+    </div>
+  </div>
+
+  {{-- ROW 3: Haulier Section --}}
+  <div class="bg-gray-50 rounded-lg border border-gray-200 p-4">
+    <h3 class="text-sm font-semibold text-gray-700 mb-3">🚛 Haulier & Vehicle Details</h3>
+
+    {{-- Line 1: Haulier and Trailer Type --}}
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      {{-- Haulier --}}
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Haulier</label>
+        <div class="relative">
+          <input type="text" id="admin-carrier-search" name="carrier_name"
+                 value="{{ old('carrier_name', $booking->carrier?->name ?? $booking->carrier_company) }}"
+                 placeholder="Search or type haulier..." autocomplete="off"
+                 class="block w-full border-gray-300 rounded bg-white focus:ring-2 focus:ring-gray-500 focus:border-gray-500 pr-10 text-sm py-2">
+          <input type="hidden" id="admin-carrier-id" name="carrier_id" value="{{ old('carrier_id', $booking->carrier_id) }}">
+          <div id="admin-carrier-dropdown" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"></div>
+          <div class="absolute inset-y-0 right-0 flex items-center pr-2">
+            <span id="admin-carrier-status" class="text-xs"></span>
+          </div>
+        </div>
+        <div class="mt-1">
+          <a href="{{ route('app.carriers.create') }}" target="_blank" class="text-[10px] text-gray-600 hover:text-gray-800 underline">🚚 Manage hauliers</a>
+        </div>
+        @error('carrier_id')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+        @error('carrier_name')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
       </div>
 
       {{-- Trailer Type --}}
       <div>
-        <label class="block text-sm font-medium text-gray-600">Trailer Type</label>
-        <select name="trailer_type_id" class="mt-1 block w-full border-gray-300 rounded-lg">
-          <option value="">– Select Trailer Type –</option>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Trailer Type</label>
+        <select name="trailer_type_id" class="block w-full border-gray-300 rounded text-sm py-2">
+          <option value="">– Select –</option>
           @foreach($trailerTypes as $trailerType)
-            <option value="{{ $trailerType->id }}" 
-                    @selected(old('trailer_type_id', $booking->trailer_type_id) == $trailerType->id)>
+            <option value="{{ $trailerType->id }}" @selected(old('trailer_type_id', $booking->trailer_type_id) == $trailerType->id)>
               {{ $trailerType->name }}
             </option>
           @endforeach
         </select>
-        @error('trailer_type_id')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
+        @error('trailer_type_id')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
       </div>
+    </div>
 
-
-      {{-- Tipping Type --}}
+    {{-- Line 2: Vehicle Registration, Container, Seal --}}
+    <div class="grid grid-cols-3 gap-4">
+      {{-- Vehicle Registration --}}
       <div>
-        <label class="block text-sm font-medium text-gray-600">🚛 Tipping Type</label>
-        <div class="mt-2 space-y-2">
-          <div class="flex items-center">
-            <input type="radio" id="tipping_type_live" name="tipping_type" value="live_tip" 
-                   @checked(old('tipping_type', $booking->tipping_type) == 'live_tip')
-                   class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300">
-            <label for="tipping_type_live" class="ml-3 flex items-center">
-              <span class="text-lg mr-2">🚛📦</span>
-              <div>
-                <div class="text-sm font-medium text-gray-900">Live Tip</div>
-                <div class="text-xs text-gray-500">Unit stays connected during tipping</div>
-              </div>
-            </label>
-          </div>
-          <div class="flex items-center">
-            <input type="radio" id="tipping_type_drop" name="tipping_type" value="drop" 
-                   @checked(old('tipping_type', $booking->tipping_type) == 'drop')
-                   class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300">
-            <label for="tipping_type_drop" class="ml-3 flex items-center">
-              <span class="text-lg mr-2">📦</span>
-              <div>
-                <div class="text-sm font-medium text-gray-900">Drop</div>
-                <div class="text-xs text-gray-500">Unit leaves, trailer handled separately</div>
-              </div>
-            </label>
-          </div>
-        </div>
-        <p class="text-xs text-gray-500 mt-2">Select how this booking will be handled during tipping</p>
-        @error('tipping_type')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
+        <label class="block text-sm font-medium text-gray-600 mb-1">Vehicle Registration</label>
+        <input type="text" name="vehicle_registration"
+               value="{{ old('vehicle_registration', $booking->vehicle_registration) }}"
+               placeholder="e.g., AB12 CDE"
+               class="block w-full border-gray-300 rounded text-sm py-2">
+        @error('vehicle_registration')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
       </div>
 
-      {{-- Tipping Bay (only show for existing bookings) --}}
-      @if($booking->exists)
-        <div>
-          <label class="block text-sm font-medium text-gray-600">🏗️ Tipping Bay</label>
-          <select name="tipping_bay_id" class="mt-1 block w-full border-gray-300 rounded-lg">
-            <option value="">– Select Bay –</option>
-            @if(isset($tippingBays))
-              @foreach($tippingBays as $bay)
-                <option value="{{ $bay->id }}" 
-                        @selected(old('tipping_bay_id', $booking->tipping_bay_id) == $bay->id)
-                        @disabled($bay->is_occupied && $bay->id != $booking->tipping_bay_id)>
-                  {{ $bay->name }} ({{ $bay->depot->name }}) 
-                  @if($bay->is_occupied && $bay->id != $booking->tipping_bay_id)
-                    - Occupied
-                  @elseif($bay->is_occupied)
-                    - Current Bay
-                  @else
-                    - Available
-                  @endif
-                </option>
-              @endforeach
-            @endif
-          </select>
-          @error('tipping_bay_id')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
-        </div>
-      @endif
+      {{-- Container Number --}}
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Container/Trailer Number</label>
+        <input type="text" name="container_number"
+               value="{{ old('container_number', $booking->container_number) }}"
+               placeholder="e.g., CONT123456"
+               class="block w-full border-gray-300 rounded text-sm py-2">
+        @error('container_number')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+      </div>
+
+      {{-- Seal Number --}}
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Seal Number</label>
+        <input type="text" name="seal_number"
+               value="{{ old('seal_number', $booking->seal_number) }}"
+               placeholder="e.g., SEAL123456"
+               class="block w-full border-gray-300 rounded text-sm py-2">
+        @error('seal_number')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+      </div>
     </div>
   </div>
 
-  {{-- NOTES & INSTRUCTIONS --}}
+  {{-- ROW 4: Tipping Section --}}
+  <div class="bg-purple-50 rounded-lg border border-purple-200 p-4">
+    <h3 class="text-sm font-semibold text-purple-900 mb-3">📦 Tipping Details</h3>
+    <div class="grid grid-cols-2 gap-4">
+      {{-- Tipping Type --}}
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Tipping Type</label>
+        <div class="flex items-center gap-6">
+          <div class="flex items-center">
+            <input type="radio" id="tipping_type_live" name="tipping_type" value="live_tip"
+                   @checked(old('tipping_type', $booking->tipping_type) == 'live_tip')
+                   class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300">
+            <label for="tipping_type_live" class="ml-2 flex items-center">
+              <span class="text-base mr-2">🚛📦</span>
+              <span class="text-sm font-medium text-gray-900">Live Tip</span>
+            </label>
+          </div>
+          <div class="flex items-center">
+            <input type="radio" id="tipping_type_drop" name="tipping_type" value="drop"
+                   @checked(old('tipping_type', $booking->tipping_type) == 'drop')
+                   class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300">
+            <label for="tipping_type_drop" class="ml-2 flex items-center">
+              <span class="text-base mr-2">📦</span>
+              <span class="text-sm font-medium text-gray-900">Drop</span>
+            </label>
+          </div>
+        </div>
+        @error('tipping_type')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+      </div>
+    </div>
+
+    {{-- Tipping Bay (only show for existing bookings) --}}
+    @if($booking->exists)
+      <div class="mt-4">
+        <label class="block text-sm font-medium text-gray-600 mb-1">Tipping Bay</label>
+        <select name="tipping_bay_id" class="block w-full border-gray-300 rounded text-sm py-2 max-w-md">
+          <option value="">– Select Bay –</option>
+          @if(isset($tippingBays))
+            @foreach($tippingBays as $bay)
+              <option value="{{ $bay->id }}"
+                      @selected(old('tipping_bay_id', $booking->tipping_bay_id) == $bay->id)
+                      @disabled($bay->is_occupied && $bay->id != $booking->tipping_bay_id)>
+                {{ $bay->name }} ({{ $bay->depot->name }})
+                @if($bay->is_occupied && $bay->id != $booking->tipping_bay_id)
+                  - Occupied
+                @elseif($bay->is_occupied)
+                  - Current
+                @else
+                  - Available
+                @endif
+              </option>
+            @endforeach
+          @endif
+        </select>
+        @error('tipping_bay_id')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+      </div>
+    @endif
+  </div>
+
+  @if($booking->exists)
+    {{-- PO NUMBERS SECTION - FULL WIDTH (Edit only) --}}
+    <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-base font-semibold text-green-900">📦 PO Numbers & Expected Quantities <span class="text-red-500">*</span></h3>
+        <div class="flex gap-2">
+          <a href="{{ route('app.bookings.download-csv-template', $booking) }}" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm">
+            📥 Download CSV Template
+          </a>
+          <button type="button" id="upload-csv-btn" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
+            📤 Upload CSV Template
+          </button>
+          <a href="{{ route('app.products.index') }}" target="_blank" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+            📦 Manage Products
+          </a>
+        </div>
+      </div>
+
+      {{-- CSV Upload Form (hidden by default) --}}
+      <div id="csv-upload-section" class="hidden mb-4 p-4 bg-white rounded-lg border border-green-300">
+        <h4 class="text-sm font-semibold text-gray-800 mb-2">Upload CSV Template</h4>
+        <p class="text-xs text-gray-600 mb-3">
+          <strong>Tip:</strong> You can use ONE CSV file for multiple bookings! Just use different Booking References.<br>
+          CSV format: Customer ID, Booking Reference, PO Number, SKU, Product Description, Expected Cases, Expected Pallets
+        </p>
+        <form id="csv-upload-form" enctype="multipart/form-data">
+          @csrf
+          <input type="hidden" name="booking_id" value="{{ $booking->id }}">
+          <input type="file" name="csv_file" id="csv-file-input" accept=".csv" class="block w-full text-sm text-gray-900 border border-gray-300 rounded cursor-pointer bg-gray-50 mb-2">
+
+          {{-- Booking Reference Selector (shown after file is selected) --}}
+          <div id="reference-selector" class="hidden mb-3">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Select Booking Reference to Import:</label>
+            <select name="booking_reference" id="booking-reference-select" class="block w-full border-gray-300 rounded text-sm py-2 mb-2">
+              <option value="">-- All References (Import Everything) --</option>
+            </select>
+            <div id="reference-info" class="text-xs text-gray-600"></div>
+          </div>
+
+          <div class="flex gap-2">
+            <button type="submit" id="upload-submit-btn" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
+              Upload & Process
+            </button>
+            <button type="button" id="cancel-upload-btn" class="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-sm">
+              Cancel
+            </button>
+          </div>
+        </form>
+        <div id="csv-upload-result" class="mt-3 hidden"></div>
+      </div>
+
+      <x-booking-po-numbers :booking="$booking" :hide_actuals="!$booking->exists" :customer_id="old('customer_id', $booking->customer_id)" />
+
+      @error('po_numbers')<p class="text-red-600 text-sm mt-2">{{ $message }}</p>@enderror
+    </div>
+  @else
+    {{-- Create Form Notice --}}
+    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+      <h3 class="text-base font-semibold text-blue-900 mb-2">📦 PO Numbers & Product Details</h3>
+      <p class="text-sm text-blue-800">
+        ℹ️ After creating this booking, you'll be able to add PO numbers and products via:
+      </p>
+      <ul class="list-disc list-inside text-sm text-blue-700 mt-2 ml-4">
+        <li>Manual entry</li>
+        <li>CSV upload template</li>
+        <li>Saved templates (coming soon)</li>
+      </ul>
+      <p class="text-sm text-red-600 font-semibold mt-3">
+        ⚠️ At least one PO with product details is required to complete the booking.
+      </p>
+    </div>
+  @endif
+
+  {{-- NOTES SECTION --}}
   <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-    <h3 class="text-lg font-medium text-yellow-900 mb-3">📝 Notes & Instructions</h3>
-    
-    <div class="space-y-4">
+    <h3 class="text-base font-semibold text-yellow-900 mb-3">📝 Notes & Instructions</h3>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {{-- General Notes --}}
       <div>
-        <label class="block text-sm font-medium text-yellow-800">General Notes</label>
-        <textarea name="notes" rows="2"
+        <label class="block text-sm font-medium text-yellow-800 mb-1">General Notes</label>
+        <textarea name="notes" rows="3"
                   placeholder="Internal notes about this booking..."
-                  class="mt-1 block w-full border-yellow-300 rounded bg-white">{{ old('notes', $booking->notes) }}</textarea>
+                  class="block w-full border-yellow-300 rounded bg-white text-sm py-2">{{ old('notes', $booking->notes) }}</textarea>
         @error('notes')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
       </div>
 
       {{-- Special Instructions --}}
       <div>
-        <label class="block text-sm font-medium text-yellow-800">Special Instructions</label>
-        <textarea name="special_instructions" rows="2"
-                  placeholder="Special handling instructions for the driver/operator..."
-                  class="mt-1 block w-full border-yellow-300 rounded bg-white">{{ old('special_instructions', $booking->special_instructions) }}</textarea>
+        <label class="block text-sm font-medium text-yellow-800 mb-1">Special Instructions</label>
+        <textarea name="special_instructions" rows="3"
+                  placeholder="Special handling instructions..."
+                  class="block w-full border-yellow-300 rounded bg-white text-sm py-2">{{ old('special_instructions', $booking->special_instructions) }}</textarea>
         @error('special_instructions')<p class="text-red-600 text-xs">{{ $message }}</p>@enderror
       </div>
     </div>
@@ -322,7 +362,7 @@
   {{-- ARRIVAL STATUS (if arrived) --}}
   @if($booking->exists && $booking->arrived_at)
     <div class="bg-green-100 p-4 rounded-lg border border-green-300">
-      <h3 class="text-lg font-medium text-green-900 mb-2">✅ Arrival Status</h3>
+      <h3 class="text-base font-semibold text-green-900 mb-2">✅ Arrival Status</h3>
       <p class="text-sm text-green-800">
         <strong>Vehicle Arrived:</strong> {{ $booking->arrived_at->format('d-M-Y H:i:s') }}
         @if($booking->departed_at)
@@ -333,402 +373,160 @@
   @endif
 </div>
 
+@include('admin.bookings._form_scripts')
+
+{{-- CSV Upload Scripts --}}
+@if($booking->exists)
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Admin carrier search functionality (similar to customer but with admin prefix)
-    const searchInput = document.getElementById('admin-carrier-search');
-    const carrierIdInput = document.getElementById('admin-carrier-id');
-    const dropdown = document.getElementById('admin-carrier-dropdown');
-    const statusSpan = document.getElementById('admin-carrier-status');
-    
-    if (!searchInput) return; // Exit if elements don't exist
-    
-    let searchTimeout;
-    let selectedCarrierId = carrierIdInput.value;
-    let currentPage = 1;
-    let isLoading = false;
-    
-    // Update status based on current state
-    function updateStatus() {
-        if (selectedCarrierId) {
-            statusSpan.textContent = '✓';
-            statusSpan.className = 'text-xs text-green-600';
-        } else if (searchInput.value.trim()) {
-            statusSpan.textContent = '+';
-            statusSpan.className = 'text-xs text-blue-600';
-            statusSpan.title = 'Will create new carrier';
-        } else {
-            statusSpan.textContent = '';
-            statusSpan.className = 'text-xs';
-        }
+    const uploadBtn = document.getElementById('upload-csv-btn');
+    const cancelBtn = document.getElementById('cancel-upload-btn');
+    const uploadSection = document.getElementById('csv-upload-section');
+    const uploadForm = document.getElementById('csv-upload-form');
+    const uploadResult = document.getElementById('csv-upload-result');
+    const fileInput = document.getElementById('csv-file-input');
+    const referenceSelector = document.getElementById('reference-selector');
+    const referenceSelect = document.getElementById('booking-reference-select');
+    const referenceInfo = document.getElementById('reference-info');
+
+    let csvReferences = [];
+
+    if (uploadBtn) {
+        uploadBtn.addEventListener('click', function() {
+            uploadSection.classList.remove('hidden');
+        });
     }
-    
-    // Search carriers
-    function searchCarriers(query, page = 1) {
-        if (query.length < 2) {
-            dropdown.classList.add('hidden');
-            return;
-        }
-        
-        if (isLoading) return;
-        isLoading = true;
-        
-        fetch(`{{ route('api.carriers.search') }}?q=${encodeURIComponent(query)}&page=${page}`)
+
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function() {
+            uploadSection.classList.add('hidden');
+            uploadForm.reset();
+            uploadResult.classList.add('hidden');
+            referenceSelector.classList.add('hidden');
+        });
+    }
+
+    // Preview CSV when file is selected
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            if (!this.files.length) {
+                referenceSelector.classList.add('hidden');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('csv_file', this.files[0]);
+            formData.append('booking_id', '{{ $booking->id }}');
+            formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+
+            uploadResult.className = 'mt-3 p-3 bg-blue-100 border border-blue-300 rounded text-sm text-blue-800';
+            uploadResult.textContent = '⏳ Reading CSV file...';
+            uploadResult.classList.remove('hidden');
+
+            fetch('{{ route("app.bookings.preview-csv") }}', {
+                method: 'POST',
+                body: formData
+            })
             .then(response => response.json())
             .then(data => {
-                if (page === 1) {
-                    populateDropdown(data, query);
+                if (data.success) {
+                    csvReferences = data.references;
+
+                    // Populate dropdown
+                    referenceSelect.innerHTML = '<option value="">-- All References (Import Everything) --</option>';
+
+                    data.references.forEach(ref => {
+                        const option = document.createElement('option');
+                        option.value = ref.reference;
+                        option.textContent = `${ref.reference} (${ref.row_count} items, ${ref.po_numbers.length} POs)`;
+                        referenceSelect.appendChild(option);
+                    });
+
+                    if (data.references.length > 0) {
+                        referenceSelector.classList.remove('hidden');
+                        uploadResult.className = 'mt-3 p-3 bg-green-100 border border-green-300 rounded text-sm text-green-800';
+                        uploadResult.textContent = `✅ Found ${data.references.length} booking reference(s) in your CSV`;
+                    } else {
+                        uploadResult.className = 'mt-3 p-3 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800';
+                        uploadResult.textContent = '⚠️ No booking references found. All rows will be imported.';
+                    }
                 } else {
-                    appendToDropdown(data, query);
+                    uploadResult.className = 'mt-3 p-3 bg-red-100 border border-red-300 rounded text-sm text-red-800';
+                    uploadResult.textContent = `❌ Error: ${data.message}`;
                 }
-                currentPage = page;
-                isLoading = false;
             })
             .catch(error => {
-                console.error('Search failed:', error);
-                dropdown.classList.add('hidden');
-                isLoading = false;
+                console.error('Preview error:', error);
+                uploadResult.className = 'mt-3 p-3 bg-red-100 border border-red-300 rounded text-sm text-red-800';
+                uploadResult.textContent = '❌ Failed to read CSV file.';
             });
-    }
-    
-    // Append more results to dropdown
-    function appendToDropdown(data, query) {
-        // Remove the "Load more" button
-        const loadMoreButton = dropdown.querySelector('[onclick*="searchCarriers"]');
-        if (loadMoreButton) {
-            loadMoreButton.remove();
-        }
-        
-        // Add new carriers
-        data.carriers.forEach(carrier => {
-            const item = document.createElement('div');
-            item.className = 'px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100';
-            item.innerHTML = `
-                <div class="font-medium text-gray-900">${carrier.name}</div>
-                <div class="text-xs text-gray-500">
-                    ${carrier.is_active ? 'Active carrier' : 'Inactive carrier - will be reactivated'}
-                </div>
-            `;
-            item.onclick = () => selectCarrier(carrier.id, carrier.name);
-            dropdown.appendChild(item);
         });
-        
-        // Add "Load more" again if there are still more results
-        if (data.has_more) {
-            const loadMoreItem = document.createElement('div');
-            loadMoreItem.className = 'px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-200 bg-gray-25 text-center';
-            loadMoreItem.innerHTML = `<div class="text-sm text-gray-600">📄 Load more carriers...</div>`;
-            loadMoreItem.onclick = () => {
-                loadMoreItem.innerHTML = '<div class="text-sm text-gray-600">⏳ Loading...</div>';
-                searchCarriers(query, currentPage + 1);
-            };
-            dropdown.appendChild(loadMoreItem);
-        }
     }
-    
-    // Populate dropdown with results
-    function populateDropdown(data, query) {
-        dropdown.innerHTML = '';
-        
-        // Show total results if more than displayed
-        if (data.total > data.carriers.length) {
-            const headerItem = document.createElement('div');
-            headerItem.className = 'px-3 py-2 bg-gray-100 border-b border-gray-200 text-xs text-gray-600';
-            headerItem.innerHTML = `Showing ${data.carriers.length} of ${data.total} carriers`;
-            dropdown.appendChild(headerItem);
-        }
-        
-        // Show existing carriers
-        data.carriers.forEach(carrier => {
-            const item = document.createElement('div');
-            item.className = 'px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100';
-            item.innerHTML = `
-                <div class="font-medium text-gray-900">${carrier.name}</div>
-                <div class="text-xs text-gray-500">
-                    ${carrier.is_active ? 'Active carrier' : 'Inactive carrier - will be reactivated'}
-                </div>
-            `;
-            item.onclick = () => selectCarrier(carrier.id, carrier.name);
-            dropdown.appendChild(item);
-        });
-        
-        // Add "Load more" option if there are more results
-        if (data.has_more) {
-            const loadMoreItem = document.createElement('div');
-            loadMoreItem.className = 'px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-200 bg-gray-25 text-center';
-            loadMoreItem.innerHTML = `<div class="text-sm text-gray-600">📄 Load more carriers...</div>`;
-            loadMoreItem.onclick = () => {
-                loadMoreItem.innerHTML = '<div class="text-sm text-gray-600">⏳ Loading...</div>';
-                searchCarriers(query, currentPage + 1);
-            };
-            dropdown.appendChild(loadMoreItem);
-        }
-        
-        // Add "Create new" option if no exact match
-        if (!data.exact_match && query.trim()) {
-            const createItem = document.createElement('div');
-            createItem.className = 'px-3 py-2 hover:bg-green-50 cursor-pointer border-t-2 border-green-200 bg-green-25';
-            createItem.innerHTML = `
-                <div class="font-medium text-green-800">➕ Create "${query}"</div>
-                <div class="text-xs text-green-600">Add as new carrier and use immediately</div>
-            `;
-            createItem.onclick = () => quickCreateCarrier(query);
-            dropdown.appendChild(createItem);
-        }
-        
-        dropdown.classList.remove('hidden');
-    }
-    
-    // Select existing carrier
-    function selectCarrier(id, name) {
-        selectedCarrierId = id;
-        carrierIdInput.value = id;
-        searchInput.value = name;
-        dropdown.classList.add('hidden');
-        updateStatus();
-    }
-    
-    // Quick create carrier (immediate API call)
-    function quickCreateCarrier(name) {
-        // Show loading state
-        const createButton = dropdown.querySelector('[onclick*="quickCreateCarrier"]');
-        if (createButton) {
-            createButton.innerHTML = `
-                <div class="font-medium text-green-800">⏳ Creating "${name}"...</div>
-                <div class="text-xs text-green-600">Please wait...</div>
-            `;
-        }
-        
-        fetch('{{ route('api.carriers.quick-create') }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: JSON.stringify({ name: name })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Select the newly created carrier
-                selectCarrier(data.carrier.id, data.carrier.name);
-                
-                // Show success message briefly
-                statusSpan.textContent = '✓';
-                statusSpan.className = 'text-xs text-green-600';
-                statusSpan.title = data.message;
+
+    // Update info when reference is selected
+    if (referenceSelect) {
+        referenceSelect.addEventListener('change', function() {
+            const selectedRef = csvReferences.find(r => r.reference === this.value);
+            if (selectedRef) {
+                referenceInfo.textContent = `Will import ${selectedRef.row_count} items from PO(s): ${selectedRef.po_numbers.join(', ')}`;
             } else {
-                alert('Failed to create carrier. Please try again.');
-                dropdown.classList.add('hidden');
+                referenceInfo.textContent = 'Will import all references from the CSV file';
             }
-        })
-        .catch(error => {
-            console.error('Create failed:', error);
-            alert('Failed to create carrier. Please try again.');
-            dropdown.classList.add('hidden');
         });
     }
-    
-    // Create new carrier (fallback - no immediate API call)
-    function createNewCarrier(name) {
-        selectedCarrierId = null;
-        carrierIdInput.value = '';
-        searchInput.value = name;
-        dropdown.classList.add('hidden');
-        updateStatus();
-    }
-    
-    // Search input handler
-    searchInput.addEventListener('input', function() {
-        const query = this.value.trim();
-        
-        // Reset selection when typing
-        selectedCarrierId = null;
-        carrierIdInput.value = '';
-        currentPage = 1; // Reset pagination
-        
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            searchCarriers(query, 1);
-        }, 300);
-        
-        updateStatus();
-    });
-    
-    // Hide dropdown when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
-            dropdown.classList.add('hidden');
-        }
-    });
-    
-    // Show dropdown on focus if there's content
-    searchInput.addEventListener('focus', function() {
-        if (this.value.length >= 2) {
-            searchCarriers(this.value);
-        }
-    });
-    
-    // Initial status update
-    updateStatus();
 
-    // ============================================
-    // Contact Name Autocomplete with Phone Lookup
-    // ============================================
-    const contactNameInput = document.getElementById('admin-contact-name-input');
-    const contactPhoneInput = document.getElementById('admin-contact-phone-input');
-    const contactDropdown = document.getElementById('admin-contact-dropdown');
-    const contactStatus = document.getElementById('admin-contact-status');
-    const supplierInput = document.getElementById('admin-supplier-input');
-    const haulierInput = document.getElementById('admin-carrier-search'); // Carrier field is now Haulier
-    const slotSelect = document.querySelector('select[name="slot_id"]');
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
 
-    if (contactNameInput) {
-        let contactSearchTimeout;
+            const formData = new FormData(uploadForm);
 
-        // Search contacts as user types
-        contactNameInput.addEventListener('input', function() {
-            const query = this.value.trim();
-
-            clearTimeout(contactSearchTimeout);
-
-            if (query.length < 2) {
-                contactDropdown.classList.add('hidden');
+            if (!fileInput.files.length) {
+                uploadResult.className = 'mt-3 p-3 bg-red-100 border border-red-300 rounded text-sm text-red-800';
+                uploadResult.textContent = '⚠️ Please select a CSV file to upload.';
+                uploadResult.classList.remove('hidden');
                 return;
             }
 
-            contactStatus.textContent = '⏳';
-            contactStatus.className = 'text-xs text-gray-400';
+            // Show loading state
+            uploadResult.className = 'mt-3 p-3 bg-blue-100 border border-blue-300 rounded text-sm text-blue-800';
+            uploadResult.textContent = '⏳ Processing CSV file...';
+            uploadResult.classList.remove('hidden');
 
-            contactSearchTimeout = setTimeout(() => {
-                searchContacts(query);
-            }, 300);
-        });
-
-        // Search contacts via API
-        function searchContacts(query) {
-            const depot_id = slotSelect?.value ? getDepotFromSlot(slotSelect.value) : null;
-            const supplier = supplierInput?.value || '';
-            const haulier = haulierInput?.value || '';
-
-            const params = new URLSearchParams({
-                query: query,
-                ...(depot_id && { depot_id }),
-                ...(supplier && { supplier }),
-                ...(haulier && { haulier })
-            });
-
-            fetch(`{{ route('api.contacts.search') }}?${params}`)
-                .then(response => response.json())
-                .then(contacts => {
-                    populateContactDropdown(contacts);
-                    contactStatus.textContent = '';
-                })
-                .catch(error => {
-                    console.error('Contact search failed:', error);
-                    contactDropdown.classList.add('hidden');
-                    contactStatus.textContent = '';
-                });
-        }
-
-        // Populate contact dropdown
-        function populateContactDropdown(contacts) {
-            contactDropdown.innerHTML = '';
-
-            if (contacts.length === 0) {
-                contactDropdown.classList.add('hidden');
-                return;
-            }
-
-            contacts.forEach(contact => {
-                const item = document.createElement('div');
-                item.className = 'px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100';
-                item.innerHTML = `
-                    <div class="font-medium text-gray-900">${contact.name}</div>
-                    <div class="text-xs text-gray-600">${contact.phone}</div>
-                    ${contact.supplier || contact.haulier ? `
-                        <div class="text-xs text-gray-500">
-                            ${contact.supplier ? 'Supplier: ' + contact.supplier : ''}
-                            ${contact.haulier ? ' Haulier: ' + contact.haulier : ''}
-                        </div>
-                    ` : ''}
-                `;
-                item.onclick = () => selectContact(contact);
-                contactDropdown.appendChild(item);
-            });
-
-            contactDropdown.classList.remove('hidden');
-        }
-
-        // Select a contact from dropdown
-        function selectContact(contact) {
-            contactNameInput.value = contact.name;
-            contactPhoneInput.value = contact.phone;
-
-            // Optionally fill supplier/haulier if they're empty
-            if (!supplierInput.value && contact.supplier) {
-                supplierInput.value = contact.supplier;
-            }
-            if (!haulierInput.value && contact.haulier) {
-                haulierInput.value = contact.haulier;
-            }
-
-            contactDropdown.classList.add('hidden');
-            contactStatus.textContent = '✓';
-            contactStatus.className = 'text-xs text-green-600';
-        }
-
-        // Lookup phone when contact name loses focus
-        contactNameInput.addEventListener('blur', function() {
-            setTimeout(() => {
-                if (this.value.trim() && !contactPhoneInput.value) {
-                    lookupContactPhone(this.value.trim());
+            fetch('{{ route("app.bookings.upload-csv") }}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 }
-                contactDropdown.classList.add('hidden');
-            }, 200);
-        });
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    uploadResult.className = 'mt-3 p-3 bg-green-100 border border-green-300 rounded text-sm text-green-800';
+                    uploadResult.innerHTML = `
+                        <strong>✅ Success!</strong><br>
+                        Processed ${data.rows_processed} rows<br>
+                        ${data.products_added} products added<br>
+                        ${data.errors?.length ? '<br><strong>Warnings:</strong><br>' + data.errors.join('<br>') : ''}
+                    `;
 
-        // Lookup contact phone by name
-        function lookupContactPhone(name) {
-            const depot_id = slotSelect?.value ? getDepotFromSlot(slotSelect.value) : null;
-            const supplier = supplierInput?.value || '';
-            const haulier = haulierInput?.value || '';
-
-            const params = new URLSearchParams({
-                name: name,
-                ...(depot_id && { depot_id }),
-                ...(supplier && { supplier }),
-                ...(haulier && { haulier })
+                    // Reload page after 2 seconds to show updated PO data
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    uploadResult.className = 'mt-3 p-3 bg-red-100 border border-red-300 rounded text-sm text-red-800';
+                    uploadResult.innerHTML = `<strong>❌ Error:</strong><br>${data.message || 'Failed to process CSV'}`;
+                }
+            })
+            .catch(error => {
+                console.error('Upload error:', error);
+                uploadResult.className = 'mt-3 p-3 bg-red-100 border border-red-300 rounded text-sm text-red-800';
+                uploadResult.textContent = '❌ An error occurred while uploading the file.';
             });
-
-            fetch(`{{ route('api.contacts.phone') }}?${params}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.phone) {
-                        contactPhoneInput.value = data.phone;
-                        contactStatus.textContent = '✓';
-                        contactStatus.className = 'text-xs text-green-600';
-                        contactStatus.title = 'Phone number found';
-                    }
-                })
-                .catch(error => {
-                    console.error('Phone lookup failed:', error);
-                });
-        }
-
-        // Helper function to extract depot ID from slot select
-        function getDepotFromSlot(slotId) {
-            // This would need to be implemented based on your slot data structure
-            // For now, we'll return null and rely on supplier/haulier filtering
-            return null;
-        }
-
-        // Hide dropdown when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!contactNameInput.contains(e.target) && !contactDropdown.contains(e.target)) {
-                contactDropdown.classList.add('hidden');
-            }
         });
     }
 });
 </script>
+@endif
