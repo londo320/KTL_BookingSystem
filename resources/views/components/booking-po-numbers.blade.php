@@ -230,10 +230,10 @@
                                             @endunless
                                         </div>
                                     @else
-                                        <!-- SKU and Description - Separate Rows for Full Width -->
-                                        <div class="mb-3 space-y-2">
-                                            <!-- SKU Row -->
-                                            <div class="relative">
+                                        <!-- SKU and Description on Same Line -->
+                                        <div class="mb-3 flex gap-2 items-start">
+                                            <!-- SKU (20% width) -->
+                                            <div class="w-1/5 flex-shrink-0 relative">
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">SKU *</label>
                                                 <input type="text" x-model="line.sku"
                                                        :id="`sku-input-${poIndex}-${lineIndex}`"
@@ -262,8 +262,8 @@
                                                 </div>
                                             </div>
 
-                                            <!-- Description Row - Full Width -->
-                                            <div>
+                                            <!-- Description (80% width) -->
+                                            <div class="flex-1 min-w-0">
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
                                                 <input type="text" x-model="line.description"
                                                        :name="`po_numbers[${poIndex}][lines][${lineIndex}][description]`"
