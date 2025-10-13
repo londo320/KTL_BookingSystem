@@ -12,7 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('bookings', function (Blueprint $table) {
-            $table->renameColumn('carrier_company', 'carrier_name');
+            // Only rename if carrier_company exists and carrier_name doesn't
+            if (Schema::hasColumn('bookings', 'carrier_company') && !Schema::hasColumn('bookings', 'carrier_name')) {
+                $table->renameColumn('carrier_company', 'carrier_name');
+            }
         });
     }
 
