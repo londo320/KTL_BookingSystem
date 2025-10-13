@@ -284,6 +284,7 @@
                                                         <input type="number" x-model="line.expected_pallets"
                                                                :name="`po_numbers[${poIndex}][lines][${lineIndex}][expected_pallets]`"
                                                                @input="calculateExpectedCases(poIndex, lineIndex)"
+                                                               @change="triggerSummaryUpdate()"
                                                                class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
                                                                {{ $readonly ? 'readonly' : '' }}>
                                                     </div>
@@ -291,6 +292,7 @@
                                                         <label class="block text-xs text-gray-500">Units</label>
                                                         <input type="number" x-model="line.expected_cases"
                                                                :name="`po_numbers[${poIndex}][lines][${lineIndex}][expected_cases]`"
+                                                               @change="triggerSummaryUpdate()"
                                                                class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
                                                                {{ $readonly ? 'readonly' : '' }}>
                                                     </div>
@@ -298,6 +300,7 @@
                                                         <label class="block text-xs text-gray-500">Type</label>
                                                         <select x-model="line.expected_pallet_type_id"
                                                                 :name="`po_numbers[${poIndex}][lines][${lineIndex}][expected_pallet_type_id]`"
+                                                                @change="triggerSummaryUpdate()"
                                                                 class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
                                                                 {{ $readonly ? 'disabled' : '' }}>
                                                             <option value="">Select</option>
@@ -318,6 +321,7 @@
                                                         <input type="number" x-model="line.actual_pallets"
                                                                :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_pallets]`"
                                                                @input="calculateActualCases(poIndex, lineIndex)"
+                                                               @change="triggerSummaryUpdate()"
                                                                :disabled="!line.sku || line.sku.trim() === ''"
                                                                :class="(!line.sku || line.sku.trim() === '') ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'"
                                                                {{ $readonly ? 'readonly' : '' }}>
@@ -326,6 +330,7 @@
                                                         <label class="block text-xs text-gray-500">Units</label>
                                                         <input type="number" x-model="line.actual_cases"
                                                                :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_cases]`"
+                                                               @change="triggerSummaryUpdate()"
                                                                :disabled="!line.sku || line.sku.trim() === ''"
                                                                :class="(!line.sku || line.sku.trim() === '') ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'"
                                                                {{ $readonly ? 'readonly' : '' }}>
@@ -334,6 +339,7 @@
                                                         <label class="block text-xs text-gray-500">Type</label>
                                                         <select x-model="line.actual_pallet_type_id"
                                                                 :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_pallet_type_id]`"
+                                                                @change="triggerSummaryUpdate()"
                                                                 :disabled="!line.sku || line.sku.trim() === '' {{ $readonly ? '|| true' : '' }}"
                                                                 :class="(!line.sku || line.sku.trim() === '') ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'">
                                                             <option value="">Select</option>
@@ -398,7 +404,7 @@
                     <div x-show="po.lines.length > 0" class="mt-4 pt-4 border-t border-gray-300">
                         <div class="bg-gray-100 rounded p-3">
                             <div class="text-sm font-medium text-gray-800 mb-2">PO Summary</div>
-                            <div class="space-y-2 text-sm">
+                            <div class="space-y-2 text-sm" x-data="{_: summaryUpdateCounter}">
                                 <div>
                                     <span class="text-gray-600 font-medium">Expected:</span>
                                     <div class="ml-4" x-html="getPoSummaryText(po, 'expected')"></div>
@@ -438,6 +444,7 @@ function poNumbersManager(customerId = null) {
         showSkuDropdown: {},
         skuSearchLoading: {},
         skuSearchTimeout: null,
+        summaryUpdateCounter: 0,
 
         init(existingData = []) {
             this.poNumbers = existingData.length > 0 ? existingData : [];
@@ -543,6 +550,7 @@ function poNumbersManager(customerId = null) {
             if (pallets > 0 && casesPerPallet > 0) {
                 line.expected_cases = pallets * casesPerPallet;
             }
+            this.summaryUpdateCounter++;
         },
 
         calculateActualCases(poIndex, lineIndex) {
@@ -553,6 +561,11 @@ function poNumbersManager(customerId = null) {
             if (pallets > 0 && casesPerPallet > 0) {
                 line.actual_cases = pallets * casesPerPallet;
             }
+            this.summaryUpdateCounter++;
+        },
+
+        triggerSummaryUpdate() {
+            this.summaryUpdateCounter++;
         },
         
         addPoNumber() {
