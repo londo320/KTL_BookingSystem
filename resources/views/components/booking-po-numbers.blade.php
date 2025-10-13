@@ -280,22 +280,23 @@
                                                 <h6 class="text-xs font-medium text-gray-600 mb-2">Expected</h6>
                                                 <div class="grid grid-cols-3 gap-2">
                                                     <div>
+                                                        <label class="block text-xs text-gray-500">Pallets</label>
+                                                        <input type="number" x-model="line.expected_pallets"
+                                                               :name="`po_numbers[${poIndex}][lines][${lineIndex}][expected_pallets]`"
+                                                               @input="calculateExpectedCases(poIndex, lineIndex)"
+                                                               class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
+                                                               {{ $readonly ? 'readonly' : '' }}>
+                                                    </div>
+                                                    <div>
                                                         <label class="block text-xs text-gray-500">Units</label>
-                                                        <input type="number" x-model="line.expected_cases" 
+                                                        <input type="number" x-model="line.expected_cases"
                                                                :name="`po_numbers[${poIndex}][lines][${lineIndex}][expected_cases]`"
                                                                class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
                                                                {{ $readonly ? 'readonly' : '' }}>
                                                     </div>
                                                     <div>
-                                                        <label class="block text-xs text-gray-500">Pallets</label>
-                                                        <input type="number" x-model="line.expected_pallets" 
-                                                               :name="`po_numbers[${poIndex}][lines][${lineIndex}][expected_pallets]`"
-                                                               class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
-                                                               {{ $readonly ? 'readonly' : '' }}>
-                                                    </div>
-                                                    <div>
                                                         <label class="block text-xs text-gray-500">Type</label>
-                                                        <select x-model="line.expected_pallet_type_id" 
+                                                        <select x-model="line.expected_pallet_type_id"
                                                                 :name="`po_numbers[${poIndex}][lines][${lineIndex}][expected_pallet_type_id]`"
                                                                 class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
                                                                 {{ $readonly ? 'disabled' : '' }}>
@@ -313,22 +314,23 @@
                                                 <h6 class="text-xs font-medium text-gray-600 mb-2">Actual</h6>
                                                 <div class="grid grid-cols-3 gap-2">
                                                     <div>
+                                                        <label class="block text-xs text-gray-500">Pallets</label>
+                                                        <input type="number" x-model="line.actual_pallets"
+                                                               :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_pallets]`"
+                                                               @input="calculateActualCases(poIndex, lineIndex)"
+                                                               class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
+                                                               {{ $readonly ? 'readonly' : '' }}>
+                                                    </div>
+                                                    <div>
                                                         <label class="block text-xs text-gray-500">Units</label>
-                                                        <input type="number" x-model="line.actual_cases" 
+                                                        <input type="number" x-model="line.actual_cases"
                                                                :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_cases]`"
                                                                class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
                                                                {{ $readonly ? 'readonly' : '' }}>
                                                     </div>
                                                     <div>
-                                                        <label class="block text-xs text-gray-500">Pallets</label>
-                                                        <input type="number" x-model="line.actual_pallets" 
-                                                               :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_pallets]`"
-                                                               class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
-                                                               {{ $readonly ? 'readonly' : '' }}>
-                                                    </div>
-                                                    <div>
                                                         <label class="block text-xs text-gray-500">Type</label>
-                                                        <select x-model="line.actual_pallet_type_id" 
+                                                        <select x-model="line.actual_pallet_type_id"
                                                                 :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_pallet_type_id]`"
                                                                 class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
                                                                 {{ $readonly ? 'disabled' : '' }}>
@@ -526,6 +528,26 @@ function poNumbersManager(customerId = null) {
 
             // Hide dropdown
             this.showSkuDropdown[key] = false;
+        },
+
+        calculateExpectedCases(poIndex, lineIndex) {
+            const line = this.poNumbers[poIndex].lines[lineIndex];
+            const pallets = parseFloat(line.expected_pallets) || 0;
+            const casesPerPallet = parseFloat(line.cases_per_pallet) || 0;
+
+            if (pallets > 0 && casesPerPallet > 0) {
+                line.expected_cases = pallets * casesPerPallet;
+            }
+        },
+
+        calculateActualCases(poIndex, lineIndex) {
+            const line = this.poNumbers[poIndex].lines[lineIndex];
+            const pallets = parseFloat(line.actual_pallets) || 0;
+            const casesPerPallet = parseFloat(line.cases_per_pallet) || 0;
+
+            if (pallets > 0 && casesPerPallet > 0) {
+                line.actual_cases = pallets * casesPerPallet;
+            }
         },
         
         addPoNumber() {
