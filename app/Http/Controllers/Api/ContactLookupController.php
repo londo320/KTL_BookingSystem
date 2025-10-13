@@ -45,11 +45,16 @@ class ContactLookupController extends Controller
             $bookingsQuery->where('haulier', $haulier);
         }
 
-        // Get unique contacts (group by name and phone)
+        // Get contacts and make them unique
         $contacts = $bookingsQuery
-            ->groupBy('contact_name', 'contact_phone', 'supplier', 'haulier')
-            ->limit(10)
+            ->orderBy('created_at', 'desc')
+            ->limit(50)
             ->get()
+            ->unique(function ($booking) {
+                return $booking->contact_name . '|' . $booking->contact_phone;
+            })
+            ->take(10)
+            ->values()
             ->map(function ($booking) {
                 return [
                     'name' => $booking->contact_name,
