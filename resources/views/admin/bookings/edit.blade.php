@@ -35,12 +35,12 @@
     </div>
   </x-slot>
   <div class="py-6 max-w-3xl mx-auto bg-white p-6 rounded shadow">
-    <form action="{{ route('app.bookings.update', $booking) }}" method="POST">
+    <form id="bookingEditForm" action="{{ route('app.bookings.update', $booking) }}" method="POST">
       @csrf
       @method('PATCH')
       @include('admin.bookings._form')
       <div class="mt-6 flex space-x-3">
-        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">
+        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded" onclick="console.log('Button clicked!')">
           Update Booking
         </button>
         <a href="{{ route('app.bookings.index') }}"
@@ -170,6 +170,28 @@
     document.getElementById('cancelModal').addEventListener('click', function(e) {
       if (e.target === this) {
         closeCancelModal();
+      }
+    });
+
+    // Debug form submission
+    const form = document.getElementById('bookingEditForm');
+    console.log('Form element found:', form);
+
+    form.addEventListener('submit', function(e) {
+      console.log('Form submit event fired!');
+      console.log('Form action:', this.action);
+      console.log('Form method:', this.method);
+
+      // Check form validity
+      if (!this.checkValidity()) {
+        console.log('Form is invalid!');
+        const invalidElements = this.querySelectorAll(':invalid');
+        console.log('Invalid elements:', invalidElements);
+        invalidElements.forEach(el => {
+          console.log('Invalid field:', el.name, el.validationMessage);
+        });
+      } else {
+        console.log('Form is valid, submitting...');
       }
     });
   </script>
