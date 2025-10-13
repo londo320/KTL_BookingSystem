@@ -285,7 +285,8 @@
                                                                :name="`po_numbers[${poIndex}][lines][${lineIndex}][expected_pallets]`"
                                                                @input="calculateExpectedCases(poIndex, lineIndex)"
                                                                @change="triggerSummaryUpdate()"
-                                                               class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
+                                                               :disabled="!line.sku || line.sku.trim() === ''"
+                                                               :class="(!line.sku || line.sku.trim() === '') ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'"
                                                                {{ $readonly ? 'readonly' : '' }}>
                                                     </div>
                                                     <div>
@@ -293,7 +294,8 @@
                                                         <input type="number" x-model="line.expected_cases"
                                                                :name="`po_numbers[${poIndex}][lines][${lineIndex}][expected_cases]`"
                                                                @change="triggerSummaryUpdate()"
-                                                               class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
+                                                               :disabled="!line.sku || line.sku.trim() === ''"
+                                                               :class="(!line.sku || line.sku.trim() === '') ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'"
                                                                {{ $readonly ? 'readonly' : '' }}>
                                                     </div>
                                                     <div>
@@ -301,14 +303,17 @@
                                                         <select x-model="line.expected_pallet_type_id"
                                                                 :name="`po_numbers[${poIndex}][lines][${lineIndex}][expected_pallet_type_id]`"
                                                                 @change="triggerSummaryUpdate()"
-                                                                class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
-                                                                {{ $readonly ? 'disabled' : '' }}>
+                                                                :disabled="!line.sku || line.sku.trim() === '' {{ $readonly ? '|| true' : '' }}"
+                                                                :class="(!line.sku || line.sku.trim() === '') ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'">
                                                             <option value="">Select</option>
                                                             @foreach($palletTypes as $type)
                                                                 <option value="{{ $type->id }}">{{ $type->display_name }}</option>
                                                             @endforeach
                                                         </select>
                                                     </div>
+                                                </div>
+                                                <div x-show="!line.sku || line.sku.trim() === ''" class="mt-2 text-xs text-amber-600 italic">
+                                                    ⚠️ Please select a SKU first to enter expected quantities
                                                 </div>
                                             </div>
 
@@ -404,15 +409,15 @@
                     <div x-show="po.lines.length > 0" class="mt-4 pt-4 border-t border-gray-300">
                         <div class="bg-gray-100 rounded p-3">
                             <div class="text-sm font-medium text-gray-800 mb-2">PO Summary</div>
-                            <div class="space-y-2 text-sm" x-data="{_: summaryUpdateCounter}">
+                            <div class="space-y-2 text-sm">
                                 <div>
                                     <span class="text-gray-600 font-medium">Expected:</span>
-                                    <div class="ml-4" x-html="getPoSummaryText(po, 'expected')"></div>
+                                    <div class="ml-4" x-html="summaryUpdateCounter, getPoSummaryText(po, 'expected')"></div>
                                 </div>
                                 @unless($hide_actuals)
                                     <div>
                                         <span class="text-gray-600 font-medium">Actual:</span>
-                                        <div class="ml-4" x-html="getPoSummaryText(po, 'actual')"></div>
+                                        <div class="ml-4" x-html="summaryUpdateCounter, getPoSummaryText(po, 'actual')"></div>
                                     </div>
                                 @endunless
                             </div>
