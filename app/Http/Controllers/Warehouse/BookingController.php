@@ -1256,6 +1256,8 @@ class BookingController extends Controller
             'po_numbers.*.po_number' => 'required|string|max:255',
             'po_numbers.*.lines' => 'nullable|array',
             'po_numbers.*.lines.*.line_number' => 'required|integer|min:1',
+            'po_numbers.*.lines.*.sku' => 'required|string|max:255',
+            'po_numbers.*.lines.*.description' => 'nullable|string|max:500',
             'po_numbers.*.lines.*.expected_cases' => 'nullable|integer|min:0',
             'po_numbers.*.lines.*.expected_pallets' => 'nullable|integer|min:0',
             'po_numbers.*.lines.*.expected_pallet_type_id' => 'nullable|exists:pallet_types,id',
