@@ -40,7 +40,7 @@
       @method('PATCH')
       @include('admin.bookings._form')
       <div class="mt-6 flex space-x-3">
-        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded" onclick="console.log('Button clicked!')">
+        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded" onclick="console.log('Button clicked!'); alert('Button was clicked!');">
           Update Booking
         </button>
         <a href="{{ route('app.bookings.index') }}"

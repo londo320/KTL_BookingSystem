@@ -64,6 +64,17 @@ class Depot extends Model
         return $this->belongsToMany(User::class, 'depot_user');
     }
 
+    public function tippingBays()
+    {
+        return $this->hasMany(TippingBay::class);
+    }
+
+    // Alias for convenience
+    public function bays()
+    {
+        return $this->tippingBays();
+    }
+
     /**
      * Get factory vehicle tipping time target in minutes for this depot and optional customer
      */

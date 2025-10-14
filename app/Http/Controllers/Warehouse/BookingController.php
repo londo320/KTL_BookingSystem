@@ -956,7 +956,15 @@ class BookingController extends Controller
         ]);
 
         try {
-            $data = $request->validate([
+            // Get SKU configuration for this customer/depot
+            $slot = Slot::findOrFail($request->slot_id);
+            $config = \App\Models\CustomerBookingConfig::getConfig(
+                $request->customer_id,
+                $slot->depot_id
+            );
+
+            // Build validation rules
+            $rules = [
             'slot_id' => 'required|exists:slots,id',
             'booking_type_id' => 'required|exists:booking_types,id',
             'customer_id' => 'required|exists:customers,id',
@@ -978,11 +986,21 @@ class BookingController extends Controller
             'tipping_location_id' => 'nullable|exists:tipping_locations,id',
             'tipping_bay_id' => 'nullable|exists:tipping_bays,id',
             'tipping_type' => 'nullable|in:live_tip,drop',
-            // PO numbers
-            'po_numbers' => 'required|array|min:1',
+            ];
+
+            // PO validation based on config
+            if ($config['require_po_data']) {
+                $rules['po_numbers'] = 'required|array|min:1';
+            } else {
+                $rules['po_numbers'] = 'nullable|array';
+            }
+
+            $rules = array_merge($rules, [
             'po_numbers.*.po_number' => 'required|string|max:255',
             'po_numbers.*.lines' => 'required|array|min:1',
             'po_numbers.*.lines.*.line_number' => 'required|integer|min:1',
+            'po_numbers.*.lines.*.sku' => 'nullable|string|max:255',
+            'po_numbers.*.lines.*.description' => 'nullable|string|max:255',
             // Support new pallet_entries structure
             'po_numbers.*.lines.*.pallet_entries' => 'nullable|array',
             'po_numbers.*.lines.*.pallet_entries.*.cases' => 'nullable|integer|min:0',
@@ -995,10 +1013,13 @@ class BookingController extends Controller
             'po_numbers.*.lines.*.actual_cases' => 'nullable|integer|min:0',
             'po_numbers.*.lines.*.actual_pallets' => 'nullable|integer|min:0',
             'po_numbers.*.lines.*.actual_pallet_type_id' => 'nullable|exists:pallet_types,id',
-        ]);
-        
-        // Custom validation: Ensure at least one PO line has cases > 0
-        $hasCases = false;
+            ]);
+
+            $data = $request->validate($rules);
+
+        // Custom validation: Ensure at least one PO line has cases > 0 (only if PO data required)
+        if ($config['require_po_data'] && !empty($data['po_numbers'])) {
+            $hasCases = false;
         foreach ($data['po_numbers'] as $po) {
             foreach ($po['lines'] as $line) {
                 // Check new pallet_entries structure first
@@ -1017,9 +1038,10 @@ class BookingController extends Controller
                 }
             }
         }
-        
-        if (!$hasCases) {
-            return back()->withErrors(['po_numbers' => 'At least one PO line must have cases greater than 0.'])->withInput();
+
+            if (!$hasCases) {
+                return back()->withErrors(['po_numbers' => 'At least one PO line must have cases greater than 0.'])->withInput();
+            }
         }
 
         // Normalize input data

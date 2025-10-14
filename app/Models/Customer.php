@@ -67,4 +67,28 @@ class Customer extends Model
     {
         return $this->hasMany(CustomerBehaviorSetting::class);
     }
+
+    /**
+     * A customer has many booking configs
+     */
+    public function bookingConfigs(): HasMany
+    {
+        return $this->hasMany(CustomerBookingConfig::class);
+    }
+
+    /**
+     * A customer has many time windows
+     */
+    public function timeWindows(): HasMany
+    {
+        return $this->hasMany(CustomerDepotTimeWindow::class);
+    }
+
+    /**
+     * A customer has many bay assignments
+     */
+    public function bayAssignments(): HasMany
+    {
+        return $this->hasMany(CustomerBayAssignment::class);
+    }
 }

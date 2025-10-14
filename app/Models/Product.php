@@ -27,6 +27,11 @@ class Product extends Model
         'cut_off_time' => 'string',     // or 'date:H:i' if you like
     ];
 
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
     public function bookings()
     {
         return $this->belongsToMany(Booking::class)

@@ -1,5 +1,21 @@
+{{-- Get SKU Configuration --}}
+@php
+    $depotId = null;
+    if ($booking->exists && $booking->slot) {
+        $depotId = $booking->slot->depot_id;
+    } elseif (old('slot_id')) {
+        $depotId = \App\Models\Slot::find(old('slot_id'))?->depot_id;
+    }
+
+    $customerId = old('customer_id', $booking->customer_id);
+
+    $config = \App\Models\CustomerBookingConfig::getConfig($customerId, $depotId);
+    $showSkuFields = $config['sku_fields_enabled'];
+    $requirePoData = $config['require_po_data'];
+@endphp
+
 {{-- FULL-WIDTH GRID LAYOUT --}}
-<div class="space-y-4">
+<div class="space-y-4" data-show-sku="{{ $showSkuFields ? 'true' : 'false' }}">
   {{-- ROW 1: Customer, Booking Type, Slot (3 columns) --}}
   <div class="bg-blue-50 rounded-lg border border-blue-200 p-4">
     <h3 class="text-sm font-semibold text-blue-900 mb-3">📋 Required Information</h3>
@@ -79,11 +95,11 @@
     <div class="grid grid-cols-3 gap-4">
       {{-- Supplier --}}
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Supplier <span class="text-red-500">*</span></label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
         <div class="relative">
           <input type="text" id="admin-supplier-search" name="supplier_name"
                  value="{{ old('supplier_name', $booking->supplier?->name ?? $booking->supplier) }}"
-                 placeholder="Search or type supplier..." required autocomplete="off"
+                 placeholder="Search or type supplier..." autocomplete="off"
                  class="block w-full border-gray-300 rounded bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10 text-sm py-2">
           <input type="hidden" id="admin-supplier-id" name="supplier_id" value="{{ old('supplier_id', $booking->supplier_id) }}">
           <div id="admin-supplier-dropdown" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"></div>
@@ -134,11 +150,11 @@
     <div class="grid grid-cols-2 gap-4 mb-4">
       {{-- Haulier --}}
       <div>
-        <label class="block text-sm font-medium text-gray-600 mb-1">Haulier</label>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Haulier <span class="text-red-500">*</span></label>
         <div class="relative">
           <input type="text" id="admin-carrier-search" name="carrier_name"
                  value="{{ old('carrier_name', $booking->carrier?->name ?? $booking->carrier_company) }}"
-                 placeholder="Search or type haulier..." autocomplete="off"
+                 placeholder="Search or type haulier..." required autocomplete="off"
                  class="block w-full border-gray-300 rounded bg-white focus:ring-2 focus:ring-gray-500 focus:border-gray-500 pr-10 text-sm py-2">
           <input type="hidden" id="admin-carrier-id" name="carrier_id" value="{{ old('carrier_id', $booking->carrier_id) }}">
           <div id="admin-carrier-dropdown" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"></div>
@@ -261,9 +277,11 @@
     @endif
   </div>
 
-  @if($booking->exists)
-    {{-- PO NUMBERS SECTION - FULL WIDTH (Edit only) --}}
-    <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+  {{-- PO NUMBERS SECTION - Dynamically controlled by customer/slot selection --}}
+  <div id="po-section-container" @if(!$booking->exists) style="display: none;" @endif data-show-sku="{{ $showSkuFields ? 'true' : 'false' }}">
+    @if($booking->exists)
+      {{-- PO NUMBERS SECTION - FULL WIDTH (Edit only) --}}
+      <div class="bg-green-50 p-4 rounded-lg border border-green-200">
       <div class="flex justify-between items-center mb-3">
         <h3 class="text-base font-semibold text-green-900">📦 PO Numbers & Expected Quantities <span class="text-red-500">*</span></h3>
         <div class="flex gap-2">
@@ -342,26 +360,33 @@
         <div id="csv-upload-result" class="mt-3 hidden"></div>
       </div>
 
-      <x-booking-po-numbers :booking="$booking" :hide_actuals="!$booking->exists" :customer_id="old('customer_id', $booking->customer_id)" />
+      <x-booking-po-numbers :booking="$booking" :hide_actuals="!$booking->exists" :customer_id="old('customer_id', $booking->customer_id)" :show_sku_fields="$showSkuFields" />
 
       @error('po_numbers')<p class="text-red-600 text-sm mt-2">{{ $message }}</p>@enderror
     </div>
-  @else
-    {{-- Create Form Notice --}}
-    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
-      <h3 class="text-base font-semibold text-blue-900 mb-2">📦 PO Numbers & Product Details</h3>
-      <p class="text-sm text-blue-800">
-        ℹ️ After creating this booking, you'll be able to add PO numbers and products via:
-      </p>
-      <ul class="list-disc list-inside text-sm text-blue-700 mt-2 ml-4">
-        <li>Manual entry</li>
-        <li>CSV upload template</li>
-        <li>Saved templates (coming soon)</li>
-      </ul>
-      <p class="text-sm text-red-600 font-semibold mt-3">
-        ⚠️ At least one PO with product details is required to complete the booking.
-      </p>
-    </div>
+    @else
+      {{-- Create Form - Single component with dynamic messaging --}}
+      <div id="po-section-content" style="display: none;">
+        <div id="po-section-header" class="p-4 rounded-lg border mb-4">
+          <h3 id="po-section-title" class="text-base font-semibold mb-2"></h3>
+          <p id="po-section-message" class="text-sm"></p>
+        </div>
+
+        <x-booking-po-numbers :booking="$booking" :hide_actuals="true" :customer_id="old('customer_id', $booking->customer_id)" :show_sku_fields="true" />
+
+        @error('po_numbers')<p class="text-red-600 text-sm mt-2">{{ $message }}</p>@enderror
+      </div>
+    @endif
+  </div>
+
+  {{-- Placeholder shown when customer not selected --}}
+  @if(!$booking->exists)
+  <div id="po-section-placeholder" class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+    <h3 class="text-base font-semibold text-gray-700 mb-2">📦 Product Details</h3>
+    <p class="text-sm text-gray-600">
+      ℹ️ Please select a customer and slot to see PO/Product requirements.
+    </p>
+  </div>
   @endif
 
   {{-- NOTES SECTION --}}

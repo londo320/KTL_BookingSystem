@@ -427,7 +427,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Search contacts via API
         function searchContacts(query) {
             const depot_id = slotSelect?.value ? getDepotFromSlot(slotSelect.value) : null;
-            const supplier = supplierInput?.value || '';
+            const supplier = contactSupplierInput?.value || '';
             const haulier = haulierInput?.value || '';
 
             const params = new URLSearchParams({
@@ -510,7 +510,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Lookup contact phone by name
         function lookupContactPhone(name) {
             const depot_id = slotSelect?.value ? getDepotFromSlot(slotSelect.value) : null;
-            const supplier = supplierInput?.value || '';
+            const supplier = contactSupplierInput?.value || '';
             const haulier = haulierInput?.value || '';
 
             const params = new URLSearchParams({
@@ -566,6 +566,144 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Hide SKU fields on edit page if not required
+    <?php if($booking->exists): ?>
+    const poSectionContainerEdit = document.getElementById('po-section-container');
+    if (poSectionContainerEdit) {
+        const showSku = poSectionContainerEdit.getAttribute('data-show-sku');
+        if (showSku === 'false') {
+            // Hide SKU fields on edit page
+            const skuFieldContainers = poSectionContainerEdit.querySelectorAll('[data-sku-field-container]');
+            skuFieldContainers.forEach(field => {
+                field.style.display = 'none';
+                // Remove required attribute from hidden fields
+                const inputs = field.querySelectorAll('input[required], select[required]');
+                inputs.forEach(input => {
+                    input.required = false;
+                });
+            });
+        }
+    }
+    <?php endif; ?>
+
+    // Dynamic Customer/Slot Configuration Handler
+    <?php if(!$booking->exists): ?>
+    const customerSelectNew = document.querySelector('select[name="customer_id"]');
+    const slotSelectNew = document.querySelector('select[name="slot_id"]');
+    const poSectionContainer = document.getElementById('po-section-container');
+    const poSectionPlaceholder = document.getElementById('po-section-placeholder');
+    const poSectionContent = document.getElementById('po-section-content');
+    const poSectionHeader = document.getElementById('po-section-header');
+    const poSectionTitle = document.getElementById('po-section-title');
+    const poSectionMessage = document.getElementById('po-section-message');
+
+    function updatePoSectionVisibility() {
+        const customerId = customerSelectNew?.value;
+        const slotId = slotSelectNew?.value;
+
+        // Only fetch config if both customer and slot are selected
+        if (!customerId || !slotId) {
+            if (poSectionContainer) poSectionContainer.style.display = 'none';
+            if (poSectionPlaceholder) poSectionPlaceholder.style.display = 'block';
+            return;
+        }
+
+        // Fetch customer configuration
+        fetch(`/api/customer-config?customer_id=${customerId}&slot_id=${slotId}`)
+            .then(response => response.json())
+            .then(data => {
+                const config = data.config;
+                console.log('Customer config:', config);
+
+                // Hide placeholder
+                if (poSectionPlaceholder) poSectionPlaceholder.style.display = 'none';
+
+                // Show container and content
+                if (poSectionContainer) poSectionContainer.style.display = 'block';
+                if (poSectionContent) poSectionContent.style.display = 'block';
+
+                // Update header styling and message based on requirement
+                if (config.require_po_data) {
+                    if (poSectionHeader) {
+                        poSectionHeader.className = 'p-4 rounded-lg border mb-4 bg-green-50 border-green-200';
+                    }
+                    if (poSectionTitle) {
+                        poSectionTitle.className = 'text-base font-semibold mb-2 text-green-900';
+                        poSectionTitle.innerHTML = '📦 PO Numbers & Expected Quantities <span class="text-red-500">*</span>';
+                    }
+                    if (poSectionMessage) {
+                        poSectionMessage.className = 'text-sm text-green-800';
+                        poSectionMessage.textContent = 'ℹ️ At least one PO with product details is required to create this booking.';
+                    }
+
+                    // Store that PO is required for validation
+                    if (poSectionContent) poSectionContent.setAttribute('data-po-required', 'true');
+                } else {
+                    if (poSectionHeader) {
+                        poSectionHeader.className = 'p-4 rounded-lg border mb-4 bg-blue-50 border-blue-200';
+                    }
+                    if (poSectionTitle) {
+                        poSectionTitle.className = 'text-base font-semibold mb-2 text-blue-900';
+                        poSectionTitle.textContent = '📦 PO Numbers & Product Details';
+                    }
+                    if (poSectionMessage) {
+                        poSectionMessage.className = 'text-sm text-blue-800';
+                        poSectionMessage.textContent = 'ℹ️ PO numbers and product details are optional for this customer. You can add them now or later via the booking edit page.';
+                    }
+
+                    // Store that PO is optional
+                    if (poSectionContent) poSectionContent.setAttribute('data-po-required', 'false');
+                }
+
+                // Trigger Alpine to initialize if not already done
+                setTimeout(() => {
+                    if (window.poNumbersManagerInstance && window.poNumbersManagerInstance.poNumbers.length === 0) {
+                        window.poNumbersManagerInstance.addPoNumber();
+                        window.poNumbersManagerInstance.addPoLine(0);
+                    }
+                }, 100);
+
+                // Control SKU field visibility within the component
+                if (config.sku_fields_enabled) {
+                    // Show SKU fields
+                    const skuFieldContainers = poSectionContainer.querySelectorAll('[data-sku-field-container]');
+                    skuFieldContainers.forEach(field => {
+                        field.style.display = 'block';
+                        // Re-enable required attributes if needed
+                        const inputs = field.querySelectorAll('input[data-was-required], select[data-was-required]');
+                        inputs.forEach(input => {
+                            input.required = true;
+                            input.removeAttribute('data-was-required');
+                        });
+                    });
+                } else {
+                    // Hide SKU fields only (keep PO section visible)
+                    const skuFieldContainers = poSectionContainer.querySelectorAll('[data-sku-field-container]');
+                    skuFieldContainers.forEach(field => {
+                        field.style.display = 'none';
+                        // Remove required attribute from hidden fields to allow form submission
+                        const inputs = field.querySelectorAll('input[required], select[required]');
+                        inputs.forEach(input => {
+                            input.setAttribute('data-was-required', 'true');
+                            input.required = false;
+                        });
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching customer config:', error);
+            });
+    }
+
+    // Listen for customer/slot changes
+    if (customerSelectNew) {
+        customerSelectNew.addEventListener('change', updatePoSectionVisibility);
+    }
+    if (slotSelectNew) {
+        slotSelectNew.addEventListener('change', updatePoSectionVisibility);
+    }
+    <?php endif; ?>
 });
 </script>
 <?php /**PATH /Users/londo/Herd/test/resources/views/admin/bookings/_form_scripts.blade.php ENDPATH**/ ?>

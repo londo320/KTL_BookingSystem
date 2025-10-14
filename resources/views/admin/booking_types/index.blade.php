@@ -44,6 +44,8 @@
               <td class="px-2 py-1 space-x-2">
                 <a href="{{ route('app.booking-types.edit', $type) }}"
                    class="text-blue-600 hover:underline text-sm">Edit</a>
+                <a href="{{ route('app.booking-types.equipment.edit', $type) }}"
+                   class="text-green-600 hover:underline text-sm">🛠️ Equipment</a>
                 <form method="POST"
                       action="{{ route('app.booking-types.destroy', $type) }}"
                       onsubmit="return confirm('Delete this booking type?');"

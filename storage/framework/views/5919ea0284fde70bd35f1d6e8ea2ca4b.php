@@ -46,12 +46,12 @@
     </div>
    <?php $__env->endSlot(); ?>
   <div class="py-6 max-w-3xl mx-auto bg-white p-6 rounded shadow">
-    <form action="<?php echo e(route('app.bookings.update', $booking)); ?>" method="POST">
+    <form id="bookingEditForm" action="<?php echo e(route('app.bookings.update', $booking)); ?>" method="POST">
       <?php echo csrf_field(); ?>
       <?php echo method_field('PUT'); ?>
       <?php echo $__env->make('admin.bookings._form', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
       <div class="mt-6 flex space-x-3">
-        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">
+        <button id="updateBookingBtn" type="submit" class="px-4 py-2 bg-green-600 text-white rounded">
           Update Booking
         </button>
         <a href="<?php echo e(route('app.bookings.index')); ?>"
@@ -181,6 +181,71 @@
         closeCancelModal();
       }
     });
+
+    // Debug form submission
+    const form = document.getElementById('bookingEditForm');
+    console.log('Form element found:', form);
+
+    // Debug button click
+    const submitButton = document.getElementById('updateBookingBtn');
+    console.log('Submit button found:', submitButton);
+
+    if (submitButton) {
+      submitButton.addEventListener('click', function(e) {
+        console.log('Submit button clicked!');
+        console.log('Button type:', this.type);
+
+        // Prevent default to check validity first
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Check form validity
+        const isValid = form.checkValidity();
+        console.log('Form valid?', isValid);
+
+        const invalidElements = form.querySelectorAll(':invalid');
+        console.log('Invalid elements count:', invalidElements.length);
+
+        if (invalidElements.length > 0) {
+          invalidElements.forEach(el => {
+            console.log('Invalid field:', {
+              name: el.name,
+              id: el.id,
+              type: el.type,
+              value: el.value,
+              message: el.validationMessage,
+              element: el
+            });
+          });
+
+          // Show validation messages
+          form.reportValidity();
+        } else {
+          // Form is valid, submit it
+          console.log('✅ Form is valid, submitting now...');
+          form.submit();
+        }
+      });
+    }
+
+    form.addEventListener('submit', function(e) {
+      console.log('✅ Form submit event fired!');
+      console.log('Form action:', this.action);
+      console.log('Form method:', this.method);
+      console.log('Form will submit now...');
+
+      // Check form validity
+      if (!this.checkValidity()) {
+        console.log('Form is invalid!');
+        const invalidElements = this.querySelectorAll(':invalid');
+        console.log('Invalid elements:', invalidElements);
+        invalidElements.forEach(el => {
+          console.log('Invalid field:', el.name, el.validationMessage);
+        });
+      } else {
+        console.log('Form is valid, submitting...');
+      }
+    }, true);
   </script>
  <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>

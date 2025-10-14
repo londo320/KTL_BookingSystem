@@ -41,6 +41,11 @@ class BookingType extends Model
         return $this->hasMany(Slot::class);
     }
 
+    public function equipmentRequirements()
+    {
+        return $this->hasMany(BookingTypeEquipmentRequirement::class);
+    }
+
     /**
      * Get duration for a specific depot (in minutes)
      */

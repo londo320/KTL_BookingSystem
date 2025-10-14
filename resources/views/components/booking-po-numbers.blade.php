@@ -1,4 +1,4 @@
-@props(['booking', 'readonly' => false, 'customer_view' => false, 'hide_actuals' => false, 'customer_id' => null])
+@props(['booking', 'readonly' => false, 'customer_view' => false, 'hide_actuals' => false, 'customer_id' => null, 'show_sku_fields' => true])
 
 @php
     $palletTypes = \App\Models\PalletType::active()->orderBy('name')->get();
@@ -133,7 +133,7 @@
                                             </div>
 
                                             <!-- SKU -->
-                                            <div class="w-24 flex-shrink-0 relative">
+                                            <div class="w-24 flex-shrink-0 relative" data-sku-field-container>
                                                 <label class="block text-[10px] font-medium text-gray-600 mb-0.5">SKU</label>
                                                 <input type="text" x-model="line.sku"
                                                        :id="`sku-input-${poIndex}-${lineIndex}`"
@@ -163,7 +163,7 @@
                                             </div>
 
                                             <!-- Description -->
-                                            <div class="flex-1 min-w-[200px]">
+                                            <div class="flex-1 min-w-[200px]" data-sku-field-container>
                                                 <label class="block text-[10px] font-medium text-gray-600 mb-0.5">Description</label>
                                                 <input type="text" x-model="line.description"
                                                        :name="`po_numbers[${poIndex}][lines][${lineIndex}][description]`"
@@ -179,9 +179,10 @@
                                                     Plts <span class="text-red-500">*</span>
                                                 </label>
                                                 <input type="number"
-                                                       x-model="(line.pallet_entries && line.pallet_entries[0]) ? line.pallet_entries[0].pallets : ''"
+                                                       x-init="if(!line.pallet_entries) line.pallet_entries = [{}]"
+                                                       x-model="line.pallet_entries[0].pallets"
                                                        :name="`po_numbers[${poIndex}][lines][${lineIndex}][pallet_entries][0][pallets]`"
-                                                       @input="if(line.cases_per_pallet && $event.target.value) { if(!line.pallet_entries) line.pallet_entries = [{}]; line.pallet_entries[0].cases = $event.target.value * line.cases_per_pallet; }"
+                                                       @input="if(line.cases_per_pallet && $event.target.value) { line.pallet_entries[0].cases = $event.target.value * line.cases_per_pallet; }"
                                                        placeholder="0"
                                                        maxlength="4"
                                                        required
@@ -196,7 +197,8 @@
                                                     <span x-show="line.cases_per_pallet" class="text-[9px] text-green-600">(auto)</span>
                                                 </label>
                                                 <input type="number"
-                                                       x-model="(line.pallet_entries && line.pallet_entries[0]) ? line.pallet_entries[0].cases : ''"
+                                                       x-init="if(!line.pallet_entries) line.pallet_entries = [{}]"
+                                                       x-model="line.pallet_entries[0].cases"
                                                        :name="`po_numbers[${poIndex}][lines][${lineIndex}][pallet_entries][0][cases]`"
                                                        placeholder="0"
                                                        maxlength="6"
@@ -208,7 +210,8 @@
                                             <!-- Pallet Type -->
                                             <div class="w-32 flex-shrink-0">
                                                 <label class="block text-[10px] font-medium text-gray-600 mb-0.5">Pallet Type</label>
-                                                <select x-model="(line.pallet_entries && line.pallet_entries[0]) ? line.pallet_entries[0].type_id : ''"
+                                                <select x-init="if(!line.pallet_entries) line.pallet_entries = [{}]"
+                                                        x-model="line.pallet_entries[0].type_id"
                                                         :name="`po_numbers[${poIndex}][lines][${lineIndex}][pallet_entries][0][type_id]`"
                                                         class="h-7 w-full border-gray-300 rounded text-xs px-2 {{ $readonly ? 'bg-gray-100' : '' }}"
                                                         {{ $readonly ? 'disabled' : '' }}>
@@ -231,10 +234,10 @@
                                         </div>
                                     @else
                                         <!-- SKU and Description on Same Line -->
-                                        <div class="mb-3 flex gap-2 items-start">
+                                        <div class="mb-3 flex gap-2 items-start" data-sku-field-container>
                                             <!-- SKU (20% width) -->
                                             <div class="w-1/5 flex-shrink-0 relative">
-                                                <label class="block text-xs font-medium text-gray-600 mb-1">SKU *</label>
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">SKU</label>
                                                 <input type="text" x-model="line.sku"
                                                        :id="`sku-input-${poIndex}-${lineIndex}`"
                                                        :name="`po_numbers[${poIndex}][lines][${lineIndex}][sku]`"
@@ -242,7 +245,7 @@
                                                        placeholder="SKU123"
                                                        autocomplete="off"
                                                        class="block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
-                                                       {{ $readonly ? 'readonly' : '' }} required>
+                                                       {{ $readonly ? 'readonly' : '' }}>
                                                 <div x-show="showSkuDropdown[`${poIndex}-${lineIndex}`]"
                                                      x-ref="skuDropdown"
                                                      @click.away="showSkuDropdown[`${poIndex}-${lineIndex}`] = false"
@@ -292,24 +295,24 @@
                                                         <input type="number" x-model="line.expected_pallets"
                                                                @input="calculateExpectedCases(poIndex, lineIndex)"
                                                                @change="triggerSummaryUpdate()"
-                                                               :disabled="!line.sku || line.sku.trim() === ''"
-                                                               :class="(!line.sku || line.sku.trim() === '') ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'"
+                                                               :disabled="{{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')"
+                                                               :class="({{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')) ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'"
                                                                {{ $readonly ? 'readonly' : '' }}>
                                                     </div>
                                                     <div>
                                                         <label class="block text-xs text-gray-500">Units</label>
                                                         <input type="number" x-model="line.expected_cases"
                                                                @change="triggerSummaryUpdate()"
-                                                               :disabled="!line.sku || line.sku.trim() === ''"
-                                                               :class="(!line.sku || line.sku.trim() === '') ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'"
+                                                               :disabled="{{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')"
+                                                               :class="({{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')) ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'"
                                                                {{ $readonly ? 'readonly' : '' }}>
                                                     </div>
                                                     <div>
                                                         <label class="block text-xs text-gray-500">Type</label>
                                                         <select x-model="line.expected_pallet_type_id"
                                                                 @change="triggerSummaryUpdate()"
-                                                                :disabled="!line.sku || line.sku.trim() === '' {{ $readonly ? '|| true' : '' }}"
-                                                                :class="(!line.sku || line.sku.trim() === '') ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'">
+                                                                :disabled="({{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')) {{ $readonly ? '|| true' : '' }}"
+                                                                :class="({{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')) ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'">
                                                             <option value="">Select</option>
                                                             @foreach($palletTypes as $type)
                                                                 <option value="{{ $type->id }}">{{ $type->display_name }}</option>
@@ -317,9 +320,11 @@
                                                         </select>
                                                     </div>
                                                 </div>
+                                                @if($show_sku_fields)
                                                 <div x-show="!line.sku || line.sku.trim() === ''" class="mt-2 text-xs text-amber-600 italic">
                                                     ⚠️ Please select a SKU first to enter expected quantities
                                                 </div>
+                                                @endif
                                             </div>
 
                                             <!-- Actual Quantities -->
@@ -331,24 +336,24 @@
                                                         <input type="number" x-model="line.actual_pallets"
                                                                @input="calculateActualCases(poIndex, lineIndex)"
                                                                @change="triggerSummaryUpdate()"
-                                                               :disabled="!line.sku || line.sku.trim() === ''"
-                                                               :class="(!line.sku || line.sku.trim() === '') ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'"
+                                                               :disabled="{{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')"
+                                                               :class="({{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')) ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'"
                                                                {{ $readonly ? 'readonly' : '' }}>
                                                     </div>
                                                     <div>
                                                         <label class="block text-xs text-gray-500">Units</label>
                                                         <input type="number" x-model="line.actual_cases"
                                                                @change="triggerSummaryUpdate()"
-                                                               :disabled="!line.sku || line.sku.trim() === ''"
-                                                               :class="(!line.sku || line.sku.trim() === '') ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'"
+                                                               :disabled="{{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')"
+                                                               :class="({{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')) ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'"
                                                                {{ $readonly ? 'readonly' : '' }}>
                                                     </div>
                                                     <div>
                                                         <label class="block text-xs text-gray-500">Type</label>
                                                         <select x-model="line.actual_pallet_type_id"
                                                                 @change="triggerSummaryUpdate()"
-                                                                :disabled="!line.sku || line.sku.trim() === '' {{ $readonly ? '|| true' : '' }}"
-                                                                :class="(!line.sku || line.sku.trim() === '') ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'">
+                                                                :disabled="({{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')) {{ $readonly ? '|| true' : '' }}"
+                                                                :class="({{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')) ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'">
                                                             <option value="">Select</option>
                                                             @foreach($palletTypes as $type)
                                                                 <option value="{{ $type->id }}">{{ $type->display_name }}</option>
@@ -356,9 +361,11 @@
                                                         </select>
                                                     </div>
                                                 </div>
+                                                @if($show_sku_fields)
                                                 <div x-show="!line.sku || line.sku.trim() === ''" class="mt-2 text-xs text-amber-600 italic">
                                                     ⚠️ Please select a SKU first to enter actual quantities
                                                 </div>
+                                                @endif
                                             </div>
                                         </div>
 
@@ -802,15 +809,20 @@ function poNumbersManager(customerId = null) {
     }
 }
 
-// Add form validation on submit
+// Add form validation on submit - only if PO data is required
 document.addEventListener('DOMContentLoaded', function() {
     const forms = document.querySelectorAll('form');
-    
+
     forms.forEach(form => {
         form.addEventListener('submit', function(e) {
             // Check if this form contains PO numbers component
             const poComponent = form.querySelector('[x-data*="poNumbersManager"]');
-            if (poComponent && window.poNumbersManagerInstance) {
+
+            // Only validate if PO is marked as required
+            const poSectionContent = document.getElementById('po-section-content');
+            const isRequired = poSectionContent && poSectionContent.getAttribute('data-po-required') === 'true';
+
+            if (poComponent && window.poNumbersManagerInstance && isRequired) {
                 if (!window.poNumbersManagerInstance.validatePoNumbers()) {
                     e.preventDefault();
                     alert('At least one PO line must have cases greater than 0.');

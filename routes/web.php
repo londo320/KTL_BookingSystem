@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\SlotGeneratorController;
 use App\Http\Controllers\Admin\SlotReleaseRuleController;
 use App\Http\Controllers\Admin\SlotTemplateController;
 use App\Http\Controllers\Admin\SlotUsageController;
+use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\UserSwitchController;
 use App\Http\Controllers\Customer\CustomerDashboardController;
 use App\Http\Controllers\DepotAdmin\DepotAdminDashboardController;
@@ -190,6 +191,12 @@ Route::middleware('auth')->group(function () {
         // ──── Customers ────
         Route::resource('customers', CustomerController::class);
         Route::post('/customers/{customer}/toggle', [CustomerController::class, 'toggle'])->name('customers.toggle');
+        Route::get('/customers/{customer}/booking-config', [\App\Http\Controllers\Admin\CustomerBookingConfigController::class, 'edit'])->name('customers.booking-config.edit');
+        Route::post('/customers/{customer}/booking-config', [\App\Http\Controllers\Admin\CustomerBookingConfigController::class, 'update'])->name('customers.booking-config.update');
+        Route::get('/customers/{customer}/time-windows', [\App\Http\Controllers\Admin\CustomerTimeWindowController::class, 'edit'])->name('customers.time-windows.edit');
+        Route::post('/customers/{customer}/time-windows', [\App\Http\Controllers\Admin\CustomerTimeWindowController::class, 'update'])->name('customers.time-windows.update');
+        Route::get('/customers/{customer}/bay-assignments', [\App\Http\Controllers\Admin\CustomerBayAssignmentController::class, 'edit'])->name('customers.bay-assignments.edit');
+        Route::post('/customers/{customer}/bay-assignments', [\App\Http\Controllers\Admin\CustomerBayAssignmentController::class, 'update'])->name('customers.bay-assignments.update');
         Route::resource('customer-depot-products', CustomerDepotProductController::class);
         
         // ──── Carriers ────
@@ -262,6 +269,8 @@ Route::middleware('auth')->group(function () {
         
         // ──── System Management ────
         Route::resource('booking-types', BookingTypeController::class);
+        Route::get('/booking-types/{bookingType}/equipment', [\App\Http\Controllers\Admin\BookingTypeEquipmentController::class, 'edit'])->name('booking-types.equipment.edit');
+        Route::post('/booking-types/{bookingType}/equipment', [\App\Http\Controllers\Admin\BookingTypeEquipmentController::class, 'update'])->name('booking-types.equipment.update');
         Route::resource('slot-templates', SlotTemplateController::class);
         Route::post('slot-templates/{slotTemplate}/duplicate', [SlotTemplateController::class, 'duplicate'])->name('slot-templates.duplicate');
         Route::post('slot-templates/bulk-duplicate', [SlotTemplateController::class, 'bulkDuplicate'])->name('slot-templates.bulk-duplicate');

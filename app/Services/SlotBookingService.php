@@ -20,14 +20,45 @@ class SlotBookingService
      */
     public function checkAvailability(Slot $primarySlot, int $bookingTypeId, ?int $customerId = null, ?int $excludeBookingId = null)
     {
+        // Use SlotAvailabilityService for comprehensive checks
+        if ($customerId) {
+            $availabilityService = app(SlotAvailabilityService::class);
+            $availabilityCheck = $availabilityService->isSlotAvailable(
+                $primarySlot,
+                $customerId,
+                $bookingTypeId,
+                $excludeBookingId
+            );
+
+            if (!$availabilityCheck['available']) {
+                return [
+                    'can_book' => false,
+                    'slots' => collect(),
+                    'message' => implode(' ', $availabilityCheck['errors'])
+                ];
+            }
+
+            // Get extended slots from availability check
+            $extendedSlotIds = $availabilityCheck['extended_slots'] ?? [];
+            $extendedSlots = !empty($extendedSlotIds)
+                ? Slot::whereIn('id', $extendedSlotIds)->orderBy('start_at')->get()
+                : collect();
+
+            $allSlots = collect([$primarySlot])->merge($extendedSlots);
+
+            return [
+                'can_book' => true,
+                'slots' => $allSlots,
+                'message' => "Available! This booking will occupy " . $allSlots->count() . " slot(s)."
+            ];
+        }
+
+        // Fallback to legacy logic if no customer ID provided
         $bookingType = BookingType::findOrFail($bookingTypeId);
         $depotId = $primarySlot->depot_id;
 
         // Get duration for this booking type at this depot (in minutes)
-        // Use customer-specific duration if customer ID provided, otherwise depot-only
-        $durationMinutes = $customerId
-            ? $bookingType->getDurationForCustomer($depotId, $customerId)
-            : $bookingType->getDurationForDepot($depotId);
+        $durationMinutes = $bookingType->getDurationForDepot($depotId);
 
         // Calculate how many slots we need
         $slotDurationMinutes = $primarySlot->start_at->diffInMinutes($primarySlot->end_at);

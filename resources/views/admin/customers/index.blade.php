@@ -44,6 +44,18 @@
                class="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs">
                Edit
             </a>
+            <a href="{{ route('app.customers.booking-config.edit', $customer) }}"
+               class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs">
+               📦 Booking Config
+            </a>
+            <a href="{{ route('app.customers.time-windows.edit', $customer) }}"
+               class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs">
+               🕐 Time Windows
+            </a>
+            <a href="{{ route('app.customers.bay-assignments.edit', $customer) }}"
+               class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600 text-xs">
+               🚪 Bay Assignments
+            </a>
             <a href="{{ route('app.customer-behavior.settings', $customer) }}"
                class="px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 text-xs">
                🔧 Limits

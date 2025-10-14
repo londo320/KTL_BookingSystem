@@ -1,19 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git fetch:*)",
-      "Bash(./import-production-db.sh:*)",
-      "Bash(/Users/londo/Herd/test/resources/views/layouts/site-admin-nav.blade.php )",
-      "Bash(/Users/londo/Herd/test/resources/views/layouts/dynamic-nav.blade.php)",
-      "Bash(do)",
-      "Bash(if [ -f \"$file\" ])",
-      "Bash(then)",
-      "Bash(/Users/londo/Herd/test/resources/views/layouts/depot-admin.blade.php )",
-      "Bash(/Users/londo/Herd/test/resources/views/layouts/site-admin.blade.php)",
-      "Bash(ssh londo@test.test \"cd /path/to/production && php artisan migrate:status | grep booking_type_customer\")",
-      "Bash(ssh londo@test.test \"cd /path/to/test && php artisan tinker --execute=''\n$booking = App\\Models\\Booking::find(10);\necho \"\"Booking ID: \"\" . $booking->id . PHP_EOL;\necho \"\"Reference: \"\" . $booking->reference . PHP_EOL;\necho \"\"Status: \"\" . $booking->status . PHP_EOL;\necho \"\"Departed at: \"\" . ($booking->departed_at ?? \"\"NULL\"\") . PHP_EOL;\necho \"\"Arrived at: \"\" . ($booking->arrived_at ?? \"\"NULL\"\") . PHP_EOL;\necho \"\"Vehicle registration: \"\" . ($booking->vehicle_registration ?? \"\"NULL\"\") . PHP_EOL;\n''\")",
-      "Bash(ssh londo@test.test \"cd /path/to/production && tail -50 storage/logs/laravel.log\")",
-      "Bash(ssh:*)"
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

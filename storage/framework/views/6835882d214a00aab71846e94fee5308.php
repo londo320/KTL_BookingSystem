@@ -1,7 +1,7 @@
 <?php $attributes ??= new \Illuminate\View\ComponentAttributeBag;
 
 $__newAttributes = [];
-$__propNames = \Illuminate\View\ComponentAttributeBag::extractPropNames((['booking', 'readonly' => false, 'customer_view' => false, 'hide_actuals' => false, 'customer_id' => null]));
+$__propNames = \Illuminate\View\ComponentAttributeBag::extractPropNames((['booking', 'readonly' => false, 'customer_view' => false, 'hide_actuals' => false, 'customer_id' => null, 'show_sku_fields' => true]));
 
 foreach ($attributes->all() as $__key => $__value) {
     if (in_array($__key, $__propNames)) {
@@ -16,7 +16,7 @@ $attributes = new \Illuminate\View\ComponentAttributeBag($__newAttributes);
 unset($__propNames);
 unset($__newAttributes);
 
-foreach (array_filter((['booking', 'readonly' => false, 'customer_view' => false, 'hide_actuals' => false, 'customer_id' => null]), 'is_string', ARRAY_FILTER_USE_KEY) as $__key => $__value) {
+foreach (array_filter((['booking', 'readonly' => false, 'customer_view' => false, 'hide_actuals' => false, 'customer_id' => null, 'show_sku_fields' => true]), 'is_string', ARRAY_FILTER_USE_KEY) as $__key => $__value) {
     $$__key = $$__key ?? $__value;
 }
 
@@ -161,7 +161,7 @@ unset($__defined_vars, $__key, $__value); ?>
                                             </div>
 
                                             <!-- SKU -->
-                                            <div class="w-24 flex-shrink-0 relative">
+                                            <div class="w-24 flex-shrink-0 relative" data-sku-field-container>
                                                 <label class="block text-[10px] font-medium text-gray-600 mb-0.5">SKU</label>
                                                 <input type="text" x-model="line.sku"
                                                        :id="`sku-input-${poIndex}-${lineIndex}`"
@@ -191,7 +191,7 @@ unset($__defined_vars, $__key, $__value); ?>
                                             </div>
 
                                             <!-- Description -->
-                                            <div class="flex-1 min-w-0">
+                                            <div class="flex-1 min-w-[200px]" data-sku-field-container>
                                                 <label class="block text-[10px] font-medium text-gray-600 mb-0.5">Description</label>
                                                 <input type="text" x-model="line.description"
                                                        :name="`po_numbers[${poIndex}][lines][${lineIndex}][description]`"
@@ -202,14 +202,15 @@ unset($__defined_vars, $__key, $__value); ?>
                                             </div>
 
                                             <!-- Pallets -->
-                                            <div class="w-16 flex-shrink-0">
+                                            <div class="w-14 flex-shrink-0">
                                                 <label class="block text-[10px] font-medium text-gray-600 mb-0.5">
                                                     Plts <span class="text-red-500">*</span>
                                                 </label>
                                                 <input type="number"
-                                                       x-model="(line.pallet_entries && line.pallet_entries[0]) ? line.pallet_entries[0].pallets : ''"
+                                                       x-init="if(!line.pallet_entries) line.pallet_entries = [{}]"
+                                                       x-model="line.pallet_entries[0].pallets"
                                                        :name="`po_numbers[${poIndex}][lines][${lineIndex}][pallet_entries][0][pallets]`"
-                                                       @input="if(line.cases_per_pallet && $event.target.value) { if(!line.pallet_entries) line.pallet_entries = [{}]; line.pallet_entries[0].cases = $event.target.value * line.cases_per_pallet; }"
+                                                       @input="if(line.cases_per_pallet && $event.target.value) { line.pallet_entries[0].cases = $event.target.value * line.cases_per_pallet; }"
                                                        placeholder="0"
                                                        maxlength="4"
                                                        required
@@ -224,7 +225,8 @@ unset($__defined_vars, $__key, $__value); ?>
                                                     <span x-show="line.cases_per_pallet" class="text-[9px] text-green-600">(auto)</span>
                                                 </label>
                                                 <input type="number"
-                                                       x-model="(line.pallet_entries && line.pallet_entries[0]) ? line.pallet_entries[0].cases : ''"
+                                                       x-init="if(!line.pallet_entries) line.pallet_entries = [{}]"
+                                                       x-model="line.pallet_entries[0].cases"
                                                        :name="`po_numbers[${poIndex}][lines][${lineIndex}][pallet_entries][0][cases]`"
                                                        placeholder="0"
                                                        maxlength="6"
@@ -234,9 +236,10 @@ unset($__defined_vars, $__key, $__value); ?>
                                             </div>
 
                                             <!-- Pallet Type -->
-                                            <div class="w-40 flex-shrink-0">
+                                            <div class="w-32 flex-shrink-0">
                                                 <label class="block text-[10px] font-medium text-gray-600 mb-0.5">Pallet Type</label>
-                                                <select x-model="(line.pallet_entries && line.pallet_entries[0]) ? line.pallet_entries[0].type_id : ''"
+                                                <select x-init="if(!line.pallet_entries) line.pallet_entries = [{}]"
+                                                        x-model="line.pallet_entries[0].type_id"
                                                         :name="`po_numbers[${poIndex}][lines][${lineIndex}][pallet_entries][0][type_id]`"
                                                         class="h-7 w-full border-gray-300 rounded text-xs px-2 <?php echo e($readonly ? 'bg-gray-100' : ''); ?>"
                                                         <?php echo e($readonly ? 'disabled' : ''); ?>>
@@ -258,11 +261,11 @@ unset($__defined_vars, $__key, $__value); ?>
                                             <?php endif; ?>
                                         </div>
                                     <?php else: ?>
-                                        <!-- SKU and Description Row -->
-                                        <div class="grid grid-cols-12 gap-2 mb-3">
-                                            <!-- SKU -->
-                                            <div class="col-span-3 relative">
-                                                <label class="block text-xs font-medium text-gray-600 mb-1">SKU *</label>
+                                        <!-- SKU and Description on Same Line -->
+                                        <div class="mb-3 flex gap-2 items-start" data-sku-field-container>
+                                            <!-- SKU (20% width) -->
+                                            <div class="w-1/5 flex-shrink-0 relative">
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">SKU</label>
                                                 <input type="text" x-model="line.sku"
                                                        :id="`sku-input-${poIndex}-${lineIndex}`"
                                                        :name="`po_numbers[${poIndex}][lines][${lineIndex}][sku]`"
@@ -270,7 +273,7 @@ unset($__defined_vars, $__key, $__value); ?>
                                                        placeholder="SKU123"
                                                        autocomplete="off"
                                                        class="block w-full border-gray-300 rounded text-xs <?php echo e($readonly ? 'bg-gray-100' : ''); ?>"
-                                                       <?php echo e($readonly ? 'readonly' : ''); ?> required>
+                                                       <?php echo e($readonly ? 'readonly' : ''); ?>>
                                                 <div x-show="showSkuDropdown[`${poIndex}-${lineIndex}`]"
                                                      x-ref="skuDropdown"
                                                      @click.away="showSkuDropdown[`${poIndex}-${lineIndex}`] = false"
@@ -290,8 +293,8 @@ unset($__defined_vars, $__key, $__value); ?>
                                                 </div>
                                             </div>
 
-                                            <!-- Description -->
-                                            <div class="col-span-9">
+                                            <!-- Description (80% width) -->
+                                            <div class="flex-1 min-w-0">
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
                                                 <input type="text" x-model="line.description"
                                                        :name="`po_numbers[${poIndex}][lines][${lineIndex}][description]`"
@@ -302,31 +305,42 @@ unset($__defined_vars, $__key, $__value); ?>
                                             </div>
                                         </div>
 
+                                        <!-- Hidden inputs to ensure values are submitted even when disabled -->
+                                        <input type="hidden" :name="`po_numbers[${poIndex}][lines][${lineIndex}][expected_pallets]`" :value="line.expected_pallets || ''">
+                                        <input type="hidden" :name="`po_numbers[${poIndex}][lines][${lineIndex}][expected_cases]`" :value="line.expected_cases || ''">
+                                        <input type="hidden" :name="`po_numbers[${poIndex}][lines][${lineIndex}][expected_pallet_type_id]`" :value="line.expected_pallet_type_id || ''">
+                                        <input type="hidden" :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_pallets]`" :value="line.actual_pallets || ''">
+                                        <input type="hidden" :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_cases]`" :value="line.actual_cases || ''">
+                                        <input type="hidden" :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_pallet_type_id]`" :value="line.actual_pallet_type_id || ''">
+
                                         <div class="grid grid-cols-2 gap-4">
                                             <!-- Expected Quantities -->
                                             <div>
                                                 <h6 class="text-xs font-medium text-gray-600 mb-2">Expected</h6>
                                                 <div class="grid grid-cols-3 gap-2">
                                                     <div>
-                                                        <label class="block text-xs text-gray-500">Units</label>
-                                                        <input type="number" x-model="line.expected_cases" 
-                                                               :name="`po_numbers[${poIndex}][lines][${lineIndex}][expected_cases]`"
-                                                               class="mt-1 block w-full border-gray-300 rounded text-xs <?php echo e($readonly ? 'bg-gray-100' : ''); ?>"
+                                                        <label class="block text-xs text-gray-500">Pallets</label>
+                                                        <input type="number" x-model="line.expected_pallets"
+                                                               @input="calculateExpectedCases(poIndex, lineIndex)"
+                                                               @change="triggerSummaryUpdate()"
+                                                               :disabled="<?php echo e($show_sku_fields ? 'true' : 'false'); ?> && (!line.sku || line.sku.trim() === '')"
+                                                               :class="(<?php echo e($show_sku_fields ? 'true' : 'false'); ?> && (!line.sku || line.sku.trim() === '')) ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs <?php echo e($readonly ? 'bg-gray-100' : ''); ?>'"
                                                                <?php echo e($readonly ? 'readonly' : ''); ?>>
                                                     </div>
                                                     <div>
-                                                        <label class="block text-xs text-gray-500">Pallets</label>
-                                                        <input type="number" x-model="line.expected_pallets" 
-                                                               :name="`po_numbers[${poIndex}][lines][${lineIndex}][expected_pallets]`"
-                                                               class="mt-1 block w-full border-gray-300 rounded text-xs <?php echo e($readonly ? 'bg-gray-100' : ''); ?>"
+                                                        <label class="block text-xs text-gray-500">Units</label>
+                                                        <input type="number" x-model="line.expected_cases"
+                                                               @change="triggerSummaryUpdate()"
+                                                               :disabled="<?php echo e($show_sku_fields ? 'true' : 'false'); ?> && (!line.sku || line.sku.trim() === '')"
+                                                               :class="(<?php echo e($show_sku_fields ? 'true' : 'false'); ?> && (!line.sku || line.sku.trim() === '')) ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs <?php echo e($readonly ? 'bg-gray-100' : ''); ?>'"
                                                                <?php echo e($readonly ? 'readonly' : ''); ?>>
                                                     </div>
                                                     <div>
                                                         <label class="block text-xs text-gray-500">Type</label>
-                                                        <select x-model="line.expected_pallet_type_id" 
-                                                                :name="`po_numbers[${poIndex}][lines][${lineIndex}][expected_pallet_type_id]`"
-                                                                class="mt-1 block w-full border-gray-300 rounded text-xs <?php echo e($readonly ? 'bg-gray-100' : ''); ?>"
-                                                                <?php echo e($readonly ? 'disabled' : ''); ?>>
+                                                        <select x-model="line.expected_pallet_type_id"
+                                                                @change="triggerSummaryUpdate()"
+                                                                :disabled="(<?php echo e($show_sku_fields ? 'true' : 'false'); ?> && (!line.sku || line.sku.trim() === '')) <?php echo e($readonly ? '|| true' : ''); ?>"
+                                                                :class="(<?php echo e($show_sku_fields ? 'true' : 'false'); ?> && (!line.sku || line.sku.trim() === '')) ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs <?php echo e($readonly ? 'bg-gray-100' : ''); ?>'">
                                                             <option value="">Select</option>
                                                             <?php $__currentLoopData = $palletTypes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $type): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                                                 <option value="<?php echo e($type->id); ?>"><?php echo e($type->display_name); ?></option>
@@ -334,6 +348,11 @@ unset($__defined_vars, $__key, $__value); ?>
                                                         </select>
                                                     </div>
                                                 </div>
+                                                <?php if($show_sku_fields): ?>
+                                                <div x-show="!line.sku || line.sku.trim() === ''" class="mt-2 text-xs text-amber-600 italic">
+                                                    ⚠️ Please select a SKU first to enter expected quantities
+                                                </div>
+                                                <?php endif; ?>
                                             </div>
 
                                             <!-- Actual Quantities -->
@@ -341,25 +360,28 @@ unset($__defined_vars, $__key, $__value); ?>
                                                 <h6 class="text-xs font-medium text-gray-600 mb-2">Actual</h6>
                                                 <div class="grid grid-cols-3 gap-2">
                                                     <div>
-                                                        <label class="block text-xs text-gray-500">Units</label>
-                                                        <input type="number" x-model="line.actual_cases" 
-                                                               :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_cases]`"
-                                                               class="mt-1 block w-full border-gray-300 rounded text-xs <?php echo e($readonly ? 'bg-gray-100' : ''); ?>"
+                                                        <label class="block text-xs text-gray-500">Pallets</label>
+                                                        <input type="number" x-model="line.actual_pallets"
+                                                               @input="calculateActualCases(poIndex, lineIndex)"
+                                                               @change="triggerSummaryUpdate()"
+                                                               :disabled="<?php echo e($show_sku_fields ? 'true' : 'false'); ?> && (!line.sku || line.sku.trim() === '')"
+                                                               :class="(<?php echo e($show_sku_fields ? 'true' : 'false'); ?> && (!line.sku || line.sku.trim() === '')) ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs <?php echo e($readonly ? 'bg-gray-100' : ''); ?>'"
                                                                <?php echo e($readonly ? 'readonly' : ''); ?>>
                                                     </div>
                                                     <div>
-                                                        <label class="block text-xs text-gray-500">Pallets</label>
-                                                        <input type="number" x-model="line.actual_pallets" 
-                                                               :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_pallets]`"
-                                                               class="mt-1 block w-full border-gray-300 rounded text-xs <?php echo e($readonly ? 'bg-gray-100' : ''); ?>"
+                                                        <label class="block text-xs text-gray-500">Units</label>
+                                                        <input type="number" x-model="line.actual_cases"
+                                                               @change="triggerSummaryUpdate()"
+                                                               :disabled="<?php echo e($show_sku_fields ? 'true' : 'false'); ?> && (!line.sku || line.sku.trim() === '')"
+                                                               :class="(<?php echo e($show_sku_fields ? 'true' : 'false'); ?> && (!line.sku || line.sku.trim() === '')) ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs <?php echo e($readonly ? 'bg-gray-100' : ''); ?>'"
                                                                <?php echo e($readonly ? 'readonly' : ''); ?>>
                                                     </div>
                                                     <div>
                                                         <label class="block text-xs text-gray-500">Type</label>
-                                                        <select x-model="line.actual_pallet_type_id" 
-                                                                :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_pallet_type_id]`"
-                                                                class="mt-1 block w-full border-gray-300 rounded text-xs <?php echo e($readonly ? 'bg-gray-100' : ''); ?>"
-                                                                <?php echo e($readonly ? 'disabled' : ''); ?>>
+                                                        <select x-model="line.actual_pallet_type_id"
+                                                                @change="triggerSummaryUpdate()"
+                                                                :disabled="(<?php echo e($show_sku_fields ? 'true' : 'false'); ?> && (!line.sku || line.sku.trim() === '')) <?php echo e($readonly ? '|| true' : ''); ?>"
+                                                                :class="(<?php echo e($show_sku_fields ? 'true' : 'false'); ?> && (!line.sku || line.sku.trim() === '')) ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs <?php echo e($readonly ? 'bg-gray-100' : ''); ?>'">
                                                             <option value="">Select</option>
                                                             <?php $__currentLoopData = $palletTypes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $type): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                                                 <option value="<?php echo e($type->id); ?>"><?php echo e($type->display_name); ?></option>
@@ -367,6 +389,11 @@ unset($__defined_vars, $__key, $__value); ?>
                                                         </select>
                                                     </div>
                                                 </div>
+                                                <?php if($show_sku_fields): ?>
+                                                <div x-show="!line.sku || line.sku.trim() === ''" class="mt-2 text-xs text-amber-600 italic">
+                                                    ⚠️ Please select a SKU first to enter actual quantities
+                                                </div>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
 
@@ -422,12 +449,12 @@ unset($__defined_vars, $__key, $__value); ?>
                             <div class="space-y-2 text-sm">
                                 <div>
                                     <span class="text-gray-600 font-medium">Expected:</span>
-                                    <div class="ml-4" x-html="getPoSummaryText(po, 'expected')"></div>
+                                    <div class="ml-4" x-html="(summaryUpdateCounter || true) && getPoSummaryText(po, 'expected')"></div>
                                 </div>
                                 <?php if (! ($hide_actuals)): ?>
                                     <div>
                                         <span class="text-gray-600 font-medium">Actual:</span>
-                                        <div class="ml-4" x-html="getPoSummaryText(po, 'actual')"></div>
+                                        <div class="ml-4" x-html="(summaryUpdateCounter || true) && getPoSummaryText(po, 'actual')"></div>
                                     </div>
                                 <?php endif; ?>
                             </div>
@@ -459,6 +486,7 @@ function poNumbersManager(customerId = null) {
         showSkuDropdown: {},
         skuSearchLoading: {},
         skuSearchTimeout: null,
+        summaryUpdateCounter: 0,
 
         init(existingData = []) {
             this.poNumbers = existingData.length > 0 ? existingData : [];
@@ -554,6 +582,32 @@ function poNumbersManager(customerId = null) {
 
             // Hide dropdown
             this.showSkuDropdown[key] = false;
+        },
+
+        calculateExpectedCases(poIndex, lineIndex) {
+            const line = this.poNumbers[poIndex].lines[lineIndex];
+            const pallets = parseFloat(line.expected_pallets) || 0;
+            const casesPerPallet = parseFloat(line.cases_per_pallet) || 0;
+
+            if (pallets > 0 && casesPerPallet > 0) {
+                line.expected_cases = pallets * casesPerPallet;
+            }
+            this.summaryUpdateCounter++;
+        },
+
+        calculateActualCases(poIndex, lineIndex) {
+            const line = this.poNumbers[poIndex].lines[lineIndex];
+            const pallets = parseFloat(line.actual_pallets) || 0;
+            const casesPerPallet = parseFloat(line.cases_per_pallet) || 0;
+
+            if (pallets > 0 && casesPerPallet > 0) {
+                line.actual_cases = pallets * casesPerPallet;
+            }
+            this.summaryUpdateCounter++;
+        },
+
+        triggerSummaryUpdate() {
+            this.summaryUpdateCounter++;
         },
         
         addPoNumber() {
@@ -687,60 +741,67 @@ function poNumbersManager(customerId = null) {
             let totalCases = 0;
             let palletBreakdown = {};
             let totalPallets = 0;
-            
-            // For expected quantities with new pallet_entries structure
+            const palletTypes = <?php echo json_encode($palletTypes->keyBy('id'), 15, 512) ?>;
+
+            // For expected quantities - use direct fields only (edit layout)
             if (type === 'expected') {
-                const palletTypes = <?php echo json_encode($palletTypes->keyBy('id'), 15, 512) ?>;
-                
                 po.lines.forEach(line => {
-                    if (line.pallet_entries && line.pallet_entries.length > 0) {
-                        line.pallet_entries.forEach(entry => {
-                            const cases = parseInt(entry.cases) || 0;
-                            const pallets = parseInt(entry.pallets) || 0;
-                            const typeId = entry.type_id;
-                            
-                            totalCases += cases;
-                            totalPallets += pallets;
-                            
-                            if (pallets > 0) {
-                                if (typeId && palletTypes[typeId]) {
-                                    const typeName = palletTypes[typeId].name;
-                                    palletBreakdown[typeName] = (palletBreakdown[typeName] || 0) + pallets;
-                                } else {
-                                    palletBreakdown['Unspecified'] = (palletBreakdown['Unspecified'] || 0) + pallets;
-                                }
-                            }
-                        });
-                    }
-                    
-                    // Fallback to old structure if no pallet_entries
-                    if ((!line.pallet_entries || line.pallet_entries.length === 0) && line.expected_cases) {
-                        totalCases += parseInt(line.expected_cases) || 0;
+                    const cases = parseInt(line.expected_cases) || 0;
+                    const pallets = parseInt(line.expected_pallets) || 0;
+                    const typeId = line.expected_pallet_type_id;
+
+                    totalCases += cases;
+                    totalPallets += pallets;
+
+                    if (pallets > 0) {
+                        if (typeId && palletTypes[typeId]) {
+                            const typeName = palletTypes[typeId].name;
+                            palletBreakdown[typeName] = (palletBreakdown[typeName] || 0) + pallets;
+                        } else {
+                            palletBreakdown['Unspecified'] = (palletBreakdown['Unspecified'] || 0) + pallets;
+                        }
                     }
                 });
-            } else {
-                // Fall back to old structure for actual quantities
-                const unitsField = type === 'actual' ? 'actual_cases' : 'expected_cases';
-                totalCases = po.lines.reduce((sum, line) => sum + (parseInt(line[unitsField]) || 0), 0);
-                palletBreakdown = this.getPalletBreakdown(po, type);
-                totalPallets = Object.values(palletBreakdown).reduce((sum, count) => sum + count, 0);
+            } else if (type === 'actual') {
+                // For actual quantities - use direct fields only
+                po.lines.forEach(line => {
+                    const cases = parseInt(line.actual_cases) || 0;
+                    const pallets = parseInt(line.actual_pallets) || 0;
+                    const typeId = line.actual_pallet_type_id;
+
+                    totalCases += cases;
+                    totalPallets += pallets;
+
+                    if (pallets > 0) {
+                        if (typeId && palletTypes[typeId]) {
+                            const typeName = palletTypes[typeId].name;
+                            palletBreakdown[typeName] = (palletBreakdown[typeName] || 0) + pallets;
+                        } else {
+                            palletBreakdown['Unspecified'] = (palletBreakdown['Unspecified'] || 0) + pallets;
+                        }
+                    }
+                });
             }
-            
+
             const parts = [];
-            
-            if (totalCases > 0) {
-                parts.push(`<strong>${totalCases} cases</strong>`);
-            }
-            
+
             if (totalPallets > 0) {
+                parts.push(`${totalPallets} pallet${totalPallets !== 1 ? 's' : ''}`);
+            }
+
+            if (totalCases > 0) {
+                parts.push(`${totalCases} unit${totalCases !== 1 ? 's' : ''}`);
+            }
+
+            // Show pallet type breakdown if types are specified
+            if (totalPallets > 0 && Object.keys(palletBreakdown).length > 0 && palletBreakdown['Unspecified'] !== totalPallets) {
                 const palletParts = Object.entries(palletBreakdown).map(([typeName, count]) => {
                     return `${count} ${typeName}`;
                 });
-                
-                parts.push(`${palletParts.join(', ')} <em>(total: ${totalPallets} pallets)</em>`);
+                parts.push(`<span class="text-gray-500">(${palletParts.join(', ')})</span>`);
             }
-            
-            return parts.length > 0 ? parts.join('<br>') : '<em>No quantities specified</em>';
+
+            return parts.length > 0 ? parts.join(' ') : '<span class="text-gray-400 italic">No quantities specified</span>';
         },
         
         validatePoNumbers() {
@@ -776,15 +837,20 @@ function poNumbersManager(customerId = null) {
     }
 }
 
-// Add form validation on submit
+// Add form validation on submit - only if PO data is required
 document.addEventListener('DOMContentLoaded', function() {
     const forms = document.querySelectorAll('form');
-    
+
     forms.forEach(form => {
         form.addEventListener('submit', function(e) {
             // Check if this form contains PO numbers component
             const poComponent = form.querySelector('[x-data*="poNumbersManager"]');
-            if (poComponent && window.poNumbersManagerInstance) {
+
+            // Only validate if PO is marked as required
+            const poSectionContent = document.getElementById('po-section-content');
+            const isRequired = poSectionContent && poSectionContent.getAttribute('data-po-required') === 'true';
+
+            if (poComponent && window.poNumbersManagerInstance && isRequired) {
                 if (!window.poNumbersManagerInstance.validatePoNumbers()) {
                     e.preventDefault();
                     alert('At least one PO line must have cases greater than 0.');
