@@ -11,6 +11,7 @@ class Depot extends Model
 
     protected $fillable = [
         'name',
+        'slot_system_mode',
         'location',
         'cut_off_time',
         'map_file',

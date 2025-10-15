@@ -66,6 +66,11 @@ class GenerateBaySlots extends Command
                         $startTime = $date->copy()->setTime($hour, 0, 0);
                         $endTime = $startTime->copy()->addHour();
 
+                        // Check if bay is operational at this time
+                        if (!$bay->isOperationalAt($startTime)) {
+                            continue; // Skip non-operational hours
+                        }
+
                         // Check if slot already exists
                         $exists = Slot::where('depot_id', $depot->id)
                             ->where('tipping_bay_id', $bay->id)

@@ -273,6 +273,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/booking-types/{bookingType}/equipment', [\App\Http\Controllers\Admin\BookingTypeEquipmentController::class, 'update'])->name('booking-types.equipment.update');
         Route::resource('bay-capacity-rules', \App\Http\Controllers\Admin\BayCapacityRuleController::class);
         Route::resource('duration-rules', \App\Http\Controllers\Admin\BookingTypeDurationRuleController::class);
+
+        // Bay Slot Generation
+        Route::get('/bay-slot-generation', [\App\Http\Controllers\Admin\BaySlotGenerationController::class, 'index'])->name('bay-slot-generation.index');
+        Route::post('/bay-slot-generation/generate', [\App\Http\Controllers\Admin\BaySlotGenerationController::class, 'generate'])->name('bay-slot-generation.generate');
+        Route::get('/bay-slot-generation/get-bays', [\App\Http\Controllers\Admin\BaySlotGenerationController::class, 'getBaysForDepot'])->name('bay-slot-generation.get-bays');
+
         Route::resource('slot-templates', SlotTemplateController::class);
         Route::post('slot-templates/{slotTemplate}/duplicate', [SlotTemplateController::class, 'duplicate'])->name('slot-templates.duplicate');
         Route::post('slot-templates/bulk-duplicate', [SlotTemplateController::class, 'bulkDuplicate'])->name('slot-templates.bulk-duplicate');

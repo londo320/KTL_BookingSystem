@@ -214,7 +214,10 @@
         ⚙️ Slot Generation Rules
       </a>
       <a href="{{ route('app.slots.generate.form') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        🧮 Generate Slots
+        🧮 Generate Slots (Depot-Based)
+      </a>
+      <a href="{{ route('app.bay-slot-generation.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+        🚪 Generate Bay Slots (Bay-Based)
       </a>
       <a href="{{ route('app.test-email.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         📧 Test Password Reset Emails

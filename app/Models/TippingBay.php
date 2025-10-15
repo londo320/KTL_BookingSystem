@@ -17,6 +17,10 @@ class TippingBay extends Model
         'is_active',
         'is_occupied',
         'equipment',
+        'operational_start',
+        'operational_end',
+        'operational_days',
+        'is_24_hour',
         'map_x',
         'map_y',
         'show_on_map',
@@ -31,7 +35,9 @@ class TippingBay extends Model
         'is_active' => 'boolean',
         'is_occupied' => 'boolean',
         'show_on_map' => 'boolean',
+        'is_24_hour' => 'boolean',
         'equipment' => 'array',
+        'operational_days' => 'array',
         'map_x' => 'decimal:2',
         'map_y' => 'decimal:2',
         'map_rotation' => 'decimal:2',
@@ -169,5 +175,57 @@ class TippingBay extends Model
         }
 
         return '<span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">Available</span>';
+    }
+
+    /**
+     * Check if bay is operational at a given time
+     */
+    public function isOperationalAt(\Carbon\Carbon $time): bool
+    {
+        // If 24 hour operation, always operational
+        if ($this->is_24_hour) {
+            return true;
+        }
+
+        // Check day of week
+        if ($this->operational_days !== null && !empty($this->operational_days)) {
+            $dayName = $time->format('l'); // Monday, Tuesday, etc.
+            if (!in_array($dayName, $this->operational_days)) {
+                return false;
+            }
+        }
+
+        // Check time range
+        if ($this->operational_start && $this->operational_end) {
+            $timeOnly = $time->format('H:i:s');
+            return $timeOnly >= $this->operational_start && $timeOnly < $this->operational_end;
+        }
+
+        return true;
+    }
+
+    /**
+     * Get operational hours for this bay
+     */
+    public function getOperationalHoursAttribute(): string
+    {
+        if ($this->is_24_hour) {
+            return '24/7';
+        }
+
+        if ($this->operational_start && $this->operational_end) {
+            $days = $this->operational_days
+                ? implode(', ', array_map(fn($d) => substr($d, 0, 3), $this->operational_days))
+                : 'All days';
+
+            return sprintf(
+                '%s: %s - %s',
+                $days,
+                \Carbon\Carbon::parse($this->operational_start)->format('H:i'),
+                \Carbon\Carbon::parse($this->operational_end)->format('H:i')
+            );
+        }
+
+        return 'Not configured';
     }
 }
