@@ -201,6 +201,12 @@
       <a href="{{ route('app.booking-types.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         🧱 Manage Booking Types
       </a>
+      <a href="{{ route('app.bay-capacity-rules.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+        🚪 Bay Capacity Rules
+      </a>
+      <a href="{{ route('app.duration-rules.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
+        ⏱️ Duration Rules (Case-Based)
+      </a>
       <a href="{{ route('app.slot-templates.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
         🕒 Slot Duration Rules (Handball etc.)
       </a>
