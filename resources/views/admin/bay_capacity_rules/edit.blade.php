@@ -50,7 +50,7 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Start Time *</label>
-                    <input type="time" name="time_start" value="{{ old('time_start', $bayCapacityRule->time_start) }}" required
+                    <input type="time" name="time_start" value="{{ old('time_start', \Carbon\Carbon::parse($bayCapacityRule->time_start)->format('H:i')) }}" required
                            class="block w-full border-gray-300 rounded text-sm py-2">
                     @error('time_start')
                         <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
@@ -58,7 +58,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">End Time *</label>
-                    <input type="time" name="time_end" value="{{ old('time_end', $bayCapacityRule->time_end) }}" required
+                    <input type="time" name="time_end" value="{{ old('time_end', \Carbon\Carbon::parse($bayCapacityRule->time_end)->format('H:i')) }}" required
                            class="block w-full border-gray-300 rounded text-sm py-2">
                     @error('time_end')
                         <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
