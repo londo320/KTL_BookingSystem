@@ -18,14 +18,14 @@ class SlotController extends Controller
     public function index(Request $request)
     {
         $allowedDepotIds = $this->getAllowedDepotIds();
-        
+
         // Get user's default depot for action restrictions
         $user = auth()->user();
         $defaultDepotId = $user->depot_id ?? $allowedDepotIds[0] ?? null;
-        
+
         // Allow viewing all depots but note which is default for actions
         $selectedDepotId = $request->get('depot_id');
-        
+
         // Show all allowed depots for viewing, but track default for actions
         if ($selectedDepotId && in_array($selectedDepotId, $allowedDepotIds)) {
             $currentDepotId = $selectedDepotId;
@@ -33,7 +33,10 @@ class SlotController extends Controller
             $currentDepotId = null; // Show all depots
         }
 
-        $query = Slot::with('depot')
+        // Check if user wants grouped view
+        $groupedView = $request->has('grouped');
+
+        $query = Slot::with(['depot', 'tippingBay'])
             ->withCount('occupyingBookings')
             ->whereIn('depot_id', $allowedDepotIds);
 
@@ -49,17 +52,67 @@ class SlotController extends Controller
             $query->whereDate('start_at', $request->date);
         }
 
-        $slots = $query->orderBy('start_at')->paginate(30);
+        $slots = $query->orderBy('start_at')->get();
+
+        // Group slots if requested
+        $groupedSlots = null;
+        if ($groupedView) {
+            $groupedSlots = $this->groupSlotsByDateTime($slots);
+        }
 
         // Get all depots for filter dropdown
         $allDepots = \App\Models\Depot::whereIn('id', $allowedDepotIds)->get();
 
         return view('admin.slots.index', compact(
-            'slots', 
-            'allDepots', 
-            'currentDepotId', 
+            'slots',
+            'groupedSlots',
+            'groupedView',
+            'allDepots',
+            'currentDepotId',
             'defaultDepotId'
         ));
+    }
+
+    /**
+     * Group slots by date/time to show capacity overview
+     */
+    protected function groupSlotsByDateTime($slots)
+    {
+        $grouped = [];
+
+        foreach ($slots as $slot) {
+            $date = $slot->start_at->format('Y-m-d');
+            $time = $slot->start_at->format('H:i');
+            $depotId = $slot->depot_id;
+            $key = "{$depotId}_{$date}_{$time}";
+
+            if (!isset($grouped[$key])) {
+                $grouped[$key] = [
+                    'depot_id' => $depotId,
+                    'depot_name' => $slot->depot->name,
+                    'date' => $date,
+                    'time' => $time,
+                    'start_at' => $slot->start_at,
+                    'end_at' => $slot->end_at,
+                    'total_capacity' => 0,
+                    'total_used' => 0,
+                    'bays' => [],
+                    'slot_ids' => [],
+                ];
+            }
+
+            $grouped[$key]['total_capacity'] += $slot->capacity;
+            $grouped[$key]['total_used'] += $slot->occupying_bookings_count;
+            $grouped[$key]['bays'][] = [
+                'id' => $slot->tipping_bay_id,
+                'name' => $slot->tippingBay?->name ?? 'No Bay',
+                'capacity' => $slot->capacity,
+                'used' => $slot->occupying_bookings_count,
+            ];
+            $grouped[$key]['slot_ids'][] = $slot->id;
+        }
+
+        return collect($grouped)->sortBy('start_at')->values();
     }
 
     public function create()
