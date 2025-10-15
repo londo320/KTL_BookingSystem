@@ -65,7 +65,7 @@
   </form>
 
   @if($groupedView && $groupedSlots)
-    {{-- Grouped View --}}
+    {{-- Grouped View - No Bay Details --}}
     <div class="overflow-x-auto bg-white shadow rounded">
       <table class="min-w-full text-sm">
         <thead class="bg-gray-100">
@@ -74,7 +74,6 @@
             <th class="px-4 py-2 text-left">Date & Time</th>
             <th class="px-4 py-2 text-left">Total Capacity</th>
             <th class="px-4 py-2 text-left">Used / Available</th>
-            <th class="px-4 py-2 text-left">Details</th>
           </tr>
         </thead>
         <tbody>
@@ -87,7 +86,7 @@
               </td>
               <td class="px-4 py-2">
                 <span class="text-lg font-semibold">{{ $group['total_capacity'] }}</span>
-                <span class="text-xs text-gray-500">bays</span>
+                <span class="text-xs text-gray-500">slots</span>
               </td>
               <td class="px-4 py-2">
                 @php
@@ -107,54 +106,15 @@
                   {{ $available }} available
                 </div>
               </td>
-              <td class="px-4 py-2">
-                <button onclick="toggleDetails({{ $loop->index }})" class="text-blue-600 hover:underline text-xs">
-                  <span id="details-btn-{{ $loop->index }}">👁️ View Bays</span>
-                </button>
-              </td>
-            </tr>
-            <tr id="details-{{ $loop->index }}" class="hidden bg-gray-50 border-t">
-              <td colspan="5" class="px-4 py-3">
-                <div class="text-sm font-medium text-gray-700 mb-2">Bay Breakdown:</div>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  @foreach($group['bays'] as $bay)
-                    <div class="bg-white border border-gray-200 rounded p-2">
-                      <div class="font-medium text-gray-900">{{ $bay['name'] }}</div>
-                      <div class="text-xs text-gray-600">
-                        {{ $bay['used'] }} / {{ $bay['capacity'] }} used
-                        @if($bay['capacity'] - $bay['used'] > 0)
-                          <span class="text-green-600">({{ $bay['capacity'] - $bay['used'] }} free)</span>
-                        @else
-                          <span class="text-red-600">(full)</span>
-                        @endif
-                      </div>
-                    </div>
-                  @endforeach
-                </div>
-              </td>
             </tr>
           @empty
             <tr>
-              <td colspan="5" class="text-center py-4 text-gray-500">No slots found.</td>
+              <td colspan="4" class="text-center py-4 text-gray-500">No slots found.</td>
             </tr>
           @endforelse
         </tbody>
       </table>
     </div>
-
-    <script>
-    function toggleDetails(index) {
-      const detailsRow = document.getElementById(`details-${index}`);
-      const btn = document.getElementById(`details-btn-${index}`);
-      if (detailsRow.classList.contains('hidden')) {
-        detailsRow.classList.remove('hidden');
-        btn.textContent = '👁️ Hide Bays';
-      } else {
-        detailsRow.classList.add('hidden');
-        btn.textContent = '👁️ View Bays';
-      }
-    }
-    </script>
 
   @else
     {{-- Detailed View (Original) --}}

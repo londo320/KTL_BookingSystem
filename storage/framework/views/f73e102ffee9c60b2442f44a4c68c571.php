@@ -60,64 +60,141 @@
       <button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Filter</button>
       <a href="<?php echo e(route('app.slots.index')); ?>" class="text-sm text-gray-600 ml-2 hover:underline">Clear Filters</a>
     </div>
-    <div class="ml-auto">
+    <div class="ml-auto flex gap-2">
       <?php if(request()->has('show_past')): ?>
         <a href="<?php echo e(route('app.slots.index', request()->except('show_past'))); ?>" class="text-sm text-blue-600 hover:underline">Hide Past Slots</a>
       <?php else: ?>
         <a href="<?php echo e(route('app.slots.index', array_merge(request()->all(), ['show_past' => true]))); ?>" class="text-sm text-blue-600 hover:underline">Show Past Slots</a>
       <?php endif; ?>
+      <span class="text-gray-300">|</span>
+      <?php if($groupedView): ?>
+        <a href="<?php echo e(route('app.slots.index', request()->except('grouped'))); ?>" class="text-sm text-blue-600 hover:underline">📋 Detailed View</a>
+      <?php else: ?>
+        <a href="<?php echo e(route('app.slots.index', array_merge(request()->all(), ['grouped' => true]))); ?>" class="text-sm text-blue-600 hover:underline">📊 Grouped View</a>
+      <?php endif; ?>
     </div>
   </form>
-  
-  <div class="overflow-x-auto bg-white shadow rounded">
-    <table class="min-w-full text-sm">
-      <thead class="bg-gray-100">
-        <tr>
-          <th class="px-4 py-2 text-left">Depot</th>
-          <th class="px-4 py-2 text-left">Start</th>
-          <th class="px-4 py-2 text-left">End</th>
-          <th class="px-4 py-2 text-left">Capacity</th>
-          <th class="px-4 py-2 text-left">Usage</th>
-          <th class="px-4 py-2 text-left">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php $__empty_1 = true; $__currentLoopData = $slots; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $slot): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-          <tr class="border-t hover:bg-gray-50">
-            <td class="px-4 py-2"><?php echo e($slot->depot->name); ?></td>
-<td class="px-4 py-2"><?php echo e(\Carbon\Carbon::parse($slot->start_at)->format('d-M H:i')); ?></td>
-<td class="px-4 py-2"><?php echo e(\Carbon\Carbon::parse($slot->end_at)->format('d-M H:i')); ?></td>
-            <td class="px-4 py-2"><?php echo e($slot->capacity); ?></td>
-            <td class="px-4 py-2"><?php echo e($slot->occupying_bookings_count); ?> / <?php echo e($slot->capacity); ?></td>
-            <td class="px-4 py-2 space-x-2">
-              <?php $canTakeAction = $slot->depot_id == $defaultDepotId; ?>
-              <?php if($canTakeAction): ?>
-                <a href="<?php echo e(route('app.slots.edit', $slot)); ?>" class="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs">Edit</a>
-                <form action="<?php echo e(route('app.slots.destroy', $slot)); ?>" method="POST" class="inline-block" onsubmit="return confirm('Are you sure?');">
-                  <?php echo csrf_field(); ?>
-                  <?php echo method_field('DELETE'); ?>
-                  <button type="submit" class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs">Delete</button>
-                </form>
-              <?php else: ?>
-                <span class="px-2 py-1 bg-gray-300 text-gray-500 rounded text-xs cursor-not-allowed" 
-                      title="Actions only available for your default depot">Edit</span>
-                <span class="px-2 py-1 bg-gray-300 text-gray-500 rounded text-xs cursor-not-allowed" 
-                      title="Actions only available for your default depot">Delete</span>
-              <?php endif; ?>
-            </td>
-          </tr>
-        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-          <tr>
-            <td colspan="6" class="text-center py-4 text-gray-500">No slots found.</td>
-          </tr>
-        <?php endif; ?>
-      </tbody>
-    </table>
-    <div class="p-4">
-      <?php echo e($slots->appends(request()->query())->links()); ?>
 
+  <?php if($groupedView && $groupedSlots): ?>
+    
+    <div class="overflow-x-auto bg-white shadow rounded">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="px-4 py-2 text-left">Depot</th>
+            <th class="px-4 py-2 text-left">Date & Time</th>
+            <th class="px-4 py-2 text-left">Total Capacity</th>
+            <th class="px-4 py-2 text-left">Used / Available</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php $__empty_1 = true; $__currentLoopData = $groupedSlots; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $group): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+            <tr class="border-t hover:bg-gray-50">
+              <td class="px-4 py-2"><?php echo e($group['depot_name']); ?></td>
+              <td class="px-4 py-2">
+                <div class="font-medium"><?php echo e(\Carbon\Carbon::parse($group['start_at'])->format('D d-M-Y')); ?></div>
+                <div class="text-xs text-gray-600"><?php echo e($group['time']); ?> - <?php echo e(\Carbon\Carbon::parse($group['end_at'])->format('H:i')); ?></div>
+              </td>
+              <td class="px-4 py-2">
+                <span class="text-lg font-semibold"><?php echo e($group['total_capacity']); ?></span>
+                <span class="text-xs text-gray-500">slots</span>
+              </td>
+              <td class="px-4 py-2">
+                <?php
+                  $available = $group['total_capacity'] - $group['total_used'];
+                  $percentage = $group['total_capacity'] > 0 ? ($group['total_used'] / $group['total_capacity']) * 100 : 0;
+                ?>
+                <div class="flex items-center gap-2">
+                  <span class="font-medium <?php echo e($available > 0 ? 'text-green-600' : 'text-red-600'); ?>">
+                    <?php echo e($group['total_used']); ?> / <?php echo e($group['total_capacity']); ?>
+
+                  </span>
+                  <div class="flex-1 h-2 bg-gray-200 rounded overflow-hidden max-w-[100px]">
+                    <div class="h-full <?php echo e($percentage >= 100 ? 'bg-red-500' : ($percentage >= 75 ? 'bg-yellow-500' : 'bg-green-500')); ?>"
+                         style="width: <?php echo e(min($percentage, 100)); ?>%"></div>
+                  </div>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">
+                  <?php echo e($available); ?> available
+                </div>
+              </td>
+            </tr>
+          <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+            <tr>
+              <td colspan="4" class="text-center py-4 text-gray-500">No slots found.</td>
+            </tr>
+          <?php endif; ?>
+        </tbody>
+      </table>
     </div>
-  </div>
+
+  <?php else: ?>
+    
+    <div class="overflow-x-auto bg-white shadow rounded">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="px-4 py-2 text-left">Depot</th>
+            <th class="px-4 py-2 text-left">Bay</th>
+            <th class="px-4 py-2 text-left">Start</th>
+            <th class="px-4 py-2 text-left">End</th>
+            <th class="px-4 py-2 text-left">Capacity</th>
+            <th class="px-4 py-2 text-left">Usage</th>
+            <th class="px-4 py-2 text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php $__empty_1 = true; $__currentLoopData = $slots; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $slot): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+            <tr class="border-t hover:bg-gray-50">
+              <td class="px-4 py-2"><?php echo e($slot->depot->name); ?></td>
+              <td class="px-4 py-2">
+                <?php if($slot->tippingBay): ?>
+                  <span class="font-medium"><?php echo e($slot->tippingBay->name); ?></span>
+                  <?php if($slot->tippingBay->code): ?>
+                    <span class="text-xs text-gray-500">(<?php echo e($slot->tippingBay->code); ?>)</span>
+                  <?php endif; ?>
+                <?php else: ?>
+                  <span class="text-gray-400">No Bay</span>
+                <?php endif; ?>
+              </td>
+              <td class="px-4 py-2"><?php echo e(\Carbon\Carbon::parse($slot->start_at)->format('d-M H:i')); ?></td>
+              <td class="px-4 py-2"><?php echo e(\Carbon\Carbon::parse($slot->end_at)->format('d-M H:i')); ?></td>
+              <td class="px-4 py-2"><?php echo e($slot->capacity); ?></td>
+              <td class="px-4 py-2">
+                <?php
+                  $available = $slot->capacity - $slot->occupying_bookings_count;
+                ?>
+                <span class="<?php echo e($available > 0 ? 'text-green-600' : 'text-red-600'); ?> font-medium">
+                  <?php echo e($slot->occupying_bookings_count); ?> / <?php echo e($slot->capacity); ?>
+
+                </span>
+              </td>
+              <td class="px-4 py-2 space-x-2">
+                <?php $canTakeAction = $slot->depot_id == $defaultDepotId; ?>
+                <?php if($canTakeAction): ?>
+                  <a href="<?php echo e(route('app.slots.edit', $slot)); ?>" class="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs">Edit</a>
+                  <form action="<?php echo e(route('app.slots.destroy', $slot)); ?>" method="POST" class="inline-block" onsubmit="return confirm('Are you sure?');">
+                    <?php echo csrf_field(); ?>
+                    <?php echo method_field('DELETE'); ?>
+                    <button type="submit" class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs">Delete</button>
+                  </form>
+                <?php else: ?>
+                  <span class="px-2 py-1 bg-gray-300 text-gray-500 rounded text-xs cursor-not-allowed"
+                        title="Actions only available for your default depot">Edit</span>
+                  <span class="px-2 py-1 bg-gray-300 text-gray-500 rounded text-xs cursor-not-allowed"
+                        title="Actions only available for your default depot">Delete</span>
+                <?php endif; ?>
+              </td>
+            </tr>
+          <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+            <tr>
+              <td colspan="7" class="text-center py-4 text-gray-500">No slots found.</td>
+            </tr>
+          <?php endif; ?>
+        </tbody>
+      </table>
+    </div>
+  <?php endif; ?>
 </div>
  <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
