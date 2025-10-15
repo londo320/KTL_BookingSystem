@@ -756,20 +756,12 @@ document.addEventListener('DOMContentLoaded', function() {
                             currentDate = null; // Reset date when changing depot
                         }
 
-                        // Build option label
+                        // Build option label - just show time and availability
                         let label = `${dateStr} ${timeStr}`;
 
-                        // Add bay info
-                        if (slot.auto_assigned_bay) {
-                            label += ` → Bay: ${slot.auto_assigned_bay.bay_name}`;
-                            if (slot.auto_assigned_bay.bay_code) {
-                                label += ` (${slot.auto_assigned_bay.bay_code})`;
-                            }
-                        }
-
-                        // Show number of available bays if more than 1
-                        if (slot.available_bays && slot.available_bays.length > 1) {
-                            label += ` [${slot.available_bays.length} bays available]`;
+                        // Show total capacity available (bays are auto-assigned on arrival)
+                        if (slot.available_bays && slot.available_bays.length > 0) {
+                            label += ` [${slot.available_bays.length} available]`;
                         }
 
                         // Use first slot ID as the value (system will assign proper bay on booking creation)

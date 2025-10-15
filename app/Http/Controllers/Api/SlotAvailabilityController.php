@@ -111,28 +111,8 @@ class SlotAvailabilityController extends Controller
             return strcmp($a['start_at'], $b['start_at']);
         });
 
-        // Determine which bay would be auto-assigned for each time slot
-        foreach ($result as &$timeSlot) {
-            // Get customer's bay priority for these bays
-            $bayIds = array_column($timeSlot['available_bays'], 'bay_id');
-
-            $priorityBay = CustomerBayAssignment::where('customer_id', $customerId)
-                ->whereIn('tipping_bay_id', $bayIds)
-                ->orderBy('priority', 'asc')
-                ->first();
-
-            if ($priorityBay) {
-                $bay = TippingBay::find($priorityBay->tipping_bay_id);
-                $timeSlot['auto_assigned_bay'] = [
-                    'bay_id' => $bay->id,
-                    'bay_name' => $bay->name,
-                    'bay_code' => $bay->code,
-                ];
-            } else {
-                // No priority set - use first available
-                $timeSlot['auto_assigned_bay'] = $timeSlot['available_bays'][0] ?? null;
-            }
-        }
+        // Note: Bay assignment happens automatically on arrival, not during booking
+        // User only needs to know that capacity exists at this time
 
         return response()->json([
             'success' => true,

@@ -80,18 +80,25 @@ unset($__errorArgs, $__bag); ?>
 
             </option>
           <?php else: ?>
-            <option value="">– Choose slot –</option>
+            <option value="">– Select customer & booking type first –</option>
             <?php
-              $groupedSlots = $slots->sortBy('start_at')->groupBy(fn($slot) => $slot->depot->name);
+              // Group slots by depot for initial display (will be replaced by AJAX)
+              $groupedSlots = $slots->groupBy(fn($slot) => $slot->depot->name);
             ?>
             <?php $__currentLoopData = $groupedSlots; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $depotName => $depotSlots): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
               <optgroup label="<?php echo e($depotName); ?>">
                 <?php $__currentLoopData = $depotSlots; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $slot): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                   <?php
                     $isRestricted = $slot->allowed_customers->count() > 0;
+                    $bayInfo = '';
+                    if (isset($slot->bay_count) && $slot->bay_count > 1) {
+                      $bayInfo = " [{$slot->bay_count} bays]";
+                    } elseif ($slot->tippingBay) {
+                      $bayInfo = " → {$slot->tippingBay->name}";
+                    }
                   ?>
                   <option value="<?php echo e($slot->id); ?>" <?php if(old('slot_id', $booking->slot_id) == $slot->id): echo 'selected'; endif; ?>>
-                    <?php echo e($isRestricted ? '🔒' : '🌐'); ?> <?php echo e($slot->start_at->format('D d-M H:i')); ?> → <?php echo e($slot->end_at->format('H:i')); ?>
+                    <?php echo e($isRestricted ? '🔒' : '🌐'); ?> <?php echo e($slot->start_at->format('D d-M H:i')); ?> → <?php echo e($slot->end_at->format('H:i')); ?><?php echo e($bayInfo); ?>
 
                   </option>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
