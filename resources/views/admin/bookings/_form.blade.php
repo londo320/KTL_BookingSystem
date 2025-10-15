@@ -63,18 +63,25 @@
               {{ $booking->slot->depot->name }} - {{ $booking->slot->start_at->format('D d-M H:i') }} → {{ $booking->slot->end_at->format('H:i') }}
             </option>
           @else
-            <option value="">– Choose slot –</option>
+            <option value="">– Select customer & booking type first –</option>
             @php
-              $groupedSlots = $slots->sortBy('start_at')->groupBy(fn($slot) => $slot->depot->name);
+              // Group slots by depot for initial display (will be replaced by AJAX)
+              $groupedSlots = $slots->groupBy(fn($slot) => $slot->depot->name);
             @endphp
             @foreach($groupedSlots as $depotName => $depotSlots)
               <optgroup label="{{ $depotName }}">
                 @foreach($depotSlots as $slot)
                   @php
                     $isRestricted = $slot->allowed_customers->count() > 0;
+                    $bayInfo = '';
+                    if (isset($slot->bay_count) && $slot->bay_count > 1) {
+                      $bayInfo = " [{$slot->bay_count} bays]";
+                    } elseif ($slot->tippingBay) {
+                      $bayInfo = " → {$slot->tippingBay->name}";
+                    }
                   @endphp
                   <option value="{{ $slot->id }}" @selected(old('slot_id', $booking->slot_id) == $slot->id)>
-                    {{ $isRestricted ? '🔒' : '🌐' }} {{ $slot->start_at->format('D d-M H:i') }} → {{ $slot->end_at->format('H:i') }}
+                    {{ $isRestricted ? '🔒' : '🌐' }} {{ $slot->start_at->format('D d-M H:i') }} → {{ $slot->end_at->format('H:i') }}{{ $bayInfo }}
                   </option>
                 @endforeach
               </optgroup>

@@ -686,11 +686,15 @@ class BookingController extends Controller
         $allowedDepotIds = $this->getAllowedDepotIds();
         $depots = $this->getAllowedDepots();
 
-        $slots = Slot::with(['depot', 'allowed_customers'])
+        // Get all available slots
+        $allSlots = Slot::with(['depot', 'allowed_customers', 'tippingBay'])
             ->whereIn('depot_id', $allowedDepotIds)
             ->whereDate('start_at', '>=', now()->toDateString())
             ->get()
             ->filter(fn ($slot) => $slot->bookings()->count() < $slot->capacity);
+
+        // Group slots by depot/date/time to avoid showing 9x "10:00" for 9 bays
+        $slots = $this->groupSlotsForDropdown($allSlots);
 
         $types = BookingType::orderBy('name')->get();
         $customers = Customer::orderBy('name')->get();
@@ -713,6 +717,32 @@ class BookingController extends Controller
         $booking = new Booking; // 👈 avoids undefined variable errors
 
         return view('warehouse.bookings.create', compact('slots', 'types', 'depots', 'customers', 'booking', 'tippingLocations', 'tippingBays', 'trailerTypes'));
+    }
+
+    /**
+     * Group slots by depot/date/time for dropdown display
+     * This collapses multiple bay slots at the same time into one entry
+     */
+    protected function groupSlotsForDropdown($slots)
+    {
+        $grouped = [];
+
+        foreach ($slots as $slot) {
+            $key = $slot->depot_id . '_' . $slot->start_at->format('Y-m-d H:i');
+
+            if (!isset($grouped[$key])) {
+                // Use first slot as representative
+                $grouped[$key] = $slot;
+                $grouped[$key]->bay_count = 1;
+                $grouped[$key]->slot_ids = [$slot->id];
+            } else {
+                // Count additional bays at this time
+                $grouped[$key]->bay_count++;
+                $grouped[$key]->slot_ids[] = $slot->id;
+            }
+        }
+
+        return collect($grouped)->sortBy('start_at');
     }
 
     public function show(Booking $booking)
@@ -1004,7 +1034,7 @@ class BookingController extends Controller
         $types = BookingType::orderBy('name')->get();
         $customers = Customer::orderBy('name')->get();
 
-        $availableSlots = Slot::with(['depot', 'allowed_customers'])
+        $availableSlots = Slot::with(['depot', 'allowed_customers', 'tippingBay'])
             ->whereIn('depot_id', $allowedDepotIds)
             ->whereDate('start_at', '>=', now()->toDateString())
             ->get()
@@ -1014,11 +1044,12 @@ class BookingController extends Controller
 
         // Ensure current slot is visible even if full or past
         if ($booking->slot && ! $availableSlots->contains('id', $booking->slot->id)) {
-            $booking->slot->load(['depot', 'allowed_customers']);
+            $booking->slot->load(['depot', 'allowed_customers', 'tippingBay']);
             $availableSlots->push($booking->slot);
         }
 
-        $slots = $availableSlots->sortBy('start_at');
+        // Group slots by depot/date/time
+        $slots = $this->groupSlotsForDropdown($availableSlots->sortBy('start_at'));
 
         // Get tipping locations and bays for the allowed depots
         $tippingLocations = \App\Models\TippingLocation::with('depot')
