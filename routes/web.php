@@ -124,6 +124,8 @@ Route::middleware('auth')->group(function () {
     Route::get('api/products/search', [ProductController::class, 'search'])->name('api.products.search');
     Route::get('api/contacts/search', [\App\Http\Controllers\Api\ContactLookupController::class, 'search'])->name('api.contacts.search');
     Route::get('api/contacts/phone', [\App\Http\Controllers\Api\ContactLookupController::class, 'getPhone'])->name('api.contacts.phone');
+    Route::get('api/slots/available', [\App\Http\Controllers\Api\SlotAvailabilityController::class, 'getAvailableSlots'])->name('api.slots.available');
+    Route::get('api/slots/priority-bay', [\App\Http\Controllers\Api\SlotAvailabilityController::class, 'getCustomerPriorityBay'])->name('api.slots.priority-bay');
 
     /**
      * ───── Main Application Routes (Unified Function-Based Access) ─────

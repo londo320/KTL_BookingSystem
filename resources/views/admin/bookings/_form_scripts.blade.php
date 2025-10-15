@@ -704,5 +704,100 @@ document.addEventListener('DOMContentLoaded', function() {
         slotSelectNew.addEventListener('change', updatePoSectionVisibility);
     }
     @endif
+
+    // ──── Dynamic Slot Loading Based on Customer + Booking Type ────
+    const customerSelect = document.querySelector('select[name="customer_id"]');
+    const bookingTypeSelect = document.querySelector('select[name="booking_type_id"]');
+    const slotSelect = document.querySelector('select[name="slot_id"]');
+
+    if (customerSelect && bookingTypeSelect && slotSelect && !slotSelect.disabled) {
+        // Function to load available slots
+        function loadAvailableSlots() {
+            const customerId = customerSelect.value;
+            const bookingTypeId = bookingTypeSelect.value;
+
+            if (!customerId || !bookingTypeId) {
+                // Reset slot dropdown
+                slotSelect.innerHTML = '<option value="">– Choose slot –</option>';
+                return;
+            }
+
+            // Show loading state
+            slotSelect.innerHTML = '<option value="">⏳ Loading available slots...</option>';
+            slotSelect.disabled = true;
+
+            // Fetch available slots
+            const url = `{{ route('api.slots.available') }}?customer_id=${customerId}&booking_type_id=${bookingTypeId}&days_ahead=30`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success || data.slots.length === 0) {
+                        slotSelect.innerHTML = '<option value="">❌ No available slots found</option>';
+                        slotSelect.disabled = true;
+                        return;
+                    }
+
+                    // Build options grouped by depot and date
+                    let html = '<option value="">– Choose slot –</option>';
+                    let currentDepot = null;
+                    let currentDate = null;
+
+                    data.slots.forEach(slot => {
+                        const slotDate = new Date(slot.start_at);
+                        const dateStr = slotDate.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' });
+                        const timeStr = slotDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+                        // New depot optgroup
+                        if (currentDepot !== slot.depot_name) {
+                            if (currentDepot !== null) html += '</optgroup>';
+                            html += `<optgroup label="${slot.depot_name}">`;
+                            currentDepot = slot.depot_name;
+                            currentDate = null; // Reset date when changing depot
+                        }
+
+                        // Build option label
+                        let label = `${dateStr} ${timeStr}`;
+
+                        // Add bay info
+                        if (slot.auto_assigned_bay) {
+                            label += ` → Bay: ${slot.auto_assigned_bay.bay_name}`;
+                            if (slot.auto_assigned_bay.bay_code) {
+                                label += ` (${slot.auto_assigned_bay.bay_code})`;
+                            }
+                        }
+
+                        // Show number of available bays if more than 1
+                        if (slot.available_bays && slot.available_bays.length > 1) {
+                            label += ` [${slot.available_bays.length} bays available]`;
+                        }
+
+                        // Use first slot ID as the value (system will assign proper bay on booking creation)
+                        const slotId = slot.slot_ids[0];
+
+                        html += `<option value="${slotId}">${label}</option>`;
+                    });
+
+                    if (currentDepot !== null) html += '</optgroup>';
+
+                    slotSelect.innerHTML = html;
+                    slotSelect.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error loading slots:', error);
+                    slotSelect.innerHTML = '<option value="">❌ Error loading slots</option>';
+                    slotSelect.disabled = true;
+                });
+        }
+
+        // Listen for changes
+        customerSelect.addEventListener('change', loadAvailableSlots);
+        bookingTypeSelect.addEventListener('change', loadAvailableSlots);
+
+        // Load slots if both are already selected (edit form)
+        if (customerSelect.value && bookingTypeSelect.value) {
+            loadAvailableSlots();
+        }
+    }
 });
 </script>
