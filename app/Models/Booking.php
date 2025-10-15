@@ -1236,8 +1236,10 @@ class Booking extends Model
             return null;
         }
 
-        // Get booking type duration for this customer and depot
-        $durationMinutes = $this->bookingType->getDurationForCustomer(
+        // Get booking type duration considering case count if available
+        $caseCount = $this->total_expected_cases ?? 0;
+        $durationMinutes = $this->bookingType->getDurationWithCaseCount(
+            $caseCount,
             $this->slot->depot_id,
             $this->customer_id
         );
@@ -1254,8 +1256,10 @@ class Booking extends Model
             return null;
         }
 
-        // Get booking type duration for this customer and depot
-        $durationMinutes = $this->bookingType->getDurationForCustomer(
+        // Get booking type duration considering case count if available
+        $caseCount = $this->total_expected_cases ?? 0;
+        $durationMinutes = $this->bookingType->getDurationWithCaseCount(
+            $caseCount,
             $this->slot->depot_id,
             $this->customer_id
         );

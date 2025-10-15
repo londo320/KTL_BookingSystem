@@ -61,6 +61,8 @@ unset($__errorArgs, $__bag); ?>
               <td class="px-2 py-1 space-x-2">
                 <a href="<?php echo e(route('app.booking-types.edit', $type)); ?>"
                    class="text-blue-600 hover:underline text-sm">Edit</a>
+                <a href="<?php echo e(route('app.booking-types.equipment.edit', $type)); ?>"
+                   class="text-green-600 hover:underline text-sm">🛠️ Equipment</a>
                 <form method="POST"
                       action="<?php echo e(route('app.booking-types.destroy', $type)); ?>"
                       onsubmit="return confirm('Delete this booking type?');"
