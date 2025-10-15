@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\BayCapacityRule;
 use App\Models\Booking;
 use App\Models\BookingType;
 use App\Models\BookingTypeEquipmentRequirement;
@@ -15,13 +16,14 @@ class SlotAvailabilityService
 {
     /**
      * Check if a slot is available for a customer and booking type
-     * considering duration, time windows, and equipment requirements
+     * considering duration, time windows, equipment requirements, and bay capacity rules
      */
     public function isSlotAvailable(
         Slot $slot,
         int $customerId,
         int $bookingTypeId,
-        ?int $excludeBookingId = null
+        ?int $excludeBookingId = null,
+        ?int $caseCount = null
     ): array {
         $errors = [];
 
@@ -32,8 +34,10 @@ class SlotAvailabilityService
             return ['available' => false, 'errors' => $errors];
         }
 
-        // Get duration for this customer at this depot
-        $durationMinutes = $bookingType->getDurationForCustomer($slot->depot_id, $customerId);
+        // Get duration for this customer at this depot (with case count if provided)
+        $durationMinutes = $caseCount !== null
+            ? $bookingType->getDurationWithCaseCount($caseCount, $slot->depot_id, $customerId)
+            : $bookingType->getDurationForCustomer($slot->depot_id, $customerId);
 
         // Check capacity for the primary slot
         if (!$this->checkSlotCapacity($slot, $excludeBookingId)) {
@@ -48,6 +52,19 @@ class SlotAvailabilityService
         // Check if slot is blocked or locked
         if ($slot->is_blocked) {
             $errors[] = 'Slot is blocked';
+        }
+
+        // Check bay capacity rules (e.g., max 3 handball bookings at once)
+        $capacityRuleCheck = $this->checkBayCapacityRules(
+            $slot->depot_id,
+            $bookingTypeId,
+            $slot->start_at,
+            $durationMinutes,
+            $slot->tipping_bay_id,
+            $excludeBookingId
+        );
+        if (!$capacityRuleCheck['available']) {
+            $errors = array_merge($errors, $capacityRuleCheck['errors']);
         }
 
         // Check extended slots (if booking extends beyond this slot)
@@ -179,13 +196,119 @@ class SlotAvailabilityService
     /**
      * Get booking duration for customer and booking type
      */
-    public function getBookingDuration(int $bookingTypeId, int $depotId, int $customerId): int
+    public function getBookingDuration(int $bookingTypeId, int $depotId, int $customerId, ?int $caseCount = null): int
     {
         $bookingType = BookingType::find($bookingTypeId);
         if (!$bookingType) {
             return 60; // Default 1 hour
         }
 
+        if ($caseCount !== null) {
+            return $bookingType->getDurationWithCaseCount($caseCount, $depotId, $customerId);
+        }
+
         return $bookingType->getDurationForCustomer($depotId, $customerId);
+    }
+
+    /**
+     * Check bay capacity rules to ensure depot can handle this booking type at this time
+     * Example: "Max 3 handball bookings between 08:00-15:00"
+     */
+    protected function checkBayCapacityRules(
+        int $depotId,
+        int $bookingTypeId,
+        Carbon $startTime,
+        int $durationMinutes,
+        ?int $bayId = null,
+        ?int $excludeBookingId = null
+    ): array {
+        $errors = [];
+
+        // Get applicable capacity rules for this depot/booking type/time
+        $rules = BayCapacityRule::getApplicableRules($depotId, $bookingTypeId, $startTime, $bayId);
+
+        if ($rules->isEmpty()) {
+            return ['available' => true, 'errors' => []];
+        }
+
+        // Check each rule
+        foreach ($rules as $rule) {
+            // Calculate end time of this booking
+            $endTime = $startTime->copy()->addMinutes($durationMinutes);
+
+            // Count how many bookings of this type will be concurrent during any point of this booking
+            $maxConcurrent = $this->getMaxConcurrentBookings(
+                $rule,
+                $startTime,
+                $endTime,
+                $excludeBookingId
+            );
+
+            // Check if adding this booking would exceed the limit
+            $capacityUsed = $maxConcurrent + ($rule->capacity_weight ?? 1.0);
+
+            if ($capacityUsed > $rule->max_concurrent_bookings) {
+                $errors[] = sprintf(
+                    'Maximum %d concurrent %s bookings allowed between %s-%s (currently %d)',
+                    $rule->max_concurrent_bookings,
+                    $rule->bookingType->name ?? 'bookings',
+                    $rule->time_start,
+                    $rule->time_end,
+                    $maxConcurrent
+                );
+            }
+        }
+
+        return [
+            'available' => empty($errors),
+            'errors' => $errors,
+        ];
+    }
+
+    /**
+     * Get maximum concurrent bookings for a capacity rule during a time range
+     */
+    protected function getMaxConcurrentBookings(
+        BayCapacityRule $rule,
+        Carbon $startTime,
+        Carbon $endTime,
+        ?int $excludeBookingId = null
+    ): int {
+        $applicableBayIds = $rule->applicable_bay_ids ?? \App\Models\TippingBay::where('depot_id', $rule->depot_id)
+            ->pluck('id')
+            ->toArray();
+
+        // Find all bookings that overlap with this time range
+        $query = Booking::where('depot_id', $rule->depot_id)
+            ->when($rule->booking_type_id, function ($q) use ($rule) {
+                $q->where('booking_type_id', $rule->booking_type_id);
+            })
+            ->when($excludeBookingId, function ($q) use ($excludeBookingId) {
+                $q->where('id', '!=', $excludeBookingId);
+            })
+            ->whereHas('slot', function ($q) use ($applicableBayIds) {
+                $q->whereIn('tipping_bay_id', $applicableBayIds);
+            });
+
+        // Get bookings that overlap with our time range
+        $bookings = $query->get()->filter(function ($booking) use ($startTime, $endTime) {
+            if (!$booking->slot) {
+                return false;
+            }
+
+            $bookingStart = $booking->slot->start_at;
+            $bookingEnd = $booking->slot->start_at->copy()->addMinutes($booking->duration_minutes ?? 60);
+
+            // Check if time ranges overlap
+            return $bookingStart < $endTime && $bookingEnd > $startTime;
+        });
+
+        // Apply capacity weight
+        $totalCapacity = 0;
+        foreach ($bookings as $booking) {
+            $totalCapacity += $rule->capacity_weight ?? 1.0;
+        }
+
+        return (int) ceil($totalCapacity);
     }
 }

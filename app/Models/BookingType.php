@@ -46,6 +46,11 @@ class BookingType extends Model
         return $this->hasMany(BookingTypeEquipmentRequirement::class);
     }
 
+    public function durationRules()
+    {
+        return $this->hasMany(BookingTypeDurationRule::class);
+    }
+
     /**
      * Get duration for a specific depot (in minutes)
      */
@@ -87,5 +92,38 @@ class BookingType extends Model
 
         // Fall back to depot-only duration
         return $this->getDurationForDepot($depotId);
+    }
+
+    /**
+     * Get duration with case count factored in
+     * Checks case-based rules first, then falls back to standard duration
+     */
+    public function getDurationWithCaseCount(
+        int $caseCount,
+        ?int $depotId = null,
+        ?int $customerId = null
+    ): int {
+        // Check case-based duration rules first
+        $caseDuration = BookingTypeDurationRule::getDurationForCaseCount(
+            $this->id,
+            $caseCount,
+            $depotId,
+            $customerId
+        );
+
+        if ($caseDuration !== null) {
+            return $caseDuration;
+        }
+
+        // Fall back to standard duration logic
+        if ($customerId && $depotId) {
+            return $this->getDurationForCustomer($depotId, $customerId);
+        }
+
+        if ($depotId) {
+            return $this->getDurationForDepot($depotId);
+        }
+
+        return $this->duration_minutes ?? 60;
     }
 }

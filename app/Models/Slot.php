@@ -12,6 +12,7 @@ class Slot extends Model
 
     protected $fillable = [
         'depot_id',
+        'tipping_bay_id',
         'start_at',
         'end_at',
         'capacity',
@@ -38,6 +39,20 @@ class Slot extends Model
     public function depot(): BelongsTo
     {
         return $this->belongsTo(Depot::class);
+    }
+
+    /**
+     * A slot belongs to a tipping bay
+     */
+    public function tippingBay(): BelongsTo
+    {
+        return $this->belongsTo(TippingBay::class);
+    }
+
+    // Alias for convenience
+    public function bay(): BelongsTo
+    {
+        return $this->tippingBay();
     }
 
     /**
