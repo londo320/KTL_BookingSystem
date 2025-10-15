@@ -44,11 +44,13 @@ class BaySlotGenerationController extends Controller
         foreach ($validated['bay_configs'] as $config) {
             $bay = TippingBay::find($config['bay_id']);
 
+            $is24Hour = isset($config['is_24_hour']) && $config['is_24_hour'] == '1';
+
             $bay->update([
-                'is_24_hour' => $config['is_24_hour'] ?? true,
-                'operational_start' => $config['is_24_hour'] ? null : ($config['operational_start'] ?? null),
-                'operational_end' => $config['is_24_hour'] ? null : ($config['operational_end'] ?? null),
-                'operational_days' => $config['is_24_hour'] ? null : ($config['operational_days'] ?? null),
+                'is_24_hour' => $is24Hour,
+                'operational_start' => $is24Hour ? null : ($config['operational_start'] ?? null),
+                'operational_end' => $is24Hour ? null : ($config['operational_end'] ?? null),
+                'operational_days' => $is24Hour ? null : ($config['operational_days'] ?? null),
             ]);
         }
 
