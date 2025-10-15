@@ -162,7 +162,7 @@
     @endif
     <li class="relative">
       <button onclick="toggleSettingsDropdown()"
-              class="px-4 py-2 rounded inline-flex items-center gap-2 font-medium text-sm {{ request()->routeIs('app.settings.*') || request()->routeIs('app.depots.*') || request()->routeIs('app.products.*') || request()->routeIs('app.customers.*') || request()->routeIs('app.slot-templates.*') || request()->routeIs('app.booking-types.*') || request()->routeIs('app.users.*') || request()->routeIs('app.custom-roles.*') ? 'bg-blue-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
+              class="px-4 py-2 rounded inline-flex items-center gap-2 font-medium text-sm {{ request()->routeIs('app.settings.*') || request()->routeIs('app.depots.*') || request()->routeIs('app.products.*') || request()->routeIs('app.customers.*') || request()->routeIs('app.slot-templates.*') || request()->routeIs('app.booking-types.*') || request()->routeIs('app.bay-capacity-rules.*') || request()->routeIs('app.duration-rules.*') || request()->routeIs('app.users.*') || request()->routeIs('app.custom-roles.*') ? 'bg-blue-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100' }}">
         <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">⚙️</span>
         <span>Settings</span>
         <svg id="settings-arrow" class="w-4 h-4 transform transition-transform" fill="currentColor" viewBox="0 0 20 20">
@@ -192,6 +192,14 @@
           <a href="{{ route('app.booking-types.index') }}"
              class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.booking-types.*') ? 'bg-blue-50 text-blue-600 font-medium' : '' }}">
             📝 Booking Types
+          </a>
+          <a href="{{ route('app.bay-capacity-rules.index') }}"
+             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.bay-capacity-rules.*') ? 'bg-blue-50 text-blue-600 font-medium' : '' }}">
+            🚪 Bay Capacity Rules
+          </a>
+          <a href="{{ route('app.duration-rules.index') }}"
+             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('app.duration-rules.*') ? 'bg-blue-50 text-blue-600 font-medium' : '' }}">
+            ⏱️ Duration Rules
           </a>
         @endif
 
