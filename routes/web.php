@@ -271,6 +271,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('booking-types', BookingTypeController::class);
         Route::get('/booking-types/{bookingType}/equipment', [\App\Http\Controllers\Admin\BookingTypeEquipmentController::class, 'edit'])->name('booking-types.equipment.edit');
         Route::post('/booking-types/{bookingType}/equipment', [\App\Http\Controllers\Admin\BookingTypeEquipmentController::class, 'update'])->name('booking-types.equipment.update');
+        Route::resource('bay-capacity-rules', \App\Http\Controllers\Admin\BayCapacityRuleController::class);
         Route::resource('slot-templates', SlotTemplateController::class);
         Route::post('slot-templates/{slotTemplate}/duplicate', [SlotTemplateController::class, 'duplicate'])->name('slot-templates.duplicate');
         Route::post('slot-templates/bulk-duplicate', [SlotTemplateController::class, 'bulkDuplicate'])->name('slot-templates.bulk-duplicate');
