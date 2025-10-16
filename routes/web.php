@@ -307,10 +307,10 @@ Route::middleware('auth')->group(function () {
         
         // ──── Inbound Module Routes (Slot Management) ────
         Route::middleware(['inbound-access'])->group(function () {
-            // Slot management
-            Route::resource('slots', SlotController::class)->except(['show']);
+            // Slot management - bulk delete routes MUST come before resource routes
             Route::delete('/slots/bulk-delete-by-date', [SlotController::class, 'bulkDeleteByDate'])->name('slots.bulk-delete-by-date');
             Route::delete('/slots/bulk-delete-selected', [SlotController::class, 'bulkDeleteSelected'])->name('slots.bulk-delete-selected');
+            Route::resource('slots', SlotController::class)->except(['show']);
             Route::post('/slots/generate', [SlotGeneratorController::class, 'store'])->name('slots.generate');
             Route::get('/slot-usage', [SlotUsageController::class, 'index'])->name('slot-usage.index');
             Route::get('/slot-capacity', [SlotCapacityController::class, 'index'])->name('slot-capacity.index');

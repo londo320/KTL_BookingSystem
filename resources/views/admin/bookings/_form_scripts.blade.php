@@ -706,9 +706,8 @@ document.addEventListener('DOMContentLoaded', function() {
     @endif
 
     // ──── Dynamic Slot Loading Based on Customer + Booking Type ────
-    const customerSelect = document.querySelector('select[name="customer_id"]');
+    // Reuse customerSelect and slotSelect from above
     const bookingTypeSelect = document.querySelector('select[name="booking_type_id"]');
-    const slotSelect = document.querySelector('select[name="slot_id"]');
 
     if (customerSelect && bookingTypeSelect && slotSelect && !slotSelect.disabled) {
         // Function to load available slots
@@ -732,7 +731,10 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
+                    console.log('Slot API response:', data);
+
                     if (!data.success || data.slots.length === 0) {
+                        console.log('No slots found or API failed', data);
                         slotSelect.innerHTML = '<option value="">❌ No available slots found</option>';
                         slotSelect.disabled = true;
                         return;
@@ -751,17 +753,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         // New depot optgroup
                         if (currentDepot !== slot.depot_name) {
                             if (currentDepot !== null) html += '</optgroup>';
-                            html += `<optgroup label="${slot.depot_name}">`;
+                            html += `<optgroup label="━━━ ${slot.depot_name} ━━━">`;
                             currentDepot = slot.depot_name;
                             currentDate = null; // Reset date when changing depot
                         }
 
-                        // Build option label - just show time and availability
+                        // Build option label showing time and which bays are available
                         let label = `${dateStr} ${timeStr}`;
 
-                        // Show total capacity available (bays are auto-assigned on arrival)
+                        // Show bay details for clarity
                         if (slot.available_bays && slot.available_bays.length > 0) {
-                            label += ` [${slot.available_bays.length} available]`;
+                            const bayNames = slot.available_bays.map(b => b.bay_name || b.bay_code || 'Bay').join(', ');
+                            label += ` → Bays: ${bayNames}`;
+                        } else {
+                            label += ` → No bays available`;
                         }
 
                         // Use first slot ID as the value (system will assign proper bay on booking creation)
@@ -777,18 +782,61 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .catch(error => {
                     console.error('Error loading slots:', error);
-                    slotSelect.innerHTML = '<option value="">❌ Error loading slots</option>';
+                    slotSelect.innerHTML = '<option value="">❌ Error loading slots - check console</option>';
                     slotSelect.disabled = true;
                 });
         }
 
-        // Listen for changes
-        customerSelect.addEventListener('change', loadAvailableSlots);
-        bookingTypeSelect.addEventListener('change', loadAvailableSlots);
+        // Function to load and display expected bay
+        function loadExpectedBay() {
+            const customerId = customerSelect.value;
+            const bookingTypeId = bookingTypeSelect.value;
+            const expectedBayInfo = document.getElementById('expected-bay-info');
+            const expectedBayDisplay = document.getElementById('expected-bay-display');
 
-        // Load slots if both are already selected (edit form)
+            if (!customerId || !bookingTypeId) {
+                expectedBayInfo.classList.add('hidden');
+                return;
+            }
+
+            // Get the depot from the first available slot (or use default depot if none selected)
+            const depotId = {{ $depotId ?? 'null' }};
+            if (!depotId) {
+                expectedBayInfo.classList.add('hidden');
+                return;
+            }
+
+            // Fetch priority bay for customer
+            fetch(`{{ route('api.slots.priority-bay') }}?customer_id=${customerId}&depot_id=${depotId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.bay) {
+                        expectedBayDisplay.innerHTML = `<strong>${data.bay.name}</strong> ${data.bay.code ? '(' + data.bay.code + ')' : ''} <span class="text-xs text-green-600">Priority: ${data.bay.priority}</span>`;
+                        expectedBayInfo.classList.remove('hidden');
+                    } else {
+                        expectedBayInfo.classList.add('hidden');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading expected bay:', error);
+                    expectedBayInfo.classList.add('hidden');
+                });
+        }
+
+        // Listen for changes
+        customerSelect.addEventListener('change', () => {
+            loadAvailableSlots();
+            loadExpectedBay();
+        });
+        bookingTypeSelect.addEventListener('change', () => {
+            loadAvailableSlots();
+            loadExpectedBay();
+        });
+
+        // Load slots and expected bay if both are already selected (edit form)
         if (customerSelect.value && bookingTypeSelect.value) {
             loadAvailableSlots();
+            loadExpectedBay();
         }
     }
 });

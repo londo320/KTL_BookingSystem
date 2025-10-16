@@ -312,6 +312,8 @@
           <th class="px-4 py-2 text-left">Start → End</th>
           <th class="px-4 py-2 text-left">Customer / Collection</th>
           <th class="px-4 py-2 text-left">Type / PO Numbers</th>
+          <th class="px-4 py-2 text-left">Haulier</th>
+          <th class="px-4 py-2 text-left">Expected Bay</th>
           <th class="px-4 py-2 text-left">Cases</th>
           <th class="px-4 py-2 text-left">Pallets</th>
           <th class="px-4 py-2 text-left">Arrival</th>
@@ -321,7 +323,7 @@
       </thead>
       <tbody>
   @foreach($bookings->groupBy(fn($b) => $b->slot->depot->name) as $depotName => $group)
-    <tr><td colspan="9" class="bg-gray-200 font-semibold px-4 py-2">Depot: {{ $depotName }}</td></tr>
+    <tr><td colspan="11" class="bg-gray-200 font-semibold px-4 py-2">Depot: {{ $depotName }}</td></tr>
     @foreach($group->sortBy(fn($b) => $b->slot->start_at) as $booking)
       <tr class="border-t hover:bg-gray-50 
         @if($booking->cancelled_at) bg-red-50 border-red-200 
@@ -440,6 +442,47 @@
             </div>
           @else
             <div class="text-xs text-gray-400">No PO numbers</div>
+          @endif
+        </td>
+
+        {{-- Haulier --}}
+        <td class="px-4 py-2 align-top">
+          @if($booking->carrier)
+            <div class="text-sm font-medium">{{ $booking->carrier->name }}</div>
+          @elseif($booking->carrier_company)
+            <div class="text-sm text-gray-600">{{ $booking->carrier_company }}</div>
+          @else
+            <div class="text-xs text-gray-400">-</div>
+          @endif
+        </td>
+
+        {{-- Expected Bay --}}
+        <td class="px-4 py-2 align-top">
+          @php
+            // Get expected bay based on customer priority
+            $expectedBay = null;
+            if ($booking->customer_id && $booking->slot) {
+              $priorityAssignment = \App\Models\CustomerBayAssignment::with('tippingBay')
+                ->where('customer_id', $booking->customer_id)
+                ->whereHas('tippingBay', function($q) use ($booking) {
+                  $q->where('depot_id', $booking->slot->depot_id);
+                })
+                ->where('is_active', true)
+                ->orderBy('priority', 'desc')
+                ->first();
+              $expectedBay = $priorityAssignment?->tippingBay;
+            }
+          @endphp
+          @if($expectedBay)
+            <div class="text-sm font-medium text-green-700">{{ $expectedBay->name }}</div>
+            @if($expectedBay->code)
+              <div class="text-xs text-gray-500">{{ $expectedBay->code }}</div>
+            @endif
+          @elseif($booking->slot?->tippingBay)
+            <div class="text-sm text-gray-600">{{ $booking->slot->tippingBay->name }}</div>
+            <div class="text-xs text-gray-400">(Booked Bay)</div>
+          @else
+            <div class="text-xs text-gray-400">TBD</div>
           @endif
         </td>
 

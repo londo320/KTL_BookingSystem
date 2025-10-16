@@ -3,7 +3,10 @@
     "allow": [
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Read(///**)",
+      "Read(//Users/londo/Library/Application Support/Herd/config/php/84/**)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []

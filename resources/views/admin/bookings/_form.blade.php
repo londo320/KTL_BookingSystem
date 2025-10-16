@@ -64,28 +64,6 @@
             </option>
           @else
             <option value="">– Select customer & booking type first –</option>
-            @php
-              // Group slots by depot for initial display (will be replaced by AJAX)
-              $groupedSlots = $slots->groupBy(fn($slot) => $slot->depot->name);
-            @endphp
-            @foreach($groupedSlots as $depotName => $depotSlots)
-              <optgroup label="{{ $depotName }}">
-                @foreach($depotSlots as $slot)
-                  @php
-                    $isRestricted = $slot->allowed_customers->count() > 0;
-                    $bayInfo = '';
-                    if (isset($slot->bay_count) && $slot->bay_count > 1) {
-                      $bayInfo = " [{$slot->bay_count} bays]";
-                    } elseif ($slot->tippingBay) {
-                      $bayInfo = " → {$slot->tippingBay->name}";
-                    }
-                  @endphp
-                  <option value="{{ $slot->id }}" @selected(old('slot_id', $booking->slot_id) == $slot->id)>
-                    {{ $isRestricted ? '🔒' : '🌐' }} {{ $slot->start_at->format('D d-M H:i') }} → {{ $slot->end_at->format('H:i') }}{{ $bayInfo }}
-                  </option>
-                @endforeach
-              </optgroup>
-            @endforeach
           @endif
         </select>
         @if($booking->exists && $booking->slot)
@@ -93,6 +71,13 @@
         @endif
         @error('slot_id')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
       </div>
+    </div>
+
+    {{-- Expected Bay Information --}}
+    <div id="expected-bay-info" class="hidden mt-3 p-3 bg-green-50 border border-green-200 rounded">
+      <div class="text-xs font-medium text-green-800 mb-1">Expected Bay on Arrival:</div>
+      <div id="expected-bay-display" class="text-sm font-semibold text-green-900"></div>
+      <div class="text-[10px] text-green-700 mt-1">Based on customer priority and equipment requirements</div>
     </div>
   </div>
 
