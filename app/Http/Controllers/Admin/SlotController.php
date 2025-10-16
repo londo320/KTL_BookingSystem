@@ -169,6 +169,68 @@ class SlotController extends Controller
     }
 
     /**
+     * Bulk delete slots by date (only empty slots without bookings)
+     */
+    public function bulkDeleteByDate(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date',
+        ]);
+
+        $user = auth()->user();
+        $defaultDepotId = $user->depot_id;
+
+        if (!$defaultDepotId) {
+            return back()->with('error', 'No default depot assigned.');
+        }
+
+        // Find all slots on this date at the default depot that have no bookings
+        $deletedCount = Slot::where('depot_id', $defaultDepotId)
+            ->whereDate('start_at', $request->date)
+            ->whereDoesntHave('occupyingBookings')
+            ->delete();
+
+        return back()->with('success', "Deleted {$deletedCount} empty slot(s) on " . $request->date);
+    }
+
+    /**
+     * Bulk delete selected slots (only empty slots without bookings)
+     */
+    public function bulkDeleteSelected(Request $request)
+    {
+        $request->validate([
+            'slot_ids' => 'required|array',
+            'slot_ids.*' => 'exists:slots,id',
+        ]);
+
+        $user = auth()->user();
+        $defaultDepotId = $user->depot_id;
+
+        if (!$defaultDepotId) {
+            return back()->with('error', 'No default depot assigned.');
+        }
+
+        // Only delete slots that:
+        // 1. Are in the selected IDs
+        // 2. Belong to the user's default depot
+        // 3. Have no bookings
+        $deletedCount = Slot::whereIn('id', $request->slot_ids)
+            ->where('depot_id', $defaultDepotId)
+            ->whereDoesntHave('occupyingBookings')
+            ->delete();
+
+        $attemptedCount = count($request->slot_ids);
+        $skippedCount = $attemptedCount - $deletedCount;
+
+        $message = "Deleted {$deletedCount} slot(s)";
+        if ($skippedCount > 0) {
+            $message .= " ({$skippedCount} skipped - had bookings or wrong depot)";
+        }
+
+        return back()->with('success', $message);
+    }
+
+    /**
      * Get depot IDs that the current user can access based on their role
      */
     private function getAllowedDepotIds()

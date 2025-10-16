@@ -309,6 +309,8 @@ Route::middleware('auth')->group(function () {
         Route::middleware(['inbound-access'])->group(function () {
             // Slot management
             Route::resource('slots', SlotController::class)->except(['show']);
+            Route::delete('/slots/bulk-delete-by-date', [SlotController::class, 'bulkDeleteByDate'])->name('slots.bulk-delete-by-date');
+            Route::delete('/slots/bulk-delete-selected', [SlotController::class, 'bulkDeleteSelected'])->name('slots.bulk-delete-selected');
             Route::post('/slots/generate', [SlotGeneratorController::class, 'store'])->name('slots.generate');
             Route::get('/slot-usage', [SlotUsageController::class, 'index'])->name('slot-usage.index');
             Route::get('/slot-capacity', [SlotCapacityController::class, 'index'])->name('slot-capacity.index');
@@ -316,7 +318,7 @@ Route::middleware('auth')->group(function () {
             Route::resource('slot-release-rules', SlotReleaseRuleController::class)
                 ->names('slotReleaseRules')
                 ->parameters(['slot-release-rules' => 'rule']);
-            
+
             // Arrival time settings
             Route::resource('arrival-time-settings', \App\Http\Controllers\Admin\ArrivalTimeSettingController::class);
             Route::get('arrival-time-settings-preview', [\App\Http\Controllers\Admin\ArrivalTimeSettingController::class, 'preview'])->name('arrival-time-settings.preview');

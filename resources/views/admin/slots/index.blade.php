@@ -28,6 +28,39 @@
       {{ session('success') }}
     </div>
   @endif
+  {{-- Bulk Delete Actions --}}
+  @if($currentDepotId == $defaultDepotId)
+    <div class="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+      <h3 class="font-semibold text-gray-800 mb-3">Bulk Delete Options</h3>
+      <div class="flex flex-wrap gap-3">
+        {{-- Delete by Date --}}
+        <form method="POST" action="{{ route('app.slots.bulk-delete-by-date') }}" class="flex items-end gap-2" onsubmit="return confirm('Delete all empty slots on this date? Slots with bookings will be preserved.');">
+          @csrf
+          @method('DELETE')
+          <div>
+            <label for="delete_date" class="block text-xs font-medium text-gray-700">Delete by Date</label>
+            <input type="date" name="date" id="delete_date" class="border rounded px-2 py-1 text-sm" required>
+          </div>
+          <button type="submit" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm">
+            🗑️ Delete Empty Slots
+          </button>
+        </form>
+
+        <span class="text-gray-300 self-end pb-1">|</span>
+
+        {{-- Delete Selected --}}
+        <div class="flex items-end gap-2">
+          <button type="button" onclick="deleteSelected()" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm">
+            🗑️ Delete Selected (<span id="selected-count">0</span>)
+          </button>
+          <button type="button" onclick="toggleSelectAll()" class="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 text-sm">
+            Select All Empty
+          </button>
+        </div>
+      </div>
+    </div>
+  @endif
+
   {{-- Filters --}}
   <form method="GET" action="{{ route('app.slots.index') }}" class="flex flex-wrap gap-4 items-end mb-4">
     <div>
@@ -114,6 +147,11 @@
       <table class="min-w-full text-sm">
         <thead class="bg-gray-100">
           <tr>
+            @if($currentDepotId == $defaultDepotId)
+              <th class="px-2 py-2 w-12">
+                <input type="checkbox" id="select-all-header" onclick="toggleSelectAll()" class="h-4 w-4">
+              </th>
+            @endif
             <th class="px-4 py-2 text-left">Depot</th>
             <th class="px-4 py-2 text-left">Bay</th>
             <th class="px-4 py-2 text-left">Time</th>
@@ -125,6 +163,15 @@
         <tbody>
           @forelse($slots as $slot)
             <tr class="border-t hover:bg-gray-50">
+              @if($currentDepotId == $defaultDepotId)
+                <td class="px-2 py-2">
+                  @if($slot->occupying_bookings_count == 0)
+                    <input type="checkbox" class="slot-checkbox h-4 w-4" value="{{ $slot->id }}" onchange="updateSelectedCount()">
+                  @else
+                    <span class="text-gray-300" title="Has bookings">🔒</span>
+                  @endif
+                </td>
+              @endif
               <td class="px-4 py-2">{{ $slot->depot->name }}</td>
               <td class="px-4 py-2">
                 @if($slot->tippingBay)
@@ -165,12 +212,79 @@
             </tr>
           @empty
             <tr>
-              <td colspan="6" class="text-center py-4 text-gray-500">No slots found.</td>
+              <td colspan="{{ $currentDepotId == $defaultDepotId ? 7 : 6 }}" class="text-center py-4 text-gray-500">No slots found.</td>
             </tr>
           @endforelse
         </tbody>
       </table>
     </div>
+  @endif
+
+  {{-- Bulk Delete JavaScript --}}
+  @if($currentDepotId == $defaultDepotId)
+    <script>
+      function updateSelectedCount() {
+        const count = document.querySelectorAll('.slot-checkbox:checked').length;
+        document.getElementById('selected-count').textContent = count;
+      }
+
+      function toggleSelectAll() {
+        const checkboxes = document.querySelectorAll('.slot-checkbox');
+        const selectAllHeader = document.getElementById('select-all-header');
+        const allChecked = selectAllHeader?.checked || false;
+
+        checkboxes.forEach(cb => {
+          cb.checked = !allChecked;
+        });
+
+        if (selectAllHeader) {
+          selectAllHeader.checked = !allChecked;
+        }
+
+        updateSelectedCount();
+      }
+
+      function deleteSelected() {
+        const selected = Array.from(document.querySelectorAll('.slot-checkbox:checked')).map(cb => cb.value);
+
+        if (selected.length === 0) {
+          alert('Please select slots to delete');
+          return;
+        }
+
+        if (!confirm(`Delete ${selected.length} selected slot(s)? Only empty slots will be deleted.`)) {
+          return;
+        }
+
+        // Create form and submit
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ route("app.slots.bulk-delete-selected") }}';
+
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = '_token';
+        csrfToken.value = '{{ csrf_token() }}';
+        form.appendChild(csrfToken);
+
+        const methodField = document.createElement('input');
+        methodField.type = 'hidden';
+        methodField.name = '_method';
+        methodField.value = 'DELETE';
+        form.appendChild(methodField);
+
+        selected.forEach(id => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'slot_ids[]';
+          input.value = id;
+          form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+      }
+    </script>
   @endif
 </div>
 </x-app-layout>
