@@ -15,7 +15,9 @@ class BookingTypeEquipmentController extends Controller
             ->get()
             ->keyBy('equipment_type');
 
-        return view('admin.booking_types.equipment-requirements', compact('bookingType', 'requirements'));
+        $equipmentTypes = \App\Models\EquipmentType::active()->ordered()->get();
+
+        return view('admin.booking_types.equipment-requirements', compact('bookingType', 'requirements', 'equipmentTypes'));
     }
 
     public function update(Request $request, BookingType $bookingType)

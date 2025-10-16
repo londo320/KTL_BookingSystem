@@ -12,6 +12,8 @@ class BookingType extends Model
     protected $fillable = [
         'name',
         'duration_minutes',
+        'booking_start_time',
+        'booking_end_time',
     ];
 
     protected $casts = [
@@ -25,14 +27,14 @@ class BookingType extends Model
     public function depots()
     {
         return $this->belongsToMany(Depot::class, 'booking_type_depot')
-            ->withPivot('duration_minutes')
+            ->withPivot('duration_minutes', 'booking_start_time', 'booking_end_time')
             ->withTimestamps();
     }
 
     public function customers()
     {
         return $this->belongsToMany(Customer::class, 'booking_type_customer')
-            ->withPivot('depot_id', 'duration_minutes')
+            ->withPivot('depot_id', 'duration_minutes', 'booking_start_time', 'booking_end_time')
             ->withTimestamps();
     }
 
@@ -125,5 +127,124 @@ class BookingType extends Model
         }
 
         return $this->duration_minutes ?? 60;
+    }
+
+    /**
+     * Get time restrictions for a specific customer and depot
+     * Returns array with 'start' and 'end' keys
+     * Priority: Customer+Depot > Customer-only > Depot-only > Default
+     */
+    public function getTimeRestrictionsFor(?int $customerId = null, ?int $depotId = null): array
+    {
+        // Check customer + depot specific
+        if ($customerId && $depotId) {
+            $customerDepotPivot = $this->customers()
+                ->where('customer_id', $customerId)
+                ->where('depot_id', $depotId)
+                ->first();
+
+            if ($customerDepotPivot && ($customerDepotPivot->pivot->booking_start_time || $customerDepotPivot->pivot->booking_end_time)) {
+                return [
+                    'start' => $customerDepotPivot->pivot->booking_start_time,
+                    'end' => $customerDepotPivot->pivot->booking_end_time,
+                ];
+            }
+        }
+
+        // Check customer-only (any depot)
+        if ($customerId) {
+            $customerPivot = $this->customers()
+                ->where('customer_id', $customerId)
+                ->whereNull('depot_id')
+                ->first();
+
+            if ($customerPivot && ($customerPivot->pivot->booking_start_time || $customerPivot->pivot->booking_end_time)) {
+                return [
+                    'start' => $customerPivot->pivot->booking_start_time,
+                    'end' => $customerPivot->pivot->booking_end_time,
+                ];
+            }
+        }
+
+        // Check depot-only
+        if ($depotId) {
+            $depotPivot = $this->depots()->where('depot_id', $depotId)->first();
+
+            if ($depotPivot && ($depotPivot->pivot->booking_start_time || $depotPivot->pivot->booking_end_time)) {
+                return [
+                    'start' => $depotPivot->pivot->booking_start_time,
+                    'end' => $depotPivot->pivot->booking_end_time,
+                ];
+            }
+        }
+
+        // Fall back to default
+        return [
+            'start' => $this->booking_start_time,
+            'end' => $this->booking_end_time,
+        ];
+    }
+
+    /**
+     * Check if this booking type is available at a specific time
+     * @param \Carbon\Carbon|string $time The time to check (slot start time)
+     * @param int|null $customerId Optional customer ID for customer-specific rules
+     * @param int|null $depotId Optional depot ID for depot-specific rules
+     * @return bool
+     */
+    public function isAvailableAtTime($time, ?int $customerId = null, ?int $depotId = null): bool
+    {
+        $restrictions = $this->getTimeRestrictionsFor($customerId, $depotId);
+        $startTime = $restrictions['start'];
+        $endTime = $restrictions['end'];
+
+        // If no time restrictions set, available 24/7
+        if (!$startTime && !$endTime) {
+            return true;
+        }
+
+        $checkTime = is_string($time) ? \Carbon\Carbon::parse($time) : $time;
+        $timeOnly = $checkTime->format('H:i:s');
+
+        // If only start time is set
+        if ($startTime && !$endTime) {
+            return $timeOnly >= $startTime;
+        }
+
+        // If only end time is set
+        if (!$startTime && $endTime) {
+            return $timeOnly <= $endTime;
+        }
+
+        // Both start and end times are set
+        return $timeOnly >= $startTime && $timeOnly <= $endTime;
+    }
+
+    /**
+     * Get human-readable time availability description
+     * @return string
+     */
+    public function getTimeAvailabilityAttribute(): string
+    {
+        if (!$this->booking_start_time && !$this->booking_end_time) {
+            return '24/7';
+        }
+
+        if ($this->booking_start_time && $this->booking_end_time) {
+            return sprintf('%s - %s',
+                \Carbon\Carbon::parse($this->booking_start_time)->format('H:i'),
+                \Carbon\Carbon::parse($this->booking_end_time)->format('H:i')
+            );
+        }
+
+        if ($this->booking_start_time) {
+            return sprintf('From %s', \Carbon\Carbon::parse($this->booking_start_time)->format('H:i'));
+        }
+
+        if ($this->booking_end_time) {
+            return sprintf('Until %s', \Carbon\Carbon::parse($this->booking_end_time)->format('H:i'));
+        }
+
+        return '24/7';
     }
 }

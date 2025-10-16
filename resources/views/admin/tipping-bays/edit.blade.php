@@ -226,32 +226,28 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Equipment Available
+                            <a href="{{ route('app.equipment-types.index') }}" target="_blank" class="text-xs text-blue-600 hover:underline ml-2">
+                                Manage Equipment Types
+                            </a>
                         </label>
-                        <div id="equipment-container">
-                            @php
-                                $equipmentData = old('equipment', $tippingBay->equipment ?? []);
-                            @endphp
-                            @if($equipmentData && count($equipmentData) > 0)
-                                @foreach($equipmentData as $index => $equipment)
-                                    @if($equipment)
-                                        <div class="flex items-center mb-2 equipment-item">
-                                            <input type="text" name="equipment[]" value="{{ $equipment }}" 
-                                                   class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                                   placeholder="e.g., Forklift, Crane, Conveyor">
-                                            <button type="button" onclick="removeEquipment(this)" 
-                                                    class="ml-2 px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600">
-                                                Remove
-                                            </button>
-                                        </div>
-                                    @endif
-                                @endforeach
-                            @endif
+                        @php
+                            $equipmentData = old('equipment', $tippingBay->equipment ?? []);
+                        @endphp
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            @forelse($equipmentTypes as $type)
+                                <label class="flex items-center p-3 border rounded hover:bg-gray-50 cursor-pointer">
+                                    <input type="checkbox"
+                                           name="equipment[]"
+                                           value="{{ $type->key }}"
+                                           class="mr-2 h-4 w-4"
+                                           @checked(in_array($type->key, $equipmentData))>
+                                    <span class="text-sm">{{ $type->name }}</span>
+                                </label>
+                            @empty
+                                <p class="text-sm text-gray-500 col-span-3">No equipment types configured. <a href="{{ route('app.equipment-types.create') }}" class="text-blue-600 hover:underline">Add one</a></p>
+                            @endforelse
                         </div>
-                        <button type="button" onclick="addEquipment()" 
-                                class="mt-2 text-sm text-blue-600 hover:text-blue-800">
-                            + Add Equipment
-                        </button>
-                        <p class="text-xs text-gray-500 mt-1">List any special equipment available at this bay</p>
+                        <p class="text-xs text-gray-500 mt-2">Select equipment available at this bay for booking type filtering</p>
                     </div>
                 </div>
                 <div class="flex items-center justify-between pt-6 border-t border-gray-200">
@@ -268,24 +264,6 @@
         </div>
     </div>
     <script>
-        function addEquipment() {
-            const container = document.getElementById('equipment-container');
-            const div = document.createElement('div');
-            div.className = 'flex items-center mb-2 equipment-item';
-            div.innerHTML = `
-                <input type="text" name="equipment[]" value="" 
-                       class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                       placeholder="e.g., Forklift, Crane, Conveyor">
-                <button type="button" onclick="removeEquipment(this)" 
-                        class="ml-2 px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600">
-                    Remove
-                </button>
-            `;
-            container.appendChild(div);
-        }
-        function removeEquipment(button) {
-            button.parentElement.remove();
-        }
         // Sync color picker with hex input
         document.getElementById('text_color').addEventListener('input', function() {
             document.getElementById('text_color_hex').value = this.value;

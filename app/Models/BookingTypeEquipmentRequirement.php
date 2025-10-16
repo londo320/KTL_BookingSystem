@@ -9,13 +9,16 @@ class BookingTypeEquipmentRequirement extends Model
 {
     protected $fillable = [
         'booking_type_id',
-        'required_equipment',
+        'equipment_type',
+        'is_required',
+        'priority_boost',
         'is_active',
     ];
 
     protected $casts = [
-        'required_equipment' => 'array',
+        'is_required' => 'boolean',
         'is_active' => 'boolean',
+        'priority_boost' => 'integer',
     ];
 
     public function bookingType(): BelongsTo
@@ -28,11 +31,11 @@ class BookingTypeEquipmentRequirement extends Model
      */
     public static function getRequiredEquipment(int $bookingTypeId): array
     {
-        $requirement = static::where('booking_type_id', $bookingTypeId)
+        return static::where('booking_type_id', $bookingTypeId)
+            ->where('is_required', true)
             ->where('is_active', true)
-            ->first();
-
-        return $requirement?->required_equipment ?? [];
+            ->pluck('equipment_type')
+            ->toArray();
     }
 
     /**

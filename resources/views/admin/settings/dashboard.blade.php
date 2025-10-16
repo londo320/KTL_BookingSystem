@@ -2,30 +2,32 @@
   <x-slot name="header">
     <h2 class="text-xl font-semibold">🛠 Admin Settings Panel</h2>
   </x-slot>
-  <div class="max-w-4xl mx-auto py-6 space-y-6">
+  <div class="max-w-7xl mx-auto py-6 space-y-6">
     @if (session('success'))
       <div class="p-4 bg-green-100 border border-green-400 text-green-700 rounded">
         {{ session('success') }}
       </div>
     @endif
-    {{-- Tipping Workflow Settings --}}
+
+    {{-- System Settings --}}
     <div class="bg-white shadow rounded-lg p-6">
-      <h3 class="text-lg font-semibold text-gray-800 mb-4">🚛 Tipping Workflow Settings</h3>
-      <form method="POST" action="{{ route('app.settings.tipping-workflow') }}">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">⚙️ System Settings</h3>
+
+      {{-- Tipping Workflow --}}
+      <form method="POST" action="{{ route('app.settings.tipping-workflow') }}" class="mb-4">
         @csrf
         <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
           <div>
             <h4 class="font-medium text-gray-800">Enable Tipping Workflow</h4>
             <p class="text-sm text-gray-600 mt-1">
-              When enabled, enforces the structured tipping workflow process. 
-              When disabled, allows manual bay assignments without workflow enforcement.
+              When enabled, enforces the structured tipping workflow process.
             </p>
           </div>
           <div class="flex items-center">
             <input type="hidden" name="tipping_workflow_enabled" value="0">
-            <input 
-              type="checkbox" 
-              name="tipping_workflow_enabled" 
+            <input
+              type="checkbox"
+              name="tipping_workflow_enabled"
               value="1"
               {{ $tippingWorkflowEnabled ? 'checked' : '' }}
               onchange="this.form.submit()"
@@ -37,31 +39,24 @@
           </div>
         </div>
       </form>
-    </div>
 
-    {{-- Module Management Section --}}
-    <div class="bg-white shadow rounded-lg p-6">
-      <h3 class="text-lg font-semibold text-gray-800 mb-4">🔧 Module Management</h3>
-      <p class="text-sm text-gray-600 mb-4">
-        Enable or disable system modules. Disabled modules will be completely hidden from navigation and inaccessible.
-      </p>
-      
-      <div class="space-y-4">
-        {{-- Inbound Module Toggle --}}
+      {{-- Module Management --}}
+      <div class="space-y-3">
+        <h4 class="font-medium text-gray-700 mt-4 mb-2">Module Management</h4>
+
+        {{-- Inbound Module --}}
         <form method="POST" action="{{ route('app.settings.inbound-module') }}">
           @csrf
           <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
             <div>
-              <h4 class="font-medium text-gray-800">Inbound Operations</h4>
-              <p class="text-sm text-gray-600 mt-1">
-                Container bookings, factory bookings, tipping workflow, and all existing inbound processes.
-              </p>
+              <h5 class="font-medium text-gray-800">Inbound Operations</h5>
+              <p class="text-sm text-gray-600 mt-1">Container bookings, tipping workflow, inbound processes</p>
             </div>
             <div class="flex items-center">
               <input type="hidden" name="inbound_module_enabled" value="0">
-              <input 
-                type="checkbox" 
-                name="inbound_module_enabled" 
+              <input
+                type="checkbox"
+                name="inbound_module_enabled"
                 value="1"
                 {{ $inboundModuleEnabled ? 'checked' : '' }}
                 onchange="this.form.submit()"
@@ -74,21 +69,19 @@
           </div>
         </form>
 
-        {{-- Outbound Module Toggle --}}
+        {{-- Outbound Module --}}
         <form method="POST" action="{{ route('app.settings.outbound-module') }}">
           @csrf
           <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
             <div>
-              <h4 class="font-medium text-gray-800">Outbound Operations</h4>
-              <p class="text-sm text-gray-600 mt-1">
-                Load management, WMS file imports, driver arrivals, customer address management, and delivery scheduling.
-              </p>
+              <h5 class="font-medium text-gray-800">Outbound Operations</h5>
+              <p class="text-sm text-gray-600 mt-1">Load management, WMS imports, delivery scheduling</p>
             </div>
             <div class="flex items-center">
               <input type="hidden" name="outbound_module_enabled" value="0">
-              <input 
-                type="checkbox" 
-                name="outbound_module_enabled" 
+              <input
+                type="checkbox"
+                name="outbound_module_enabled"
                 value="1"
                 {{ $outboundModuleEnabled ? 'checked' : '' }}
                 onchange="this.form.submit()"
@@ -103,180 +96,191 @@
       </div>
     </div>
 
-    {{-- User Approval Settings --}}
+    {{-- User Management --}}
     <div class="bg-white shadow rounded-lg p-6">
-      <h3 class="text-lg font-semibold text-gray-800 mb-4">👥 User Approval Settings</h3>
-      <p class="text-sm text-gray-600 mb-4">
-        Configure email notifications for new user registration approvals.
-      </p>
-      
-      <form method="POST" action="{{ route('app.settings.admin-approval-emails') }}">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">👥 User Management</h3>
+
+      <form method="POST" action="{{ route('app.settings.admin-approval-emails') }}" class="mb-4">
         @csrf
         <div class="space-y-4">
           <div>
             <label for="admin_approval_emails" class="block text-sm font-medium text-gray-700 mb-2">
               Admin Approval Email Addresses
             </label>
-            <textarea 
-              name="admin_approval_emails" 
+            <textarea
+              name="admin_approval_emails"
               id="admin_approval_emails"
               rows="3"
               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               placeholder="admin@knowleslogistics.com, manager@knowleslogistics.com"
             >{{ $adminApprovalEmails }}</textarea>
             <p class="mt-1 text-sm text-gray-500">
-              Enter email addresses separated by commas. These admins will receive notifications when new users register and need approval.
+              Enter email addresses separated by commas for new user registration notifications.
             </p>
           </div>
           <div class="flex justify-end">
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
               Save Email Settings
             </button>
           </div>
         </div>
       </form>
+
+      <div class="grid grid-cols-2 gap-3 mt-4">
+        <a href="{{ route('app.users.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">👥</span>
+          <span class="text-sm font-medium">Manage Users</span>
+        </a>
+        <a href="{{ route('app.customers.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">🏢</span>
+          <span class="text-sm font-medium">Manage Customers</span>
+        </a>
+      </div>
     </div>
 
-    {{-- Depot Map Management Section --}}
+    {{-- Depot & Bay Management --}}
     <div class="bg-white shadow rounded-lg p-6">
-      <h3 class="text-lg font-semibold text-gray-800 mb-4">🗺️ Depot Map Management</h3>
-      <p class="text-sm text-gray-600 mb-4">
-        Configure and manage interactive depot maps showing real-time bay status and positions.
-      </p>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <a href="{{ route('app.depot-map.index') }}" 
-           class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-          <div class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-            🗺️
-          </div>
-          <div class="ml-4">
-            <h4 class="font-medium text-gray-900">View Depot Map</h4>
-            <p class="text-sm text-gray-500">See live bay status and operations</p>
-          </div>
+      <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">🏭 Depot & Bay Management</h3>
+
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <a href="{{ route('app.depots.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">🏭</span>
+          <span class="text-sm font-medium">Manage Depots</span>
+        </a>
+        <a href="{{ route('app.tipping-bays.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">🚛</span>
+          <span class="text-sm font-medium">Manage Bays</span>
+        </a>
+        <a href="{{ route('app.tipping-locations.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">📍</span>
+          <span class="text-sm font-medium">Tipping Locations</span>
+        </a>
+        <a href="{{ route('app.depot-map.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">🗺️</span>
+          <span class="text-sm font-medium">View Depot Map</span>
         </a>
         @if($depots->count() > 0)
-        <a href="{{ route('app.depot-map.manage-positions', $depots->first()) }}" 
-           class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-        @else
-        <div class="flex items-center p-4 border border-gray-200 rounded-lg bg-gray-100 opacity-50">
-        @endif
-          <div class="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-            🎯
-          </div>
-          <div class="ml-4">
-            <h4 class="font-medium text-gray-900">Position Bays</h4>
-            <p class="text-sm text-gray-500">{{ $depots->count() > 0 ? 'Drag and drop bay positions on map' : 'No depots configured' }}</p>
-          </div>
-        @if($depots->count() > 0)
+        <a href="{{ route('app.depot-map.manage-positions', $depots->first()) }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">🎯</span>
+          <span class="text-sm font-medium">Position Bays on Map</span>
         </a>
         @else
+        <div class="flex items-center p-3 border rounded bg-gray-100 opacity-50">
+          <span class="mr-2">🎯</span>
+          <span class="text-sm font-medium">Position Bays (No depots)</span>
         </div>
         @endif
-        <a href="{{ route('app.depots.index') }}" 
-           class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-          <div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-            🏭
-          </div>
-          <div class="ml-4">
-            <h4 class="font-medium text-gray-900">Manage Depots</h4>
-            <p class="text-sm text-gray-500">Upload map files and depot settings</p>
-          </div>
-        </a>
-        <a href="{{ route('app.tipping-bays.index') }}" 
-           class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-          <div class="flex-shrink-0 w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-            🚛
-          </div>
-          <div class="ml-4">
-            <h4 class="font-medium text-gray-900">Manage Bays</h4>
-            <p class="text-sm text-gray-500">Configure tipping bay settings</p>
-          </div>
+        <a href="{{ route('app.equipment-types.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">🛠️</span>
+          <span class="text-sm font-medium">Equipment Types</span>
         </a>
       </div>
     </div>
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-      <a href="{{ route('app.depots.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        📦 Manage Depots
-      </a>
-      <a href="{{ route('app.booking-types.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        🧱 Manage Booking Types
-      </a>
-      <a href="{{ route('app.bay-capacity-rules.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        🚪 Bay Capacity Rules
-      </a>
-      <a href="{{ route('app.duration-rules.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        ⏱️ Duration Rules (Case-Based)
-      </a>
-      <a href="{{ route('app.slot-templates.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        🕒 Slot Duration Rules (Handball etc.)
-      </a>
-      <a href="{{ route('app.slot-capacity.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        ⚙️ Slot Generation Rules
-      </a>
-      <a href="{{ route('app.slots.generate.form') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        🧮 Generate Slots (Depot-Based)
-      </a>
-      <a href="{{ route('app.bay-slot-generation.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        🚪 Generate Bay Slots (Bay-Based)
-      </a>
-      <a href="{{ route('app.test-email.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        📧 Test Password Reset Emails
-      </a>
-      <a href="{{ route('app.slot-usage.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        📊 Slot Usage Viewer
-      </a>
-      <a href="{{ route('app.products.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        📦 Products
-      </a>
-      <a href="{{ route('app.users.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        👥 Users Settings
-      </a>
-      <a href="{{ route('app.customers.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        👥 Customer Settings
-      </a>
-      <a href="{{ route('app.slotReleaseRules.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        ⚙️ Slot Rules Config
-      </a>
-      <a href="{{ route('app.settings.pallet-types') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        📦 Pallet Types
-      </a>
-      <a href="{{ route('app.trailer-types.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        🚛 Trailer Types
-      </a>
-      <a href="{{ route('app.carriers.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        🚚 Carrier Management
-      </a>
-      <a href="{{ route('app.tipping-locations.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        📍 Tipping Locations
-      </a>
-      <a href="{{ route('app.tipping-bays.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        🏗️ Tipping Bays
-      </a>
-      <a href="{{ route('app.depot-map.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        🗺️ Depot Map View
-      </a>
-      @if($depots->count() > 0)
-      <a href="{{ route('app.depot-map.manage-positions', $depots->first()) }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        🎯 Position Bays on Map
-      </a>
-      @else
-      <div class="block p-4 bg-gray-100 shadow rounded opacity-50">
-        🎯 Position Bays on Map (No depots)
+
+    {{-- Booking Configuration --}}
+    <div class="bg-white shadow rounded-lg p-6">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">📋 Booking Configuration</h3>
+
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <a href="{{ route('app.booking-types.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">🧱</span>
+          <span class="text-sm font-medium">Booking Types</span>
+        </a>
+        <a href="{{ route('app.bay-capacity-rules.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">🚪</span>
+          <span class="text-sm font-medium">Bay Capacity Rules</span>
+        </a>
+        <a href="{{ route('app.duration-rules.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">⏱️</span>
+          <span class="text-sm font-medium">Duration Rules (Case-Based)</span>
+        </a>
+        <a href="{{ route('app.arrival-time-settings.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">🕐</span>
+          <span class="text-sm font-medium">Arrival Time Rules</span>
+        </a>
       </div>
-      @endif
-      <a href="{{ route('app.arrival-time-settings.index') }}" class="block p-4 bg-white shadow rounded hover:bg-gray-50">
-        🕐 Arrival Time Rules
-      </a>
-@if($depots->count())
-  <div class="col-span-2 mt-6">
-    <h3 class="text-lg font-semibold mb-2">🔁 Customer Depot Product Rules</h3>
-    <p class="text-sm text-gray-600 mb-2">
-      <a href="{{ route('app.customer-depot-products.index') }}" class="text-blue-600 hover:underline">
-        Manage Customer-Depot-Product relationships
-      </a>
-    </p>
-  </div>
-@endif
+    </div>
+
+    {{-- Slot Management --}}
+    <div class="bg-white shadow rounded-lg p-6">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">🕒 Slot Management</h3>
+
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <a href="{{ route('app.slot-templates.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">📅</span>
+          <span class="text-sm font-medium">Slot Templates</span>
+        </a>
+        <a href="{{ route('app.slot-capacity.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">⚙️</span>
+          <span class="text-sm font-medium">Slot Generation Rules</span>
+        </a>
+        <a href="{{ route('app.slots.generate.form') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">🧮</span>
+          <span class="text-sm font-medium">Generate Slots (Depot)</span>
+        </a>
+        <a href="{{ route('app.bay-slot-generation.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">🚪</span>
+          <span class="text-sm font-medium">Generate Slots (Bay)</span>
+        </a>
+        <a href="{{ route('app.slotReleaseRules.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">🔓</span>
+          <span class="text-sm font-medium">Slot Release Rules</span>
+        </a>
+        <a href="{{ route('app.slot-usage.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">📊</span>
+          <span class="text-sm font-medium">Slot Usage Viewer</span>
+        </a>
+      </div>
+    </div>
+
+    {{-- Product & Inventory --}}
+    <div class="bg-white shadow rounded-lg p-6">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">📦 Product & Inventory</h3>
+
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <a href="{{ route('app.products.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">📦</span>
+          <span class="text-sm font-medium">Products</span>
+        </a>
+        <a href="{{ route('app.settings.pallet-types') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">🧱</span>
+          <span class="text-sm font-medium">Pallet Types</span>
+        </a>
+        @if($depots->count())
+        <a href="{{ route('app.customer-depot-products.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">🔁</span>
+          <span class="text-sm font-medium">Customer-Depot Products</span>
+        </a>
+        @endif
+      </div>
+    </div>
+
+    {{-- Transport & Logistics --}}
+    <div class="bg-white shadow rounded-lg p-6">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">🚚 Transport & Logistics</h3>
+
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <a href="{{ route('app.carriers.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">🚚</span>
+          <span class="text-sm font-medium">Carriers/Hauliers</span>
+        </a>
+        <a href="{{ route('app.trailer-types.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">🚛</span>
+          <span class="text-sm font-medium">Trailer Types</span>
+        </a>
+      </div>
+    </div>
+
+    {{-- System Tools --}}
+    <div class="bg-white shadow rounded-lg p-6">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">🔧 System Tools</h3>
+
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <a href="{{ route('app.test-email.index') }}" class="flex items-center p-3 border rounded hover:bg-gray-50">
+          <span class="mr-2">📧</span>
+          <span class="text-sm font-medium">Test Email System</span>
+        </a>
+      </div>
     </div>
   </div>
 </x-app-layout>

@@ -10,11 +10,19 @@ use App\Models\CustomerBayAssignment;
 use App\Models\Depot;
 use App\Models\Slot;
 use App\Models\TippingBay;
+use App\Services\SlotAvailabilityService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class SlotAvailabilityController extends Controller
 {
+    protected SlotAvailabilityService $slotService;
+
+    public function __construct(SlotAvailabilityService $slotService)
+    {
+        $this->slotService = $slotService;
+    }
+
     /**
      * Get available slots filtered by customer and booking type
      */
@@ -30,11 +38,20 @@ class SlotAvailabilityController extends Controller
         $customerId = $validated['customer_id'];
         $bookingTypeId = $validated['booking_type_id'];
         $depotId = $validated['depot_id'] ?? null;
-        $daysAhead = $validated['days_ahead'] ?? 14;
+        $daysAhead = (int) ($validated['days_ahead'] ?? 14);
+
+        // Get booking type to check time restrictions
+        $bookingType = BookingType::find($bookingTypeId);
+        if (!$bookingType) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Booking type not found',
+            ], 404);
+        }
 
         // Get customer's allowed bays
         $allowedBayIds = CustomerBayAssignment::where('customer_id', $customerId)
-            ->where('is_allowed', true)
+            ->where('is_active', true)
             ->pluck('tipping_bay_id')
             ->toArray();
 
@@ -65,18 +82,40 @@ class SlotAvailabilityController extends Controller
 
         // Group slots by date and time (since multiple bays can have same start time)
         $groupedSlots = [];
+        $debugInfo = [
+            'total_slots_fetched' => $slots->count(),
+            'slots_skipped_capacity' => 0,
+            'slots_skipped_customer_release' => 0,
+            'slots_skipped_time_restriction' => 0,
+            'slots_skipped_equipment' => 0,
+            'slots_included' => 0,
+        ];
 
         foreach ($slots as $slot) {
-            // Check if slot has capacity
-            $bookingCount = $slot->bookings()->count();
-            if ($bookingCount >= $slot->capacity) {
-                continue; // Skip full slots
+            // Use the service to check full availability including equipment requirements
+            $availability = $this->slotService->isSlotAvailable(
+                $slot,
+                $customerId,
+                $bookingTypeId
+            );
+
+            if (!$availability['available']) {
+                // Track which checks failed
+                foreach ($availability['errors'] as $error) {
+                    if (str_contains($error, 'capacity')) {
+                        $debugInfo['slots_skipped_capacity']++;
+                    } elseif (str_contains($error, 'time window')) {
+                        $debugInfo['slots_skipped_time_restriction']++;
+                    } elseif (str_contains($error, 'equipment')) {
+                        $debugInfo['slots_skipped_equipment']++;
+                    } elseif (str_contains($error, 'blocked')) {
+                        $debugInfo['slots_skipped_capacity']++;
+                    }
+                }
+                continue; // Skip unavailable slots
             }
 
-            // Check slot release rules
-            if ($slot->allowed_customers->isNotEmpty() && !$slot->allowed_customers->contains('id', $customerId)) {
-                continue; // Customer not allowed
-            }
+            $debugInfo['slots_included']++;
 
             $dateKey = $slot->start_at->format('Y-m-d');
             $timeKey = $slot->start_at->format('H:i');
@@ -118,6 +157,11 @@ class SlotAvailabilityController extends Controller
             'success' => true,
             'slots' => $result,
             'total' => count($result),
+            'debug' => $debugInfo,
+            'booking_type_time_restrictions' => [
+                'global_start' => $bookingType->booking_start_time,
+                'global_end' => $bookingType->booking_end_time,
+            ],
         ]);
     }
 
@@ -136,7 +180,7 @@ class SlotAvailabilityController extends Controller
             ->whereHas('tippingBay', function ($query) use ($validated) {
                 $query->where('depot_id', $validated['depot_id']);
             })
-            ->where('is_allowed', true)
+            ->where('is_active', true)
             ->orderBy('priority', 'asc')
             ->first();
 

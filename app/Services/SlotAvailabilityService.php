@@ -44,6 +44,11 @@ class SlotAvailabilityService
             $errors[] = 'Slot is at full capacity';
         }
 
+        // Check booking type time restrictions (with customer/depot overrides)
+        if (!$bookingType->isAvailableAtTime($slot->start_at, $customerId, $slot->depot_id)) {
+            $errors[] = 'Booking time is outside allowed time window for this booking type';
+        }
+
         // Check time window restrictions
         if (!CustomerDepotTimeWindow::isTimeAllowed($customerId, $slot->depot_id, $slot->start_at)) {
             $errors[] = 'Booking time is outside allowed time window for this customer';
@@ -52,6 +57,11 @@ class SlotAvailabilityService
         // Check if slot is blocked or locked
         if ($slot->is_blocked) {
             $errors[] = 'Slot is blocked';
+        }
+
+        // Check if bay is active
+        if ($slot->tippingBay && !$slot->tippingBay->is_active) {
+            $errors[] = 'This bay is no longer available';
         }
 
         // Check bay capacity rules (e.g., max 3 handball bookings at once)
@@ -94,6 +104,15 @@ class SlotAvailabilityService
                     'No bays available with required equipment: %s',
                     implode(', ', $requiredEquipment)
                 );
+            } else {
+                // Check if THIS slot's bay is in the list of available bays
+                $availableBayIds = $availableBays->pluck('id')->toArray();
+                if (!in_array($slot->tipping_bay_id, $availableBayIds)) {
+                    $errors[] = sprintf(
+                        'This bay does not have required equipment: %s',
+                        implode(', ', $requiredEquipment)
+                    );
+                }
             }
         }
 
@@ -148,8 +167,9 @@ class SlotAvailabilityService
             return collect([]);
         }
 
-        // Find all slots between primary slot end and booking end
+        // Find all slots between primary slot end and booking end ON THE SAME BAY
         return Slot::where('depot_id', $primarySlot->depot_id)
+            ->where('tipping_bay_id', $primarySlot->tipping_bay_id) // CRITICAL: Same bay only!
             ->where('start_at', '>', $primarySlot->start_at)
             ->where('start_at', '<', $endTime)
             ->orderBy('start_at')
@@ -279,15 +299,15 @@ class SlotAvailabilityService
             ->toArray();
 
         // Find all bookings that overlap with this time range
-        $query = Booking::where('depot_id', $rule->depot_id)
+        $query = Booking::whereHas('slot', function ($q) use ($applicableBayIds, $rule) {
+                $q->where('depot_id', $rule->depot_id)
+                  ->whereIn('tipping_bay_id', $applicableBayIds);
+            })
             ->when($rule->booking_type_id, function ($q) use ($rule) {
                 $q->where('booking_type_id', $rule->booking_type_id);
             })
             ->when($excludeBookingId, function ($q) use ($excludeBookingId) {
                 $q->where('id', '!=', $excludeBookingId);
-            })
-            ->whereHas('slot', function ($q) use ($applicableBayIds) {
-                $q->whereIn('tipping_bay_id', $applicableBayIds);
             });
 
         // Get bookings that overlap with our time range

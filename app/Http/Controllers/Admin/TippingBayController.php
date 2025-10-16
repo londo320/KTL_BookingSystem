@@ -151,20 +151,21 @@ class TippingBayController extends Controller
         $allowedDepotIds = $this->getAllowedDepotIds();
         $user = auth()->user();
         $defaultDepotId = $user->depot_id ?? $allowedDepotIds[0] ?? null;
-        
+
         // Check depot access
         if (! in_array($tippingBay->depot_id, $allowedDepotIds)) {
             abort(403, 'You do not have access to this depot.');
         }
-        
+
         // Check if user can edit this depot (admins can edit any accessible depot, others need it to be their default)
         if (!$user->hasRole('admin') && $tippingBay->depot_id !== $defaultDepotId) {
             abort(403, 'You can only edit tipping bays in your default depot. Please change your default depot in your profile if needed.');
         }
 
         $depots = $this->getAllowedDepots();
+        $equipmentTypes = \App\Models\EquipmentType::active()->ordered()->get();
 
-        return view('admin.tipping-bays.edit', compact('tippingBay', 'depots'));
+        return view('admin.tipping-bays.edit', compact('tippingBay', 'depots', 'equipmentTypes'));
     }
 
     public function update(Request $request, TippingBay $tippingBay)

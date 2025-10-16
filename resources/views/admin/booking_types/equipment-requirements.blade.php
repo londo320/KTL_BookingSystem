@@ -37,117 +37,63 @@
 
         {{-- Equipment Requirements --}}
         <div class="bg-white shadow rounded-lg p-6">
-            <h2 class="text-lg font-bold text-gray-900 mb-4 border-b pb-2">🛠️ Equipment Requirements</h2>
+            <div class="flex items-center justify-between mb-4 border-b pb-2">
+                <h2 class="text-lg font-bold text-gray-900">🛠️ Equipment Requirements</h2>
+                <a href="{{ route('app.equipment-types.index') }}" target="_blank" class="text-xs text-blue-600 hover:underline">
+                    Manage Equipment Types
+                </a>
+            </div>
 
             <div class="space-y-4">
-                {{-- Common equipment types --}}
-                @php
-                    $equipmentTypes = [
-                        'ramp' => 'Ramp',
-                        'dock_leveler' => 'Dock Leveler',
-                        'forklift' => 'Forklift',
-                        'pallet_jack' => 'Pallet Jack',
-                        'cold_storage' => 'Cold Storage',
-                        'freezer' => 'Freezer',
-                        'scale' => 'Scale',
-                        'loading_bay' => 'Loading Bay',
-                        'unloading_bay' => 'Unloading Bay',
-                        'inspection_area' => 'Inspection Area',
-                        'secure_storage' => 'Secure Storage',
-                        'hazmat_certified' => 'Hazmat Certified',
-                    ];
-                @endphp
+                @if($equipmentTypes->count() > 0)
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        @foreach($equipmentTypes as $type)
+                            @php
+                                $requirement = $requirements->get($type->key);
+                            @endphp
+                            <div class="border rounded-lg p-4 hover:border-blue-300 transition @if($requirement?->is_required) bg-blue-50 border-blue-300 @else bg-gray-50 @endif">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="font-semibold text-gray-800">{{ $type->name }}</h3>
+                                    <span class="text-xs text-gray-500">{{ $type->key }}</span>
+                                </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    @foreach($equipmentTypes as $key => $label)
-                        @php
-                            $requirement = $requirements->get($key);
-                        @endphp
-                        <div class="border rounded-lg p-4 hover:border-blue-300 transition @if($requirement?->is_required) bg-blue-50 border-blue-300 @else bg-gray-50 @endif">
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="font-semibold text-gray-800">{{ $label }}</h3>
-                                <span class="text-xs text-gray-500">{{ $key }}</span>
-                            </div>
+                                @if($type->description)
+                                    <p class="text-xs text-gray-600 mb-3">{{ $type->description }}</p>
+                                @endif
 
-                            {{-- Required Checkbox --}}
-                            <div class="mb-3">
-                                <label class="flex items-center">
-                                    <input type="checkbox"
-                                           name="equipment[{{ $key }}][required]"
-                                           value="1"
-                                           @checked($requirement?->is_required ?? false)
-                                           class="mr-2 h-4 w-4">
-                                    <span class="text-sm font-medium">Required for this booking type</span>
-                                </label>
-                            </div>
+                                {{-- Required Checkbox --}}
+                                <div class="mb-3">
+                                    <label class="flex items-center">
+                                        <input type="checkbox"
+                                               name="equipment[{{ $type->key }}][required]"
+                                               value="1"
+                                               @checked($requirement?->is_required ?? false)
+                                               class="mr-2 h-4 w-4">
+                                        <span class="text-sm font-medium">Required for this booking type</span>
+                                    </label>
+                                </div>
 
-                            {{-- Priority Boost --}}
-                            <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Priority Boost (0-100)</label>
-                                <input type="number"
-                                       name="equipment[{{ $key }}][priority_boost]"
-                                       value="{{ $requirement?->priority_boost ?? 10 }}"
-                                       min="0"
-                                       max="100"
-                                       class="block w-full border-gray-300 rounded text-sm py-1">
-                                <p class="text-[10px] text-gray-500 mt-0.5">Points added to bay priority</p>
+                                {{-- Priority Boost --}}
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Priority Boost (0-100)</label>
+                                    <input type="number"
+                                           name="equipment[{{ $type->key }}][priority_boost]"
+                                           value="{{ $requirement?->priority_boost ?? 10 }}"
+                                           min="0"
+                                           max="100"
+                                           class="block w-full border-gray-300 rounded text-sm py-1">
+                                    <p class="text-[10px] text-gray-500 mt-0.5">Points added to bay priority</p>
+                                </div>
                             </div>
-                        </div>
-                    @endforeach
-                </div>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="text-sm text-gray-500">
+                        No equipment types configured.
+                        <a href="{{ route('app.equipment-types.create') }}" class="text-blue-600 hover:underline">Create equipment types</a> to configure requirements.
+                    </p>
+                @endif
             </div>
-        </div>
-
-        {{-- Custom Equipment --}}
-        <div class="bg-white shadow rounded-lg p-6">
-            <h2 class="text-lg font-bold text-gray-900 mb-4 border-b pb-2">➕ Custom Equipment</h2>
-
-            <p class="text-sm text-gray-600 mb-4">
-                Custom equipment types from existing bay configurations will appear here automatically when bays are assigned equipment in the Bay management section.
-            </p>
-
-            {{-- Display any custom equipment not in the standard list --}}
-            @php
-                $customEquipment = $requirements->filter(function($req) use ($equipmentTypes) {
-                    return !array_key_exists($req->equipment_type, $equipmentTypes);
-                });
-            @endphp
-
-            @if($customEquipment->count() > 0)
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    @foreach($customEquipment as $requirement)
-                        <div class="border rounded-lg p-4 hover:border-blue-300 transition bg-yellow-50 border-yellow-300">
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="font-semibold text-gray-800">{{ ucwords(str_replace('_', ' ', $requirement->equipment_type)) }}</h3>
-                                <span class="text-xs bg-yellow-200 px-2 py-0.5 rounded">Custom</span>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="flex items-center">
-                                    <input type="checkbox"
-                                           name="equipment[{{ $requirement->equipment_type }}][required]"
-                                           value="1"
-                                           @checked($requirement->is_required)
-                                           class="mr-2 h-4 w-4">
-                                    <span class="text-sm font-medium">Required for this booking type</span>
-                                </label>
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Priority Boost (0-100)</label>
-                                <input type="number"
-                                       name="equipment[{{ $requirement->equipment_type }}][priority_boost]"
-                                       value="{{ $requirement->priority_boost }}"
-                                       min="0"
-                                       max="100"
-                                       class="block w-full border-gray-300 rounded text-sm py-1">
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            @else
-                <p class="text-sm text-gray-500 italic">No custom equipment configured yet.</p>
-            @endif
         </div>
 
         {{-- Submit Button --}}

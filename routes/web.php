@@ -270,6 +270,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/tipping-workflow/{booking}/move-trailer', [\App\Http\Controllers\Admin\TippingWorkflowController::class, 'moveTrailer'])->name('tipping-workflow.move-trailer');
         
         // ──── System Management ────
+        Route::resource('equipment-types', \App\Http\Controllers\Admin\EquipmentTypeController::class);
         Route::resource('booking-types', BookingTypeController::class);
         Route::get('/booking-types/{bookingType}/equipment', [\App\Http\Controllers\Admin\BookingTypeEquipmentController::class, 'edit'])->name('booking-types.equipment.edit');
         Route::post('/booking-types/{bookingType}/equipment', [\App\Http\Controllers\Admin\BookingTypeEquipmentController::class, 'update'])->name('booking-types.equipment.update');

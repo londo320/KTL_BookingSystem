@@ -34,6 +34,8 @@
         <thead>
           <tr>
             <th class="text-left px-2 py-1">Name</th>
+            <th class="text-left px-2 py-1">Duration</th>
+            <th class="text-left px-2 py-1">Available Times</th>
             <th class="text-left px-2 py-1">Actions</th>
           </tr>
         </thead>
@@ -41,6 +43,12 @@
           @forelse($types as $type)
             <tr class="border-t">
               <td class="px-2 py-1">{{ $type->name }}</td>
+              <td class="px-2 py-1 text-gray-600">{{ $type->duration_minutes ?? 60 }} min</td>
+              <td class="px-2 py-1">
+                <span class="text-xs px-2 py-1 rounded {{ ($type->booking_start_time || $type->booking_end_time) ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800' }}">
+                  {{ $type->time_availability }}
+                </span>
+              </td>
               <td class="px-2 py-1 space-x-2">
                 <a href="{{ route('app.booking-types.edit', $type) }}"
                    class="text-blue-600 hover:underline text-sm">Edit</a>
@@ -58,7 +66,7 @@
             </tr>
           @empty
             <tr>
-              <td colspan="2" class="text-center py-4 text-gray-500">
+              <td colspan="4" class="text-center py-4 text-gray-500">
                 No booking types found.
               </td>
             </tr>

@@ -72,8 +72,7 @@
           <tr>
             <th class="px-4 py-2 text-left">Depot</th>
             <th class="px-4 py-2 text-left">Date & Time</th>
-            <th class="px-4 py-2 text-left">Total Capacity</th>
-            <th class="px-4 py-2 text-left">Used / Available</th>
+            <th class="px-4 py-2 text-left">Capacity</th>
           </tr>
         </thead>
         <tbody>
@@ -82,11 +81,7 @@
               <td class="px-4 py-2">{{ $group['depot_name'] }}</td>
               <td class="px-4 py-2">
                 <div class="font-medium">{{ \Carbon\Carbon::parse($group['start_at'])->format('D d-M-Y') }}</div>
-                <div class="text-xs text-gray-600">{{ $group['time'] }} - {{ \Carbon\Carbon::parse($group['end_at'])->format('H:i') }}</div>
-              </td>
-              <td class="px-4 py-2">
-                <span class="text-lg font-semibold">{{ $group['total_capacity'] }}</span>
-                <span class="text-xs text-gray-500">slots</span>
+                <div class="text-xs text-gray-600">{{ $group['time'] }}</div>
               </td>
               <td class="px-4 py-2">
                 @php
@@ -102,14 +97,11 @@
                          style="width: {{ min($percentage, 100) }}%"></div>
                   </div>
                 </div>
-                <div class="text-xs text-gray-500 mt-1">
-                  {{ $available }} available
-                </div>
               </td>
             </tr>
           @empty
             <tr>
-              <td colspan="4" class="text-center py-4 text-gray-500">No slots found.</td>
+              <td colspan="3" class="text-center py-4 text-gray-500">No slots found.</td>
             </tr>
           @endforelse
         </tbody>
@@ -124,8 +116,7 @@
           <tr>
             <th class="px-4 py-2 text-left">Depot</th>
             <th class="px-4 py-2 text-left">Bay</th>
-            <th class="px-4 py-2 text-left">Start</th>
-            <th class="px-4 py-2 text-left">End</th>
+            <th class="px-4 py-2 text-left">Time</th>
             <th class="px-4 py-2 text-left">Capacity</th>
             <th class="px-4 py-2 text-left">Usage</th>
             <th class="px-4 py-2 text-left">Actions</th>
@@ -145,8 +136,7 @@
                   <span class="text-gray-400">No Bay</span>
                 @endif
               </td>
-              <td class="px-4 py-2">{{ \Carbon\Carbon::parse($slot->start_at)->format('d-M H:i') }}</td>
-              <td class="px-4 py-2">{{ \Carbon\Carbon::parse($slot->end_at)->format('d-M H:i') }}</td>
+              <td class="px-4 py-2">{{ \Carbon\Carbon::parse($slot->start_at)->format('D d-M H:i') }}</td>
               <td class="px-4 py-2">{{ $slot->capacity }}</td>
               <td class="px-4 py-2">
                 @php
@@ -175,7 +165,7 @@
             </tr>
           @empty
             <tr>
-              <td colspan="7" class="text-center py-4 text-gray-500">No slots found.</td>
+              <td colspan="6" class="text-center py-4 text-gray-500">No slots found.</td>
             </tr>
           @endforelse
         </tbody>
