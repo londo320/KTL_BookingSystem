@@ -1,0 +1,493 @@
+<nav class="bg-white border-b border-gray-100">
+    <!-- Primary Navigation Menu -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <div class="flex">
+                <!-- Logo -->
+                <div class="shrink-0 flex items-center">
+                    <a href="<?php echo e(route('app.dashboard')); ?>">
+                        <img src="<?php echo e(asset('images/ktl_logo.svg')); ?>"
+                             alt="KLT Logo"
+                             class="h-8 w-auto"
+                             onerror="this.style.display='none'; document.getElementById('fallback-logo').style.display='block';">
+                        <div id="fallback-logo" class="hidden w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
+                            <span class="text-white font-bold text-xs">KL</span>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Navigation Links -->
+                <div class="hidden space-x-4 sm:-my-px sm:ml-10 sm:flex sm:items-center">
+                    <!-- Dashboard -->
+                    <a href="<?php echo e(route('app.dashboard')); ?>"
+                       class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 text-sm font-medium <?php echo e(request()->routeIs('app.dashboard') ? 'border-indigo-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'); ?>">
+                        <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">📊</span>
+                        <span>Dashboard</span>
+                    </a>
+
+                    <!-- Bookings -->
+                    <?php if(auth()->user()->hasFunction('bookings.view') || auth()->user()->hasFunction('bookings.view-streamlined') || auth()->user()->hasFunction('slots.view')): ?>
+                        <div class="relative">
+                            <button onclick="toggleBookingsMenu()"
+                                    class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 border-transparent text-sm font-medium <?php echo e(request()->routeIs('app.bookings*') || request()->routeIs('app.slots.*') ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'); ?>">
+                                <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">📋</span>
+                                <span>Bookings</span>
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="bookings-menu" class="hidden absolute top-full left-0 mt-1 w-56 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                                <?php if(auth()->user()->hasFunction('bookings.view')): ?>
+                                    <a href="<?php echo e(route('app.bookings.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 <?php echo e(request()->routeIs('app.bookings.index') ? 'bg-indigo-50 text-indigo-600 font-medium' : ''); ?>">
+                                        📊 Bookings (Full View)
+                                        <div class="text-xs text-gray-500 mt-0.5">Complete booking management</div>
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('bookings.view-streamlined')): ?>
+                                    <a href="<?php echo e(route('app.bookings.streamlined')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 <?php echo e(request()->routeIs('app.bookings.streamlined') ? 'bg-indigo-50 text-indigo-600 font-medium' : ''); ?>">
+                                        ⚡ Bookings (Live View)
+                                        <div class="text-xs text-gray-500 mt-0.5">Streamlined with live updates</div>
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('bookings.view') || auth()->user()->hasFunction('bookings.create')): ?>
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <a href="<?php echo e(route('app.bookings.bulk-upload')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 <?php echo e(request()->routeIs('app.bookings.bulk-upload') ? 'bg-indigo-50 text-indigo-600 font-medium' : ''); ?>">
+                                        📤 Bulk PO Upload
+                                        <div class="text-xs text-gray-500 mt-0.5">Upload CSV to multiple bookings</div>
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('slots.view')): ?>
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <a href="<?php echo e(route('app.slots.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        📅 Slots
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Operations -->
+                    <?php if(auth()->user()->hasFunction('tipping-workflow.show') || auth()->user()->hasFunction('operations-control.view') || auth()->user()->hasFunction('queue-management.view') || auth()->user()->hasFunction('tipping-bays.view') || auth()->user()->hasFunction('depot-map.view')): ?>
+                        <div class="relative">
+                            <button onclick="toggleOperationsMenu()"
+                                    class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 border-transparent text-sm font-medium <?php echo e(request()->routeIs('app.tipping-*') || request()->routeIs('app.operations-*') || request()->routeIs('app.queue-*') || request()->routeIs('app.depot-map.*') ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'); ?>">
+                                <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">🚛</span>
+                                <span>Operations</span>
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="operations-menu" class="hidden absolute top-full left-0 mt-1 w-56 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                                <?php if(auth()->user()->hasFunction('depot-map.view')): ?>
+                                    <a href="<?php echo e(route('app.depot-map.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        🗺️ Depot Map
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('tipping-workflow.show')): ?>
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase">Tipping</div>
+                                    <a href="<?php echo e(route('app.tipping-workflow.dashboard')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        📊 Tipping Dashboard
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('tipping-locations.view')): ?>
+                                    <a href="<?php echo e(route('app.tipping-locations.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        📍 Drop Locations
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('tipping-bays.view')): ?>
+                                    <a href="<?php echo e(route('app.tipping-bays.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        🚛 Tipping Bays
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('queue-management.view')): ?>
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase">Site Control</div>
+                                    <a href="<?php echo e(route('app.queue-management')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        ⚡ Queue Management
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('operations-control.view')): ?>
+                                    <a href="<?php echo e(route('app.operations-control')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        🎯 Operations Control
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('trailer-operations-dashboard.view')): ?>
+                                    <a href="<?php echo e(route('app.trailer-operations-dashboard')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        🚛 Trailer Operations
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('empty-unit-collection.view')): ?>
+                                    <a href="<?php echo e(route('app.empty-unit-collection')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        📦 Empty Unit Collection
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('factory-bookings.view')): ?>
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <a href="<?php echo e(route('app.factory-bookings.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        🏭 Factory Inbound
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Management -->
+                    <?php if(auth()->user()->hasFunction('customers.view') || auth()->user()->hasFunction('carriers.view') || auth()->user()->hasFunction('users.view') || auth()->user()->hasFunction('custom-roles.view') || auth()->user()->hasFunction('customer-behavior.view')): ?>
+                        <div class="relative">
+                            <button onclick="toggleManagementMenu()"
+                                    class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 border-transparent text-sm font-medium <?php echo e(request()->routeIs('app.customers.*') || request()->routeIs('app.carriers.*') || request()->routeIs('app.users.*') || request()->routeIs('app.custom-roles.*') || request()->routeIs('app.customer-behavior.*') ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'); ?>">
+                                <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">👥</span>
+                                <span>Management</span>
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="management-menu" class="hidden absolute top-full left-0 mt-1 w-56 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                                <?php if(auth()->user()->hasFunction('customers.view')): ?>
+                                    <a href="<?php echo e(route('app.customers.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        🏭 Customers
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('customer-behavior.view')): ?>
+                                    <a href="<?php echo e(route('app.customer-behavior.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        📈 Customer Analysis
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('carriers.view')): ?>
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <a href="<?php echo e(route('app.carriers.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        🚚 Carriers
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('users.view')): ?>
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <a href="<?php echo e(route('app.users.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        👤 Users
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('custom-roles.view')): ?>
+                                    <a href="<?php echo e(route('app.custom-roles.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        🏷️ Custom Roles
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Configuration -->
+                    <?php if(auth()->user()->hasFunction('depots.view') || auth()->user()->hasFunction('products.view') || auth()->user()->hasFunction('slot-templates.view') || auth()->user()->hasFunction('booking-types.view') || auth()->user()->hasFunction('pallet-types.view') || auth()->user()->hasFunction('trailer-types.view') || auth()->user()->hasFunction('settings.manage')): ?>
+                        <div class="relative">
+                            <button onclick="toggleConfigMenu()"
+                                    class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">⚙️</span>
+                                <span>Configuration</span>
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="config-menu" class="hidden absolute top-full left-0 mt-1 w-56 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                                <?php if(auth()->user()->hasFunction('depots.view')): ?>
+                                    <a href="<?php echo e(route('app.depots.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        🏢 Depots
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('products.view')): ?>
+                                    <a href="<?php echo e(route('app.products.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        📦 Products
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('slot-templates.view')): ?>
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase">Booking Setup</div>
+                                    <a href="<?php echo e(route('app.slot-templates.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        📋 Slot Templates
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('booking-types.view')): ?>
+                                    <a href="<?php echo e(route('app.booking-types.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        📝 Booking Types
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('pallet-types.view')): ?>
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase">Equipment Types</div>
+                                    <a href="<?php echo e(route('app.settings.pallet-types')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        📦 Pallet Types
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('trailer-types.view')): ?>
+                                    <a href="<?php echo e(route('app.trailer-types.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        🚛 Trailer Types
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('settings.manage')): ?>
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase">System</div>
+                                    <a href="<?php echo e(route('app.settings.dashboard')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        🛠️ System Settings
+                                    </a>
+                                    <a href="<?php echo e(route('app.settings.factory-tipping-targets')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        🏭 Factory Tipping Targets
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Reports -->
+                    <?php if(auth()->user()->hasFunction('trailer-location-report.view') || auth()->user()->hasFunction('bookings.export.pdf') || auth()->user()->hasFunction('slot-usage.view')): ?>
+                        <div class="relative">
+                            <button onclick="toggleReportsMenu()"
+                                    class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">📊</span>
+                                <span>Reports</span>
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="reports-menu" class="hidden absolute top-full left-0 mt-1 w-56 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                                <?php if(auth()->user()->hasFunction('trailer-location-report.view')): ?>
+                                    <a href="<?php echo e(route('app.trailer-location-report')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        📍 Trailer Location Report
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('bookings.export.pdf')): ?>
+                                    <a href="<?php echo e(route('app.bookings.index', ['export' => 'pdf'])); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        📄 Booking Report
+                                    </a>
+                                <?php endif; ?>
+                                <?php if(auth()->user()->hasFunction('slot-usage.view')): ?>
+                                    <a href="<?php echo e(route('app.slot-usage.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        📈 Slot Usage Analytics
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Outbound (if enabled) -->
+                    <?php if(\App\Models\Setting::get('outbound_module_enabled', false)): ?>
+                        <div class="relative">
+                            <button onclick="toggleOutboundMenu()"
+                                    class="inline-flex items-center gap-2 px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                <span class="inline-block align-middle" style="line-height: 1; vertical-align: middle;">📦</span>
+                                <span>Outbound</span>
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="outbound-menu" class="hidden absolute top-full left-0 mt-1 w-56 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                                <div class="px-4 py-2 text-xs font-semibold text-indigo-400 uppercase border-b border-gray-100">
+                                    🧪 Beta - Testing Phase
+                                </div>
+                                <a href="<?php echo e(route('outbound.dashboard')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    📊 Outbound Dashboard
+                                    <div class="text-xs text-gray-500 mt-0.5">Overview of delivery operations</div>
+                                </a>
+                                <a href="<?php echo e(route('outbound.loads.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    📦 Load Management
+                                    <div class="text-xs text-gray-500 mt-0.5">Create and manage delivery loads</div>
+                                </a>
+                                <a href="<?php echo e(route('outbound.arrivals.dashboard')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    🚛 Driver Arrivals
+                                    <div class="text-xs text-gray-500 mt-0.5">Register loads when drivers arrive</div>
+                                </a>
+                                <a href="<?php echo e(route('outbound.imports.dashboard')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    📁 WMS File Imports
+                                    <div class="text-xs text-gray-500 mt-0.5">Upload and process WMS files</div>
+                                </a>
+                                <a href="<?php echo e(route('outbound.addresses.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    📍 Customer Addresses
+                                    <div class="text-xs text-gray-500 mt-0.5">Manage delivery addresses</div>
+                                </a>
+                                <div class="border-t border-gray-100 my-1"></div>
+                                <div class="px-4 py-2">
+                                    <div class="text-xs text-gray-500">⚠️ Testing module - Safe to explore</div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Right Side Navigation -->
+            <div class="hidden sm:flex sm:items-center sm:ml-6">
+                <!-- User Dropdown -->
+                <div class="relative">
+                    <button onclick="toggleUserMenu()"
+                            class="flex items-center px-3 py-2 text-sm font-medium text-gray-500 hover:text-gray-700">
+                        <?php echo e(Auth::user()->name); ?>
+
+                        <?php if(Auth::user()->depot_id): ?>
+                            <span class="ml-1 text-xs text-gray-400">
+                                (<?php echo e(Auth::user()->defaultDepot->name); ?>)
+                            </span>
+                        <?php endif; ?>
+                        <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="user-menu" class="hidden absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                        <a href="<?php echo e(route('profile.edit')); ?>"
+                           class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            👤 Edit Profile
+                        </a>
+
+                        
+                        <?php if(!app()->isProduction()): ?>
+                            <div class="border-t border-gray-100"></div>
+                            <?php if(session('original_admin_id')): ?>
+                                <form method="POST" action="<?php echo e(route('switch-back')); ?>">
+                                    <?php echo csrf_field(); ?>
+                                    <button type="submit" class="w-full text-left px-4 py-2 text-sm text-orange-600 hover:bg-orange-50 font-semibold">
+                                        🔄 Switch Back to Admin
+                                    </button>
+                                </form>
+                            <?php else: ?>
+                                <div class="px-4 py-2">
+                                    <select onchange="switchUser(this.value)" class="w-full text-sm border border-gray-300 rounded px-2 py-1 bg-white">
+                                        <option value="">🔄 Switch User (Testing)</option>
+                                        <?php $__currentLoopData = \App\Models\User::with('roles')->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $user): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <option value="<?php echo e($user->id); ?>">
+                                                <?php echo e($user->name); ?> (<?php echo e($user->roles->pluck('name')->join(', ') ?: 'No Role'); ?>)
+                                            </option>
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                    </select>
+                                </div>
+                            <?php endif; ?>
+                        <?php endif; ?>
+
+                        <div class="border-t border-gray-100">
+                            <form method="POST" action="<?php echo e(route('logout')); ?>">
+                                <?php echo csrf_field(); ?>
+                                <button type="submit"
+                                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    🚪 Logout
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile menu button -->
+            <div class="-mr-2 flex items-center sm:hidden">
+                <button onclick="toggleMobileMenu()"
+                        class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
+                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Navigation Menu -->
+    <div id="mobile-menu" class="hidden sm:hidden">
+        <div class="pt-2 pb-3 space-y-1">
+            <a href="<?php echo e(route('app.dashboard')); ?>"
+               class="block pl-3 pr-4 py-2 text-base font-medium <?php echo e(request()->routeIs('app.dashboard') ? 'text-indigo-700 border-l-4 border-indigo-500 bg-indigo-50' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'); ?>">
+                📊 Dashboard
+            </a>
+
+            <?php if(auth()->user()->hasFunction('bookings.view')): ?>
+                <a href="<?php echo e(route('app.bookings.index')); ?>"
+                   class="block pl-3 pr-4 py-2 text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50">
+                    📋 Bookings
+                </a>
+            <?php endif; ?>
+
+            <?php if(auth()->user()->hasFunction('slots.view')): ?>
+                <a href="<?php echo e(route('app.slots.index')); ?>"
+                   class="block pl-3 pr-4 py-2 text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50">
+                    📅 Slots
+                </a>
+            <?php endif; ?>
+        </div>
+    </div>
+</nav>
+
+<script>
+function switchUser(userId) {
+    if (userId) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/switch-user/${userId}`;
+
+        const token = document.createElement('input');
+        token.type = 'hidden';
+        token.name = '_token';
+        token.value = '<?php echo e(csrf_token()); ?>';
+
+        form.appendChild(token);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function toggleBookingsMenu() {
+    const menu = document.getElementById('bookings-menu');
+    menu.classList.toggle('hidden');
+    closeOtherMenus('bookings-menu');
+}
+
+function toggleOperationsMenu() {
+    const menu = document.getElementById('operations-menu');
+    menu.classList.toggle('hidden');
+    closeOtherMenus('operations-menu');
+}
+
+function toggleManagementMenu() {
+    const menu = document.getElementById('management-menu');
+    menu.classList.toggle('hidden');
+    closeOtherMenus('management-menu');
+}
+
+function toggleReportsMenu() {
+    const menu = document.getElementById('reports-menu');
+    menu.classList.toggle('hidden');
+    closeOtherMenus('reports-menu');
+}
+
+function toggleConfigMenu() {
+    const menu = document.getElementById('config-menu');
+    menu.classList.toggle('hidden');
+    closeOtherMenus('config-menu');
+}
+
+function toggleUserMenu() {
+    const menu = document.getElementById('user-menu');
+    menu.classList.toggle('hidden');
+    closeOtherMenus('user-menu');
+}
+
+function toggleOutboundMenu() {
+    const menu = document.getElementById('outbound-menu');
+    menu.classList.toggle('hidden');
+    closeOtherMenus('outbound-menu');
+}
+
+function toggleMobileMenu() {
+    const menu = document.getElementById('mobile-menu');
+    menu.classList.toggle('hidden');
+}
+
+function closeOtherMenus(exceptMenuId) {
+    const menuIds = ['bookings-menu', 'operations-menu', 'management-menu', 'reports-menu', 'config-menu', 'user-menu', 'outbound-menu'];
+    menuIds.forEach(menuId => {
+        if (menuId !== exceptMenuId) {
+            const menu = document.getElementById(menuId);
+            if (menu) menu.classList.add('hidden');
+        }
+    });
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('.relative') && !event.target.closest('button')) {
+        closeOtherMenus(null);
+    }
+});
+</script>
+<?php /**PATH /Users/londo/Herd/test/resources/views/layouts/dynamic-nav.blade.php ENDPATH**/ ?>

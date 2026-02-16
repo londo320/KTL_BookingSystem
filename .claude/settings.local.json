@@ -6,7 +6,12 @@
       "Bash(git push:*)",
       "Read(///**)",
       "Read(//Users/londo/Library/Application Support/Herd/config/php/84/**)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(pip3 install:*)",
+      "mcp__ide__executeCode",
+      "Bash(php:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)"
     ],
     "deny": [],
     "ask": []
