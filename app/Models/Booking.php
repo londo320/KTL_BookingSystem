@@ -55,6 +55,7 @@ class Booking extends Model
         'tipping_status',
         'in_parking_at',
         'moved_to_bay_at',
+        'trailer_dropped_at',
         'tipping_started_at',
         'tipping_completed_at',
         'trailer_departed_at',
@@ -88,6 +89,7 @@ class Booking extends Model
         // Tipping workflow casts
         'in_parking_at' => 'datetime',
         'moved_to_bay_at' => 'datetime',
+        'trailer_dropped_at' => 'datetime',
         'tipping_started_at' => 'datetime',
         'tipping_completed_at' => 'datetime',
         'trailer_departed_at' => 'datetime',

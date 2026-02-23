@@ -160,6 +160,18 @@ docker exec -w /var/www/html "$APP_CONTAINER" php artisan storage:link || echo "
 echo "🚀 Running database migrations..."
 docker exec -w /var/www/html "$APP_CONTAINER" php artisan migrate --force
 
+echo "⏰ Setting up Laravel scheduler (cron jobs)..."
+# Add Laravel scheduler to crontab
+docker exec "$APP_CONTAINER" bash -c 'apt-get install -y -qq cron'
+docker exec "$APP_CONTAINER" bash -c 'service cron start'
+docker exec "$APP_CONTAINER" bash -c 'echo "* * * * * cd /var/www/html && php artisan schedule:run >> /dev/null 2>&1" | crontab -'
+docker exec "$APP_CONTAINER" bash -c 'crontab -l' || echo "Warning: Could not list crontab"
+echo "✅ Laravel scheduler configured - runs every minute"
+echo "   • Auto-release slots: Every 15 minutes"
+echo "   • Bay sync: Every 30 minutes"
+echo "   • Slot generation: Daily at 00:15"
+echo "   • Booking cleanup: Every 15 minutes"
+
 echo "🚀 Optimizing Laravel (after permission fixes)..."
 docker exec -w /var/www/html "$APP_CONTAINER" php artisan config:cache
 docker exec -w /var/www/html "$APP_CONTAINER" php artisan route:cache

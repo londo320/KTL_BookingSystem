@@ -63,7 +63,7 @@ class Setting extends Model
     /**
      * Get factory vehicle tipping time target in minutes for a specific depot and customer
      */
-    public static function getFactoryTippingTimeTarget(int $depotId, int $customerId = null): int
+    public static function getFactoryTippingTimeTarget(int $depotId, ?int $customerId = null): int
     {
         // Try to get customer-specific setting first if customer provided
         if ($customerId) {
@@ -86,7 +86,7 @@ class Setting extends Model
     /**
      * Set factory vehicle tipping time target in minutes
      */
-    public static function setFactoryTippingTimeTarget(int $depotId, int $minutes, int $customerId = null): void
+    public static function setFactoryTippingTimeTarget(int $depotId, int $minutes, ?int $customerId = null): void
     {
         if ($customerId) {
             static::set("factory_tipping_target_depot_{$depotId}_customer_{$customerId}", $minutes, 'integer');

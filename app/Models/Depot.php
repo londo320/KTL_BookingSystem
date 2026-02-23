@@ -79,7 +79,7 @@ class Depot extends Model
     /**
      * Get factory vehicle tipping time target in minutes for this depot and optional customer
      */
-    public function getFactoryTippingTimeTarget(int $customerId = null): int
+    public function getFactoryTippingTimeTarget(?int $customerId = null): int
     {
         return \App\Models\Setting::getFactoryTippingTimeTarget($this->id, $customerId);
     }
@@ -87,7 +87,7 @@ class Depot extends Model
     /**
      * Set factory vehicle tipping time target in minutes for this depot
      */
-    public function setFactoryTippingTimeTarget(int $minutes, int $customerId = null): void
+    public function setFactoryTippingTimeTarget(int $minutes, ?int $customerId = null): void
     {
         \App\Models\Setting::setFactoryTippingTimeTarget($this->id, $minutes, $customerId);
     }

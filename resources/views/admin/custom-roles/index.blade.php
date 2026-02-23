@@ -21,11 +21,15 @@
                 <p class="text-sm text-gray-600 mt-1">Create and manage dynamic roles with specific function permissions</p>
             </div>
             <div class="flex gap-2">
-                <a href="{{ route('app.custom-roles.create-predefined') }}" 
-                   class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">
-                    📋 Create Predefined Roles
-                </a>
-                <a href="{{ route('app.custom-roles.create') }}" 
+                <form method="POST" action="{{ route('app.custom-roles.create-predefined') }}" class="inline">
+                    @csrf
+                    <button type="submit"
+                            class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                            onclick="return confirm('This will create 7 predefined roles with appropriate functions. Continue?')">
+                        📋 Create Predefined Roles
+                    </button>
+                </form>
+                <a href="{{ route('app.custom-roles.create') }}"
                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                     ➕ Create Custom Role
                 </a>

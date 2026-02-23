@@ -69,83 +69,138 @@ class CustomRole extends Model
     public static function createPredefinedRoles(): void
     {
         $roles = [
+            // ===== WAREHOUSE ROLES =====
             [
-                'name' => 'warehouse_operator',
-                'display_name' => 'Warehouse Operator',
-                'description' => 'Basic warehouse operations - view bookings, manage arrivals/departures',
+                'name' => 'warehouse_operative',
+                'display_name' => 'Warehouse Operative',
+                'description' => 'Day-to-day warehouse operations - check-in vehicles, assign bays, update statuses',
+                'is_active' => true,
                 'function_keys' => [
                     'dashboard.warehouse',
                     'bookings.view',
+                    'bookings.show',
                     'bookings.arrival',
                     'bookings.departure',
                     'bookings.assign-bay',
+                    'bookings.clear-bay',
                     'tipping-workflow.dashboard',
-                ]
-            ],
-            [
-                'name' => 'warehouse_supervisor',
-                'display_name' => 'Warehouse Supervisor',
-                'description' => 'Extended warehouse operations - create/edit bookings, manage workflows',
-                'function_keys' => [
-                    'dashboard.warehouse',
-                    'bookings.view',
-                    'bookings.create',
-                    'bookings.edit',
-                    'bookings.arrival',
-                    'bookings.departure',
-                    'bookings.assign-bay',
-                    'bookings.transfer-bay',
-                    'factory-bookings.view',
-                    'factory-bookings.create',
-                    'tipping-workflow.dashboard',
-                    'warehouse.trailer-report',
-                    'operations.assign-drop-zone',
-                    'operations.shunt-to-bay',
+                    'tipping-workflow.show',
                 ]
             ],
             [
                 'name' => 'warehouse_manager',
                 'display_name' => 'Warehouse Manager',
-                'description' => 'Full warehouse management - all operations plus reporting and export',
+                'description' => 'Full warehouse management - all operations, bookings, reporting',
+                'is_active' => true,
                 'function_keys' => [
                     'dashboard.warehouse',
                     'bookings.view',
                     'bookings.create',
                     'bookings.edit',
                     'bookings.delete',
+                    'bookings.show',
                     'bookings.arrival',
                     'bookings.departure',
                     'bookings.assign-bay',
                     'bookings.transfer-bay',
+                    'bookings.clear-bay',
                     'bookings.export.pdf',
                     'bookings.export.csv',
-                    'bookings.export.excel',
                     'factory-bookings.view',
                     'factory-bookings.create',
                     'factory-bookings.edit',
                     'tipping-workflow.dashboard',
-                    'warehouse.trailer-report',
-                    'warehouse.tipping-workflow',
+                    'tipping-workflow.show',
                     'operations.assign-drop-zone',
                     'operations.shunt-to-bay',
-                    'operations.start-tipping',
-                    'operations.complete-tipping',
-                    'customer-behavior.view',
                 ]
             ],
+
+            // ===== FORKLIFT DRIVER =====
             [
-                'name' => 'reports_viewer',
-                'display_name' => 'Reports Viewer',
-                'description' => 'Read-only access to reports and analytics',
+                'name' => 'forklift_driver',
+                'display_name' => 'Forklift Driver',
+                'description' => 'Equipment operator - view assigned tasks, update tipping progress',
+                'is_active' => true,
                 'function_keys' => [
                     'dashboard.warehouse',
                     'bookings.view',
-                    'warehouse.trailer-report',
+                    'bookings.show',
+                    'tipping-workflow.dashboard',
+                    'tipping-workflow.show',
+                    'tipping-workflow.start-tipping',
+                    'tipping-workflow.complete-tipping',
+                    'operations.start-tipping',
+                    'operations.complete-tipping',
+                ]
+            ],
+
+            // ===== YARD CONTROLLER =====
+            [
+                'name' => 'yard_controller',
+                'display_name' => 'Yard Controller',
+                'description' => 'Manages vehicle movements, parking assignments, bay allocation',
+                'is_active' => true,
+                'function_keys' => [
+                    'dashboard.warehouse',
+                    'bookings.view',
+                    'bookings.show',
+                    'bookings.assign-bay',
+                    'bookings.transfer-bay',
+                    'bookings.move-to-waiting',
+                    'tipping-workflow.dashboard',
+                    'tipping-workflow.show',
+                    'tipping-workflow.move-to-location',
+                    'operations.assign-drop-zone',
+                ]
+            ],
+
+            // ===== GATE SECURITY =====
+            [
+                'name' => 'gate_security',
+                'display_name' => 'Gate Security',
+                'description' => 'Vehicle check-in/out at gate, verify bookings',
+                'is_active' => true,
+                'function_keys' => [
+                    'dashboard.warehouse',
+                    'bookings.view',
+                    'bookings.show',
+                    'bookings.arrival',
+                    'bookings.arrival.form',
+                ]
+            ],
+
+            // ===== VIEWER =====
+            [
+                'name' => 'viewer',
+                'display_name' => 'Reports Viewer',
+                'description' => 'Read-only access to bookings, reports, and analytics',
+                'is_active' => true,
+                'function_keys' => [
+                    'dashboard.view',
+                    'dashboard.warehouse',
+                    'bookings.view',
+                    'bookings.show',
                     'bookings.export.pdf',
                     'bookings.export.csv',
-                    'bookings.export.excel',
-                    'customer-behavior.view',
                     'factory-bookings.view',
+                ]
+            ],
+
+            // ===== CUSTOMER ADMIN =====
+            [
+                'name' => 'customer_admin',
+                'display_name' => 'Customer Admin',
+                'description' => 'Company admin - manage users and all company bookings',
+                'is_active' => true,
+                'function_keys' => [
+                    'customer.dashboard',
+                    'bookings.view',
+                    'bookings.create',
+                    'bookings.edit',
+                    'bookings.show',
+                    'bookings.cancel',
+                    'bookings.export.pdf',
                 ]
             ],
         ];

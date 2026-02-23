@@ -246,9 +246,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/users/{user}/switch-to', [UserSwitchController::class, 'switchTo'])->name('users.switch-to');
         
         // ──── Custom Roles ────
+        Route::get('/custom-roles/create-predefined', [\App\Http\Controllers\Admin\CustomRoleController::class, 'createPredefined'])->name('custom-roles.create-predefined');
         Route::resource('custom-roles', \App\Http\Controllers\Admin\CustomRoleController::class);
         Route::post('/custom-roles/{customRole}/toggle', [\App\Http\Controllers\Admin\CustomRoleController::class, 'toggle'])->name('custom-roles.toggle');
-        Route::post('/custom-roles/create-predefined', [\App\Http\Controllers\Admin\CustomRoleController::class, 'createPredefined'])->name('custom-roles.create-predefined');
         
         // ──── Reports & Analytics ────
         Route::get('/trailer-report', [WarehouseController::class, 'trailerReport'])->name('trailer-report');
@@ -523,7 +523,7 @@ Route::middleware('auth')->group(function () {
 
         // Custom role management actions
         Route::post('custom-roles/{customRole}/toggle', [\App\Http\Controllers\Admin\CustomRoleController::class, 'toggle'])->name('custom-roles.toggle');
-        Route::post('custom-roles/create-predefined', [\App\Http\Controllers\Admin\CustomRoleController::class, 'createPredefined'])->name('custom-roles.create-predefined');
+        Route::get('custom-roles/create-predefined', [\App\Http\Controllers\Admin\CustomRoleController::class, 'createPredefined'])->name('custom-roles.create-predefined');
 
         // Additional tipping location actions  
         Route::patch('tipping-locations/{tippingLocation}/toggle-active', [\App\Http\Controllers\Admin\TippingLocationController::class, 'toggleActive'])->name('tipping-locations.toggle-active');

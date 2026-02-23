@@ -9,13 +9,13 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // Laravel 12 Scheduling Configuration
-// Generate slots daily at 00:15 (12:15 AM) with 30 days ahead
-Schedule::command('slots:generate', ['--days' => 30])
+// Generate slots daily at 00:15 (12:15 AM) with 14 days ahead
+Schedule::command('slots:generate', ['--days' => 14])
     ->dailyAt('00:15')
     ->withoutOverlapping()
     ->timezone('Europe/London')
     ->appendOutputTo(storage_path('logs/slots_generate.log'))
-    ->description('Auto-generate slots from templates for the next 30 days');
+    ->description('Auto-generate slots from templates for the next 14 days');
 
 // Auto-release slots every 15 minutes based on rules
 Schedule::command('app:auto-release-slots')
