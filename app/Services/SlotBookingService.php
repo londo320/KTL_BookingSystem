@@ -132,6 +132,14 @@ class SlotBookingService
             throw new \Exception($availability['message']);
         }
 
+        // Auto-assign bay if needed (when slot doesn't have a specific bay)
+        if (!isset($bookingData['tipping_bay_id']) || $bookingData['tipping_bay_id'] === null) {
+            $assignedBay = $this->autoAssignBay($primarySlot, $bookingTypeId, $customerId, $availability['slots']);
+            if ($assignedBay) {
+                $bookingData['tipping_bay_id'] = $assignedBay->id;
+            }
+        }
+
         // Create the booking
         $booking = Booking::create($bookingData);
 
@@ -145,6 +153,57 @@ class SlotBookingService
         }
 
         return $booking;
+    }
+
+    /**
+     * Auto-assign a bay for a booking based on equipment requirements and availability
+     *
+     * @param Slot $primarySlot
+     * @param int $bookingTypeId
+     * @param int|null $customerId
+     * @param Collection $slotsToOccupy All slots that will be occupied by this booking
+     * @return \App\Models\TippingBay|null
+     */
+    protected function autoAssignBay(Slot $primarySlot, int $bookingTypeId, ?int $customerId, $slotsToOccupy)
+    {
+        // Get required equipment for this booking type
+        $requiredEquipment = \App\Models\BookingTypeEquipmentRequirement::getRequiredEquipment($bookingTypeId);
+
+        // Get available bays for this customer with required equipment
+        $availableBays = \App\Models\CustomerBayAssignment::getAvailableBaysForCustomer(
+            $customerId,
+            $primarySlot->depot_id,
+            $requiredEquipment
+        );
+
+        if ($availableBays->isEmpty()) {
+            return null;
+        }
+
+        // Find a bay that is available for ALL the slots we need to occupy
+        foreach ($availableBays as $bay) {
+            $bayAvailableForAllSlots = true;
+
+            foreach ($slotsToOccupy as $slot) {
+                // Check if this bay has capacity during this slot time
+                $conflictingBookings = \App\Models\Booking::where('tipping_bay_id', $bay->id)
+                    ->whereHas('occupiedSlots', function ($q) use ($slot) {
+                        $q->where('slots.id', $slot->id);
+                    })
+                    ->count();
+
+                if ($conflictingBookings > 0) {
+                    $bayAvailableForAllSlots = false;
+                    break;
+                }
+            }
+
+            if ($bayAvailableForAllSlots) {
+                return $bay;
+            }
+        }
+
+        return null;
     }
 
     /**

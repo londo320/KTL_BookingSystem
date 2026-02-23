@@ -105,14 +105,18 @@ class SlotAvailabilityService
                     implode(', ', $requiredEquipment)
                 );
             } else {
-                // Check if THIS slot's bay is in the list of available bays
-                $availableBayIds = $availableBays->pluck('id')->toArray();
-                if (!in_array($slot->tipping_bay_id, $availableBayIds)) {
-                    $errors[] = sprintf(
-                        'This bay does not have required equipment: %s',
-                        implode(', ', $requiredEquipment)
-                    );
+                // If slot has a specific bay assigned, check if it has the equipment
+                if ($slot->tipping_bay_id !== null) {
+                    $availableBayIds = $availableBays->pluck('id')->toArray();
+                    if (!in_array($slot->tipping_bay_id, $availableBayIds)) {
+                        $errors[] = sprintf(
+                            'This bay does not have required equipment: %s',
+                            implode(', ', $requiredEquipment)
+                        );
+                    }
                 }
+                // If slot has no bay assigned (depot-wide slot), we just need at least one bay available
+                // Bay will be auto-assigned during booking creation
             }
         }
 

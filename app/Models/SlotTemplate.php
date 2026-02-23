@@ -10,6 +10,7 @@ class SlotTemplate extends Model
 
     protected $fillable = [
         'depot_id',
+        'booking_type_id',
         'day_of_week',        // integer 0 (Sunday) to 6
         'start_time',
         'end_time',
@@ -26,5 +27,10 @@ class SlotTemplate extends Model
     public function depot()
     {
         return $this->belongsTo(Depot::class);
+    }
+
+    public function bookingType()
+    {
+        return $this->belongsTo(BookingType::class);
     }
 }

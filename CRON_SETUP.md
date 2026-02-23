@@ -38,7 +38,7 @@ All tasks are configured in `routes/console.php`:
 
 | Task | Schedule | Description |
 |------|----------|-------------|
-| `slots:generate` | Daily at 00:15 | Generate slots for next 14 days from templates |
+| `slots:generate --days=14` | Daily at 00:15 | Generate slots for next 14 days from templates (configurable up to 30 days) |
 | `app:auto-release-slots` | Every 15 minutes | Release slots to public based on rules |
 | `bays:sync-occupancy` | Every 30 minutes | Sync bay occupancy status with active bookings |
 | `bookings:cleanup-incomplete` | Every 15 minutes | Delete incomplete bookings after 30 minutes |
@@ -73,8 +73,11 @@ php artisan app:auto-release-slots
 # Sync bay occupancy
 php artisan bays:sync-occupancy
 
-# Generate slots
+# Generate slots (default 14 days)
 php artisan slots:generate
+
+# Generate slots (custom days, e.g., 30 days)
+php artisan slots:generate --days=30
 
 # Cleanup incomplete bookings
 php artisan bookings:cleanup-incomplete --minutes=30

@@ -9,7 +9,8 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // Laravel 12 Scheduling Configuration
-// Generate slots daily at 00:15 (12:15 AM) with 14 days ahead
+// Generate slots daily at 00:15 (12:15 AM) with 14 days ahead from templates
+// Templates support time gaps (e.g., 06:00-13:00, then 16:00-20:00 with lunch break)
 Schedule::command('slots:generate', ['--days' => 14])
     ->dailyAt('00:15')
     ->withoutOverlapping()
