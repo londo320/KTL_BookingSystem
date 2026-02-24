@@ -54,9 +54,19 @@ class SlotAvailabilityService
             $errors[] = 'Booking time is outside allowed time window for this customer';
         }
 
-        // Check if slot is blocked or locked
+        // Check if slot is blocked
         if ($slot->is_blocked) {
             $errors[] = 'Slot is blocked';
+        }
+
+        // Check if slot is past cut-off time (locked_at)
+        if ($slot->locked_at && now()->greaterThan($slot->locked_at)) {
+            $errors[] = 'Booking cut-off time has passed for this slot';
+        }
+
+        // Check if slot is in the past
+        if ($slot->start_at->isPast()) {
+            $errors[] = 'Cannot book a slot in the past';
         }
 
         // Check if bay is active
