@@ -161,8 +161,9 @@ echo "🚀 Running database migrations..."
 docker exec -w /var/www/html "$APP_CONTAINER" php artisan migrate --force
 
 echo "⏰ Setting up Laravel scheduler (cron jobs)..."
-# Install cron
-docker exec "$APP_CONTAINER" bash -c 'apt-get install -y -qq cron' 2>&1 | grep -v "debconf: unable to initialize" || true
+# Install cron (update package list first to ensure availability)
+echo "📦 Installing cron package..."
+docker exec "$APP_CONTAINER" bash -c 'apt-get update -qq && apt-get install -y cron'
 
 # Add Laravel scheduler to crontab with logging
 docker exec "$APP_CONTAINER" bash -c 'echo "* * * * * cd /var/www/html && php artisan schedule:run >> /var/www/html/storage/logs/scheduler.log 2>&1" | crontab -'
