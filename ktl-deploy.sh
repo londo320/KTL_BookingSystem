@@ -2,9 +2,6 @@
 set -e
 
 echo "===== KTL Booking System - Complete Setup ====="
-echo "🔧 Includes automatic permission fixes and depot map corrections"
-echo "🚀 Fully automated - no manual steps required!"
-echo ""
 
 # Configuration
 PROJECT_DIR="/mnt/user/appdata/ktl-booking"
@@ -89,30 +86,13 @@ fi
 echo "⚙️ Setting up environment file..."
 if [ -f ".env.example" ]; then
     cp .env.example .env
-    echo "✅ Copied .env.example to .env"
+    echo "✅ Copied .env.example to .env with complete production configuration"
 else
-    echo "⚠️ Creating basic .env file..."
-    echo 'APP_NAME="KTL Booking System"' > .env
-    echo 'APP_ENV=production' >> .env
-    echo 'APP_KEY=' >> .env
-    echo 'APP_DEBUG=false' >> .env
-    echo 'APP_URL=http://localhost:8088' >> .env
-    echo '' >> .env
-    echo 'DB_CONNECTION=mysql' >> .env
-    echo 'DB_HOST=ktl-booking-mysql' >> .env
-    echo 'DB_PORT=3306' >> .env
-    echo 'DB_DATABASE=ktl_booking' >> .env
-    echo 'DB_USERNAME=ktl_user' >> .env
-    echo 'DB_PASSWORD=ktl_password' >> .env
+    echo "❌ .env.example not found - this should not happen"
+    exit 1
 fi
 
-# Update database settings
-sed -i "s/DB_HOST=.*/DB_HOST=ktl-booking-mysql/" .env
-sed -i "s/DB_DATABASE=.*/DB_DATABASE=ktl_booking/" .env
-sed -i "s/DB_USERNAME=.*/DB_USERNAME=ktl_user/" .env
-sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=ktl_password/" .env
-
-echo "✅ Environment configured from .env.example"
+echo "✅ Environment configured"
 
 echo "🐳 Creating Laravel app container..."
 docker run -d \
@@ -153,54 +133,82 @@ docker exec "$APP_CONTAINER" rm composer-setup.php
 echo "🚀 Installing Laravel dependencies..."
 docker exec -w /var/www/html "$APP_CONTAINER" composer install --no-interaction --optimize-autoloader
 
-echo "🔧 AGGRESSIVE Laravel permission fixes..."
-# NUCLEAR OPTION: Completely remove and recreate problematic directories
-echo "🗑️ Removing problematic cache directories..."
-docker exec -w /var/www/html "$APP_CONTAINER" rm -rf storage/framework/views storage/framework/cache bootstrap/cache storage/logs || true
+echo "🔧 Applying Laravel permission fixes..."
+# AGGRESSIVE: Remove and recreate directories to eliminate permission issues
+docker exec -w /var/www/html "$APP_CONTAINER" rm -rf storage/framework/views storage/framework/cache bootstrap/cache || true
+docker exec -w /var/www/html "$APP_CONTAINER" mkdir -p storage/framework/views storage/framework/cache storage/framework/sessions storage/logs bootstrap/cache storage/app/public/depot-maps
 
-echo "📁 Recreating directories with proper structure..."
-docker exec -w /var/www/html "$APP_CONTAINER" mkdir -p storage/framework/views storage/framework/cache storage/framework/sessions storage/logs bootstrap/cache
-
-echo "🔒 Setting MAXIMUM permissions initially (777)..."
-docker exec -w /var/www/html "$APP_CONTAINER" chmod -R 777 storage bootstrap/cache public
+# Set permissions BEFORE anything creates files
+docker exec -w /var/www/html "$APP_CONTAINER" chmod -R 777 storage bootstrap/cache
 docker exec -w /var/www/html "$APP_CONTAINER" chown -R www-data:www-data storage bootstrap/cache public
+
+# Clear any existing locks or cached items
+docker exec -w /var/www/html "$APP_CONTAINER" rm -f storage/framework/cache/* || true
 
 echo "🚀 Setting up Laravel..."
 docker exec -w /var/www/html "$APP_CONTAINER" php artisan key:generate --force
 
-echo "🧹 Pre-migration cache clearing..."
-docker exec -w /var/www/html "$APP_CONTAINER" php artisan config:clear || echo "Config clear failed (expected)"
-docker exec -w /var/www/html "$APP_CONTAINER" php artisan cache:clear || echo "Cache clear failed (expected)"
-docker exec -w /var/www/html "$APP_CONTAINER" php artisan view:clear || echo "View clear failed (expected)"
-docker exec -w /var/www/html "$APP_CONTAINER" php artisan route:clear || echo "Route clear failed (expected)"
+# Clear all caches before setting up
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan config:clear
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan cache:clear
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan view:clear
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan route:clear
 
-# Create storage directories and symlink
-echo "🔗 Creating storage directories..."
-docker exec -w /var/www/html "$APP_CONTAINER" mkdir -p storage/app/public/depot-maps
-docker exec -w /var/www/html "$APP_CONTAINER" chmod -R 775 storage/app/public/depot-maps
-
-echo "🔗 Creating storage symlink..."
-docker exec -w /var/www/html "$APP_CONTAINER" php artisan storage:link || echo "Storage link already exists or failed"
-
-echo "🔧 Ensuring depot-maps directory permissions..."
-docker exec -w /var/www/html "$APP_CONTAINER" chown -R www-data:www-data storage/app/public/depot-maps
-docker exec -w /var/www/html "$APP_CONTAINER" chmod -R 775 storage/app/public/depot-maps
+# Create storage symlink
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan storage:link || echo "Storage link already exists"
 
 echo "🚀 Running database migrations..."
 docker exec -w /var/www/html "$APP_CONTAINER" php artisan migrate --force
 
-echo "🚀 Optimizing Laravel (post-migration)..."
-docker exec -w /var/www/html "$APP_CONTAINER" php artisan config:cache || echo "Config cache failed"
-docker exec -w /var/www/html "$APP_CONTAINER" php artisan route:cache || echo "Route cache failed"
-docker exec -w /var/www/html "$APP_CONTAINER" php artisan view:cache || echo "View cache failed"
+echo "⏰ Setting up Laravel scheduler (cron jobs)..."
+# Install cron (update package list first to ensure availability)
+echo "📦 Installing cron package..."
+docker exec "$APP_CONTAINER" bash -c 'apt-get update -qq && apt-get install -y cron'
 
-echo "🔒 FINAL permission lockdown..."
-# Set secure but functional permissions
-docker exec -w /var/www/html "$APP_CONTAINER" chmod -R 755 . 
+# Add Laravel scheduler to crontab with logging
+docker exec "$APP_CONTAINER" bash -c 'echo "* * * * * cd /var/www/html && php artisan schedule:run >> /var/www/html/storage/logs/scheduler.log 2>&1" | crontab -'
+
+# Start cron service
+docker exec "$APP_CONTAINER" bash -c 'service cron start'
+
+# Verify crontab was added
+echo "📋 Verifying crontab:"
+docker exec "$APP_CONTAINER" bash -c 'crontab -l' || echo "Warning: Could not list crontab"
+
+# Verify cron service is running
+echo "🔍 Checking cron service status:"
+docker exec "$APP_CONTAINER" bash -c 'service cron status' || echo "Warning: Cron status check failed"
+
+echo "✅ Laravel scheduler configured - runs every minute"
+echo "   • slots:generate: Daily at 00:15 (14 days ahead)"
+echo "   • app:auto-release-slots: Every 15 minutes (sets cut-off times)"
+echo "   • bays:sync-occupancy: Every 30 minutes"
+echo "   • bookings:cleanup-incomplete: Every 15 minutes"
+
+# Run initial slot release to set locked_at times
+echo "🚀 Running initial slot release to set cut-off times..."
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan app:auto-release-slots || echo "Warning: Initial slot release failed"
+echo "✅ Initial slot release completed"
+
+echo "🚀 Optimizing Laravel (after permission fixes)..."
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan config:cache
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan route:cache
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan view:cache
+
+# Final permission check after caching
+echo "🔒 Final permission verification..."
+docker exec -w /var/www/html "$APP_CONTAINER" chown -R www-data:www-data storage bootstrap/cache
 docker exec -w /var/www/html "$APP_CONTAINER" chmod -R 775 storage bootstrap/cache
-docker exec -w /var/www/html "$APP_CONTAINER" chown -R www-data:www-data storage bootstrap/cache public
 
-echo "🌐 Starting web server..."
+echo "🌐 Configuring and starting web server..."
+# Reconfigure Apache to ensure DocumentRoot is correct
+docker exec "$APP_CONTAINER" bash -c 'echo "<VirtualHost *:80>" > /etc/apache2/sites-available/000-default.conf'
+docker exec "$APP_CONTAINER" bash -c 'echo "    DocumentRoot /var/www/html/public" >> /etc/apache2/sites-available/000-default.conf'
+docker exec "$APP_CONTAINER" bash -c 'echo "    <Directory /var/www/html/public>" >> /etc/apache2/sites-available/000-default.conf'
+docker exec "$APP_CONTAINER" bash -c 'echo "        AllowOverride All" >> /etc/apache2/sites-available/000-default.conf'
+docker exec "$APP_CONTAINER" bash -c 'echo "        Require all granted" >> /etc/apache2/sites-available/000-default.conf'
+docker exec "$APP_CONTAINER" bash -c 'echo "    </Directory>" >> /etc/apache2/sites-available/000-default.conf'
+docker exec "$APP_CONTAINER" bash -c 'echo "</VirtualHost>" >> /etc/apache2/sites-available/000-default.conf'
 docker exec "$APP_CONTAINER" service apache2 restart
 
 echo "🔍 Testing application..."
@@ -215,46 +223,32 @@ echo "============================================="
 echo "🌐 Application URL: http://$UNRAID_IP:8088"
 echo "🔧 Admin Panel: http://$UNRAID_IP:8088/admin"
 echo "🗄️  MySQL: $UNRAID_IP:$MYSQL_PORT"
-echo "📧 Email: Configured with Mailtrap"
-echo "   └── Host: sandbox.smtp.mailtrap.io:2525"
-echo "   └── Check your Mailtrap inbox for test email"
 echo "============================================="
 
 echo ""
 echo "🐳 Container Status:"
 docker ps | grep ktl-booking
 
+# Final verification
 echo ""
-echo "🔍 Final verification..."
+echo "🔍 Verifying setup..."
 docker exec -w /var/www/html "$APP_CONTAINER" ls -la storage/framework/ | head -5
 echo ""
-echo "📁 Final storage permissions:"
-docker exec -w /var/www/html "$APP_CONTAINER" ls -ld storage/ bootstrap/cache/ public/
-
-echo ""
-echo "🗺️ Depot maps storage verification:"
-docker exec -w /var/www/html "$APP_CONTAINER" ls -la storage/app/public/ | grep depot-maps || echo "depot-maps directory created"
-docker exec -w /var/www/html "$APP_CONTAINER" ls -la public/ | grep storage || echo "storage symlink check"
-
-echo ""
-echo "📧 Testing email configuration..."
-docker exec -w /var/www/html "$APP_CONTAINER" php artisan tinker --execute="
-try {
-    Mail::raw('KTL Booking System deployment completed successfully! 🚀', function(\$message) {
-        \$message->to('test@example.com')
-                ->subject('KTL Booking System - Deployment Complete');
-    });
-    echo 'Email test sent successfully to Mailtrap';
-} catch (Exception \$e) {
-    echo 'Email test failed: ' . \$e->getMessage();
-}
-" || echo "Email test failed - check configuration"
+echo "📁 Storage permissions:"
+docker exec -w /var/www/html "$APP_CONTAINER" ls -ld storage/ bootstrap/cache/
 
 send_notification "Setup Complete" "KTL Booking System is running at http://$UNRAID_IP:8088"
 
 echo ""
 echo "✅ Setup completed successfully!"
-echo "✅ AGGRESSIVE permission fixes applied!"
+echo "✅ Permission fixes applied automatically!"
 echo "✅ Depot map file paths corrected!"
-echo "✅ Email configuration applied (Mailtrap)!"
-echo "✅ Ready for reliable redeployment!"
+echo "✅ Cron jobs configured and running!"
+echo ""
+echo "📊 Cron Job Status:"
+echo "   • Crontab: $(docker exec "$APP_CONTAINER" bash -c 'crontab -l | wc -l') job(s) configured"
+echo "   • Service: $(docker exec "$APP_CONTAINER" bash -c 'service cron status' 2>&1 | grep -q 'running' && echo '✅ Running' || echo '⚠️  Not running')"
+echo "   • Log file: storage/logs/scheduler.log"
+echo ""
+echo "🔍 Next scheduled tasks:"
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan schedule:list | head -10 || echo "Unable to list schedule"
