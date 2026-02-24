@@ -2,7 +2,7 @@
 
 ## 🚀 Automatic Setup
 
-The cron jobs are automatically configured during deployment. No manual intervention required!
+The cron jobs are **automatically configured during deployment**. No manual intervention required!
 
 ### For New Deployments
 
@@ -13,9 +13,13 @@ Run the main deployment script:
 
 The script automatically:
 - ✅ Installs cron inside the container
-- ✅ Configures Laravel scheduler
+- ✅ Configures Laravel scheduler with logging
 - ✅ Sets up all scheduled tasks
 - ✅ Starts the cron daemon
+- ✅ Runs initial slot release to set cut-off times
+- ✅ Verifies cron is running
+
+**The deployment script now handles everything!**
 
 ### For Existing Installations
 

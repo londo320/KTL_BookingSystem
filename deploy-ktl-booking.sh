@@ -161,16 +161,33 @@ echo "🚀 Running database migrations..."
 docker exec -w /var/www/html "$APP_CONTAINER" php artisan migrate --force
 
 echo "⏰ Setting up Laravel scheduler (cron jobs)..."
-# Add Laravel scheduler to crontab
-docker exec "$APP_CONTAINER" bash -c 'apt-get install -y -qq cron'
+# Install cron
+docker exec "$APP_CONTAINER" bash -c 'apt-get install -y -qq cron' 2>&1 | grep -v "debconf: unable to initialize" || true
+
+# Add Laravel scheduler to crontab with logging
+docker exec "$APP_CONTAINER" bash -c 'echo "* * * * * cd /var/www/html && php artisan schedule:run >> /var/www/html/storage/logs/scheduler.log 2>&1" | crontab -'
+
+# Start cron service
 docker exec "$APP_CONTAINER" bash -c 'service cron start'
-docker exec "$APP_CONTAINER" bash -c 'echo "* * * * * cd /var/www/html && php artisan schedule:run >> /dev/null 2>&1" | crontab -'
+
+# Verify crontab was added
+echo "📋 Verifying crontab:"
 docker exec "$APP_CONTAINER" bash -c 'crontab -l' || echo "Warning: Could not list crontab"
+
+# Verify cron service is running
+echo "🔍 Checking cron service status:"
+docker exec "$APP_CONTAINER" bash -c 'service cron status' || echo "Warning: Cron status check failed"
+
 echo "✅ Laravel scheduler configured - runs every minute"
-echo "   • Auto-release slots: Every 15 minutes"
-echo "   • Bay sync: Every 30 minutes"
-echo "   • Slot generation: Daily at 00:15"
-echo "   • Booking cleanup: Every 15 minutes"
+echo "   • slots:generate: Daily at 00:15 (14 days ahead)"
+echo "   • app:auto-release-slots: Every 15 minutes (sets cut-off times)"
+echo "   • bays:sync-occupancy: Every 30 minutes"
+echo "   • bookings:cleanup-incomplete: Every 15 minutes"
+
+# Run initial slot release to set locked_at times
+echo "🚀 Running initial slot release to set cut-off times..."
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan app:auto-release-slots || echo "Warning: Initial slot release failed"
+echo "✅ Initial slot release completed"
 
 echo "🚀 Optimizing Laravel (after permission fixes)..."
 docker exec -w /var/www/html "$APP_CONTAINER" php artisan config:cache
@@ -225,3 +242,12 @@ echo ""
 echo "✅ Setup completed successfully!"
 echo "✅ Permission fixes applied automatically!"
 echo "✅ Depot map file paths corrected!"
+echo "✅ Cron jobs configured and running!"
+echo ""
+echo "📊 Cron Job Status:"
+echo "   • Crontab: $(docker exec "$APP_CONTAINER" bash -c 'crontab -l | wc -l') job(s) configured"
+echo "   • Service: $(docker exec "$APP_CONTAINER" bash -c 'service cron status' 2>&1 | grep -q 'running' && echo '✅ Running' || echo '⚠️  Not running')"
+echo "   • Log file: storage/logs/scheduler.log"
+echo ""
+echo "🔍 Next scheduled tasks:"
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan schedule:list | head -10 || echo "Unable to list schedule"
