@@ -56,7 +56,7 @@ class SlotAvailabilityController extends Controller
             ->toArray();
 
         // Build base query with optimizations
-        $query = Slot::with(['depot', 'tippingBay', 'occupiedByBookings'])
+        $query = Slot::with(['depot', 'tippingBay'])
             ->where('start_at', '>=', now())
             ->where('start_at', '<=', now()->addDays($daysAhead))
             ->where('is_blocked', false);
@@ -278,7 +278,7 @@ class SlotAvailabilityController extends Controller
             ->toArray();
 
         // Build query for specific date
-        $query = Slot::with(['depot', 'tippingBay', 'occupiedByBookings'])
+        $query = Slot::with(['depot', 'tippingBay'])
             ->whereDate('start_at', $date->toDateString())
             ->where('start_at', '>=', now())
             ->where('is_blocked', false)
