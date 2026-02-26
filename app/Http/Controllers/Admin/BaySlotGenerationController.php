@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Console\Commands\GenerateBaySlots;
 use App\Http\Controllers\Controller;
+use App\Jobs\GenerateBaySlotsJob;
 use App\Models\Depot;
 use App\Models\TippingBay;
 use Illuminate\Http\Request;
@@ -54,18 +55,13 @@ class BaySlotGenerationController extends Controller
             ]);
         }
 
-        // Generate slots using the command
-        Artisan::call('slots:generate-bay', [
-            '--depot' => $validated['depot_id'],
-            '--days' => $validated['days'],
-        ]);
-
-        $output = Artisan::output();
+        // Dispatch slot generation as a background job to prevent timeout
+        GenerateBaySlotsJob::dispatch($validated['depot_id'], $validated['days']);
 
         return redirect()
             ->route('app.bay-slot-generation.index')
-            ->with('success', 'Bay slots generated successfully!')
-            ->with('command_output', $output);
+            ->with('success', 'Bay slot generation started! This will run in the background and may take a few minutes. Check the slot list to see progress.')
+            ->with('info', 'The job is running in the background. Refresh the slot list in a few minutes to see the new slots.');
     }
 
     /**
