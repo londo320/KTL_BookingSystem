@@ -59,8 +59,7 @@ class SlotAvailabilityController extends Controller
         $query = Slot::with(['depot', 'tippingBay', 'occupiedByBookings'])
             ->where('start_at', '>=', now())
             ->where('start_at', '<=', now()->addDays($daysAhead))
-            ->where('is_blocked', false)
-            ->whereNull('deleted_at');
+            ->where('is_blocked', false);
 
         if ($depotId) {
             $query->where('depot_id', $depotId);
@@ -70,6 +69,8 @@ class SlotAvailabilityController extends Controller
             // Filter slots by customer's allowed bays
             $query->whereIn('tipping_bay_id', $allowedBayIds);
         }
+        // If customer has no bay assignments, show all slots (backwards compatibility)
+        // This allows customers without bay restrictions to book any slot
 
         // Order and limit for performance (max 500 slots per request)
         $slots = $query->orderBy('start_at')
@@ -165,7 +166,10 @@ class SlotAvailabilityController extends Controller
             'success' => true,
             'slots' => $result,
             'total' => count($result),
-            'debug' => $debugInfo,
+            'debug' => array_merge($debugInfo, [
+                'customer_allowed_bays' => $allowedBayIds,
+                'has_bay_restrictions' => !empty($allowedBayIds),
+            ]),
             'booking_type_time_restrictions' => [
                 'global_start' => $bookingType->booking_start_time,
                 'global_end' => $bookingType->booking_end_time,
