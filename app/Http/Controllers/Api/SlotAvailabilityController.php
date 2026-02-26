@@ -38,7 +38,7 @@ class SlotAvailabilityController extends Controller
         $customerId = $validated['customer_id'];
         $bookingTypeId = $validated['booking_type_id'];
         $depotId = $validated['depot_id'] ?? null;
-        $daysAhead = (int) ($validated['days_ahead'] ?? 14);
+        $daysAhead = (int) ($validated['days_ahead'] ?? 7); // Reduced default from 14 to 7 days for performance
 
         // Get booking type to check time restrictions
         $bookingType = BookingType::find($bookingTypeId);
@@ -55,30 +55,26 @@ class SlotAvailabilityController extends Controller
             ->pluck('tipping_bay_id')
             ->toArray();
 
-        if (empty($allowedBayIds)) {
-            // Customer has no bay assignments - show all slots (backwards compatibility)
-            $query = Slot::with(['depot', 'tippingBay'])
-                ->whereDate('start_at', '>=', now()->toDateString())
-                ->whereDate('start_at', '<=', now()->addDays($daysAhead)->toDateString());
+        // Build base query with optimizations
+        $query = Slot::with(['depot', 'tippingBay', 'occupiedByBookings'])
+            ->where('start_at', '>=', now())
+            ->where('start_at', '<=', now()->addDays($daysAhead))
+            ->where('is_blocked', false)
+            ->whereNull('deleted_at');
 
-            if ($depotId) {
-                $query->where('depot_id', $depotId);
-            }
-
-            $slots = $query->orderBy('start_at')->get();
-        } else {
-            // Filter slots by customer's allowed bays
-            $query = Slot::with(['depot', 'tippingBay'])
-                ->whereIn('tipping_bay_id', $allowedBayIds)
-                ->whereDate('start_at', '>=', now()->toDateString())
-                ->whereDate('start_at', '<=', now()->addDays($daysAhead)->toDateString());
-
-            if ($depotId) {
-                $query->where('depot_id', $depotId);
-            }
-
-            $slots = $query->orderBy('start_at')->get();
+        if ($depotId) {
+            $query->where('depot_id', $depotId);
         }
+
+        if (!empty($allowedBayIds)) {
+            // Filter slots by customer's allowed bays
+            $query->whereIn('tipping_bay_id', $allowedBayIds);
+        }
+
+        // Order and limit for performance (max 500 slots per request)
+        $slots = $query->orderBy('start_at')
+            ->limit(500)
+            ->get();
 
         // Group slots by date and time (since multiple bays can have same start time)
         $groupedSlots = [];
@@ -133,12 +129,24 @@ class SlotAvailabilityController extends Controller
                 ];
             }
 
-            // Add bay to this time slot
-            $groupedSlots[$compositeKey]['available_bays'][] = [
-                'bay_id' => $slot->tipping_bay_id,
-                'bay_name' => $slot->tippingBay ? $slot->tippingBay->name : 'No Bay',
-                'bay_code' => $slot->tippingBay ? $slot->tippingBay->code : null,
-            ];
+            // Add bay to this time slot (avoid duplicates)
+            $bayId = $slot->tipping_bay_id;
+            $bayExists = false;
+
+            foreach ($groupedSlots[$compositeKey]['available_bays'] as $existingBay) {
+                if ($existingBay['bay_id'] === $bayId) {
+                    $bayExists = true;
+                    break;
+                }
+            }
+
+            if (!$bayExists) {
+                $groupedSlots[$compositeKey]['available_bays'][] = [
+                    'bay_id' => $bayId,
+                    'bay_name' => $slot->tippingBay ? $slot->tippingBay->name : 'No Bay',
+                    'bay_code' => $slot->tippingBay ? $slot->tippingBay->code : null,
+                ];
+            }
 
             $groupedSlots[$compositeKey]['slot_ids'][] = $slot->id;
         }
