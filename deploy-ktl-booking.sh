@@ -20,8 +20,11 @@ send_notification() {
 }
 
 echo "🔍 Checking for port conflicts..."
-if netstat -ln | grep -q ":3306 "; then
+# Check if port 3306 is in use (using ss or docker as fallback if netstat not available)
+if command -v netstat >/dev/null 2>&1 && netstat -ln 2>/dev/null | grep -q ":3306 "; then
     echo "⚠️  Port 3306 is in use, using port $MYSQL_PORT for MySQL instead"
+elif docker ps --format '{{.Ports}}' 2>/dev/null | grep -q "3306"; then
+    echo "⚠️  Port 3306 is in use by Docker, using port $MYSQL_PORT for MySQL instead"
 else
     MYSQL_PORT="3306"
     echo "✅ Port 3306 is available"
