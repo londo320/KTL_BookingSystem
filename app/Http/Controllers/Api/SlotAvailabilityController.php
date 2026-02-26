@@ -174,6 +174,185 @@ class SlotAvailabilityController extends Controller
     }
 
     /**
+     * Get available dates with slot counts (for date picker sidebar)
+     */
+    public function getAvailableDates(Request $request)
+    {
+        $validated = $request->validate([
+            'customer_id' => 'required|exists:customers,id',
+            'booking_type_id' => 'required|exists:booking_types,id',
+            'depot_id' => 'nullable|exists:depots,id',
+            'days_ahead' => 'nullable|integer|min:1|max:30',
+        ]);
+
+        $customerId = $validated['customer_id'];
+        $bookingTypeId = $validated['booking_type_id'];
+        $depotId = $validated['depot_id'] ?? null;
+        $daysAhead = (int) ($validated['days_ahead'] ?? 14);
+
+        // Get customer's allowed bays
+        $allowedBayIds = CustomerBayAssignment::where('customer_id', $customerId)
+            ->where('is_active', true)
+            ->pluck('tipping_bay_id')
+            ->toArray();
+
+        // Build query
+        $query = Slot::select('start_at')
+            ->where('start_at', '>=', now())
+            ->where('start_at', '<=', now()->addDays($daysAhead))
+            ->where('is_blocked', false)
+            ->whereNull('deleted_at');
+
+        if ($depotId) {
+            $query->where('depot_id', $depotId);
+        }
+
+        if (!empty($allowedBayIds)) {
+            $query->whereIn('tipping_bay_id', $allowedBayIds);
+        }
+
+        $slots = $query->get();
+
+        // Group by date and count available slots per date
+        $dateGroups = [];
+        foreach ($slots as $slot) {
+            // Check availability using service
+            $availability = $this->slotService->isSlotAvailable(
+                $slot,
+                $customerId,
+                $bookingTypeId
+            );
+
+            if ($availability['available']) {
+                $dateKey = $slot->start_at->format('Y-m-d');
+                if (!isset($dateGroups[$dateKey])) {
+                    $dateGroups[$dateKey] = [
+                        'date' => $dateKey,
+                        'day_name' => $slot->start_at->format('l'), // Monday, Tuesday, etc.
+                        'formatted_date' => $slot->start_at->format('D M j'), // Mon Feb 26
+                        'count' => 0,
+                    ];
+                }
+                $dateGroups[$dateKey]['count']++;
+            }
+        }
+
+        // Convert to array and sort
+        $result = array_values($dateGroups);
+        usort($result, function ($a, $b) {
+            return strcmp($a['date'], $b['date']);
+        });
+
+        return response()->json([
+            'success' => true,
+            'dates' => $result,
+            'total_dates' => count($result),
+        ]);
+    }
+
+    /**
+     * Get available slots for a specific date
+     */
+    public function getSlotsByDate(Request $request)
+    {
+        $validated = $request->validate([
+            'customer_id' => 'required|exists:customers,id',
+            'booking_type_id' => 'required|exists:booking_types,id',
+            'depot_id' => 'nullable|exists:depots,id',
+            'date' => 'required|date|after_or_equal:today',
+        ]);
+
+        $customerId = $validated['customer_id'];
+        $bookingTypeId = $validated['booking_type_id'];
+        $depotId = $validated['depot_id'] ?? null;
+        $date = Carbon::parse($validated['date']);
+
+        // Get customer's allowed bays
+        $allowedBayIds = CustomerBayAssignment::where('customer_id', $customerId)
+            ->where('is_active', true)
+            ->pluck('tipping_bay_id')
+            ->toArray();
+
+        // Build query for specific date
+        $query = Slot::with(['depot', 'tippingBay', 'occupiedByBookings'])
+            ->whereDate('start_at', $date->toDateString())
+            ->where('start_at', '>=', now())
+            ->where('is_blocked', false)
+            ->whereNull('deleted_at');
+
+        if ($depotId) {
+            $query->where('depot_id', $depotId);
+        }
+
+        if (!empty($allowedBayIds)) {
+            $query->whereIn('tipping_bay_id', $allowedBayIds);
+        }
+
+        $slots = $query->orderBy('start_at')->get();
+
+        // Group by time, showing only customer's allowed bays
+        $groupedSlots = [];
+
+        foreach ($slots as $slot) {
+            // Check availability
+            $availability = $this->slotService->isSlotAvailable(
+                $slot,
+                $customerId,
+                $bookingTypeId
+            );
+
+            if (!$availability['available']) {
+                continue;
+            }
+
+            $timeKey = $slot->start_at->format('H:i');
+
+            if (!isset($groupedSlots[$timeKey])) {
+                $groupedSlots[$timeKey] = [
+                    'time' => $timeKey,
+                    'start_at' => $slot->start_at->toIso8601String(),
+                    'available_bays' => [],
+                    'slot_ids' => [],
+                ];
+            }
+
+            // Add bay (avoid duplicates)
+            $bayId = $slot->tipping_bay_id;
+            $bayExists = false;
+
+            foreach ($groupedSlots[$timeKey]['available_bays'] as $existingBay) {
+                if ($existingBay['bay_id'] === $bayId) {
+                    $bayExists = true;
+                    break;
+                }
+            }
+
+            if (!$bayExists) {
+                $groupedSlots[$timeKey]['available_bays'][] = [
+                    'bay_id' => $bayId,
+                    'bay_name' => $slot->tippingBay ? $slot->tippingBay->name : 'No Bay',
+                    'bay_code' => $slot->tippingBay ? $slot->tippingBay->code : null,
+                ];
+            }
+
+            $groupedSlots[$timeKey]['slot_ids'][] = $slot->id;
+        }
+
+        // Convert to array and sort by time
+        $result = array_values($groupedSlots);
+        usort($result, function ($a, $b) {
+            return strcmp($a['time'], $b['time']);
+        });
+
+        return response()->json([
+            'success' => true,
+            'date' => $date->format('Y-m-d'),
+            'slots' => $result,
+            'total_slots' => count($result),
+        ]);
+    }
+
+    /**
      * Get customer's priority bay for a given depot
      */
     public function getCustomerPriorityBay(Request $request)
