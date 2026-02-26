@@ -55,7 +55,8 @@ class GenerateBaySlots extends Command
 
             // For each bay, create slots
             foreach ($bays as $bay) {
-                $this->line("    🚪 Bay: {$bay->name}");
+                $bayCreated = 0;
+                $baySkipped = 0;
 
                 // Generate slots for each day
                 for ($day = 0; $day < $days; $day++) {
@@ -79,6 +80,7 @@ class GenerateBaySlots extends Command
 
                         if ($exists) {
                             $skipped++;
+                            $baySkipped++;
                             continue;
                         }
 
@@ -112,8 +114,12 @@ class GenerateBaySlots extends Command
 
                         $slot->save();
                         $created++;
+                        $bayCreated++;
                     }
                 }
+
+                // Only output summary per bay, not every slot
+                $this->line("    🚪 {$bay->name}: Created {$bayCreated}, Skipped {$baySkipped}");
             }
         }
 

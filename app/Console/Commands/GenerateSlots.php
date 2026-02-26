@@ -48,8 +48,6 @@ class GenerateSlots extends Command
                     ->exists();
 
                 if ($exists) {
-                    $this->line(" • {$start->toDateTimeString()} exists, skipping");
-
                     continue;
                 }
 
@@ -79,8 +77,6 @@ class GenerateSlots extends Command
                 }
 
                 $slot->save();
-
-                $this->info(" ✔ created {$start->toDateTimeString()} → {$end->toTimeString()}");
                 $created++;
             }
         }
