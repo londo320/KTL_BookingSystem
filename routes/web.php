@@ -297,6 +297,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/settings/outbound-module', [AdminSettingsController::class, 'updateOutboundModule'])->name('settings.outbound-module');
         Route::post('/settings/inbound-module', [AdminSettingsController::class, 'updateInboundModule'])->name('settings.inbound-module');
         Route::post('/settings/admin-approval-emails', [AdminSettingsController::class, 'updateAdminApprovalEmails'])->name('settings.admin-approval-emails');
+        Route::post('/settings/slot-generation-method', [AdminSettingsController::class, 'updateSlotGenerationMethod'])->name('settings.slot-generation-method');
         Route::get('/settings/pallet-types', [\App\Http\Controllers\Admin\PalletTypeController::class, 'index'])->name('settings.pallet-types');
         Route::get('/settings/pallet-types/create', [\App\Http\Controllers\Admin\PalletTypeController::class, 'create'])->name('settings.pallet-types.create');
         Route::post('/settings/pallet-types', [\App\Http\Controllers\Admin\PalletTypeController::class, 'store'])->name('settings.pallet-types.store');

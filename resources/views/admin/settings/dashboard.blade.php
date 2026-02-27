@@ -93,6 +93,59 @@
             </div>
           </div>
         </form>
+
+        {{-- Slot Generation Method --}}
+        <form method="POST" action="{{ route('app.settings.slot-generation-method') }}">
+          @csrf
+          <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div class="mb-3">
+              <h5 class="font-medium text-gray-800 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                Slot Generation Method
+              </h5>
+              <p class="text-sm text-gray-600 mt-1">Choose how slots are generated for bookings</p>
+            </div>
+            <div class="space-y-2">
+              <label class="flex items-start p-3 border rounded-lg cursor-pointer {{ $slotGenerationMethod === 'bay' ? 'bg-blue-100 border-blue-500' : 'bg-white border-gray-300 hover:bg-gray-50' }}">
+                <input
+                  type="radio"
+                  name="slot_generation_method"
+                  value="bay"
+                  {{ $slotGenerationMethod === 'bay' ? 'checked' : '' }}
+                  onchange="this.form.submit()"
+                  class="mt-1 h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                <div class="ml-3">
+                  <span class="font-medium text-gray-900">Bay-Based Slot Generation</span>
+                  <p class="text-xs text-gray-600 mt-1">
+                    ✅ Per-bay operating hours<br>
+                    ✅ Equipment requirements (handball capability)<br>
+                    ✅ Customer bay assignments<br>
+                    ✅ Multiple concurrent bookings (different bays)
+                  </p>
+                </div>
+              </label>
+              <label class="flex items-start p-3 border rounded-lg cursor-pointer {{ $slotGenerationMethod === 'template' ? 'bg-blue-100 border-blue-500' : 'bg-white border-gray-300 hover:bg-gray-50' }}">
+                <input
+                  type="radio"
+                  name="slot_generation_method"
+                  value="template"
+                  {{ $slotGenerationMethod === 'template' ? 'checked' : '' }}
+                  onchange="this.form.submit()"
+                  class="mt-1 h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                <div class="ml-3">
+                  <span class="font-medium text-gray-900">Template-Based Slot Generation</span>
+                  <p class="text-xs text-gray-600 mt-1">
+                    📋 Uses predefined slot templates<br>
+                    📋 Simpler configuration<br>
+                    📋 Legacy method
+                  </p>
+                </div>
+              </label>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
 

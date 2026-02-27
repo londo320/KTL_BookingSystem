@@ -227,4 +227,23 @@ class FactoryBooking extends Model
         $endTime = $this->departed_at ?? now();
         return $this->arrived_at->diffForHumans($endTime, true);
     }
+
+    /**
+     * Get the scheduled end time for this factory booking
+     * Factory bookings use a fixed tipping time target (default 60 minutes)
+     */
+    public function getScheduledEndTime(): ?\Carbon\Carbon
+    {
+        if (!$this->slot) {
+            return null;
+        }
+
+        // Get factory tipping time target from settings (depot-specific or default)
+        $tippingTimeMinutes = \App\Models\Setting::getFactoryTippingTimeTarget(
+            $this->depot_id,
+            $this->customer_id
+        );
+
+        return $this->slot->start_at->copy()->addMinutes($tippingTimeMinutes);
+    }
 }

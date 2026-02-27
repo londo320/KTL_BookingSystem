@@ -28,6 +28,7 @@ class ProfileController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
+            'switch_user_enabled' => ['nullable', 'boolean'],
         ]);
 
         $data = ['name' => $request->name];
@@ -37,7 +38,17 @@ class ProfileController extends Controller
             $data['email_verified_at'] = null;
         }
 
+        // Only allow paul.carr@knowleslogistics.com to update switch_user_enabled
+        if ($user->email === 'paul.carr@knowleslogistics.com') {
+            $data['switch_user_enabled'] = $request->has('switch_user_enabled') ? $request->boolean('switch_user_enabled') : false;
+        }
+
         $user->update($data);
+
+        // Refresh the authenticated user instance to pick up the changes immediately
+        // This ensures navigation updates reflect the new switch_user_enabled value
+        Auth::logout();
+        Auth::login($user->fresh());
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }

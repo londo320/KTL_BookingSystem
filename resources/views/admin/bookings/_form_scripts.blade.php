@@ -705,25 +705,35 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     @endif
 
-    // ──── Dynamic Slot Loading Based on Customer + Booking Type ────
-    // Reuse customerSelect and slotSelect from above
+    // ──── Dynamic Slot Loading Based on Customer + Booking Type (With Sidebar) ────
     const bookingTypeSelect = document.querySelector('select[name="booking_type_id"]');
+    const adminDateSidebar = document.getElementById('admin-date-sidebar');
+    const adminSlotSelect = document.getElementById('admin-slot-select') || slotSelect;
 
-    if (customerSelect && bookingTypeSelect && slotSelect && !slotSelect.disabled) {
-        // Function to load available slots
+    if (customerSelect && bookingTypeSelect && adminSlotSelect) {
+        let selectedDate = null;
+        let allSlots = []; // Store all slots for filtering by date
+
+        // Function to load available dates
         function loadAvailableSlots() {
             const customerId = customerSelect.value;
             const bookingTypeId = bookingTypeSelect.value;
 
             if (!customerId || !bookingTypeId) {
-                // Reset slot dropdown
-                slotSelect.innerHTML = '<option value="">– Choose slot –</option>';
+                if (adminDateSidebar) {
+                    adminDateSidebar.innerHTML = '<p class="text-gray-500 text-sm">Select customer & booking type to see available dates</p>';
+                }
+                adminSlotSelect.innerHTML = '<option value="">– Select customer, type & date →</option>';
+                adminSlotSelect.disabled = true;
                 return;
             }
 
-            // Show loading state
-            slotSelect.innerHTML = '<option value="">⏳ Loading available slots...</option>';
-            slotSelect.disabled = true;
+            // Show loading
+            if (adminDateSidebar) {
+                adminDateSidebar.innerHTML = '<p class="text-gray-500 text-sm">⏳ Loading dates...</p>';
+            }
+            adminSlotSelect.innerHTML = '<option value="">⏳ Loading...</option>';
+            adminSlotSelect.disabled = true;
 
             // Fetch available slots
             const url = `{{ route('api.slots.available') }}?customer_id=${customerId}&booking_type_id=${bookingTypeId}&days_ahead=30`;
@@ -734,58 +744,120 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log('Slot API response:', data);
 
                     if (!data.success || data.slots.length === 0) {
-                        console.log('No slots found or API failed', data);
-                        slotSelect.innerHTML = '<option value="">❌ No available slots found</option>';
-                        slotSelect.disabled = true;
+                        if (adminDateSidebar) {
+                            adminDateSidebar.innerHTML = '<p class="text-red-500 text-sm">❌ No slots available for this customer and booking type</p>';
+                        }
+                        adminSlotSelect.innerHTML = '<option value="">No slots available</option>';
                         return;
                     }
 
-                    // Build options grouped by depot and date
-                    let html = '<option value="">– Choose slot –</option>';
-                    let currentDepot = null;
-                    let currentDate = null;
+                    // Store all slots
+                    allSlots = data.slots;
 
+                    // Group slots by date
+                    const dateGroups = {};
                     data.slots.forEach(slot => {
-                        const slotDate = new Date(slot.start_at);
-                        const dateStr = slotDate.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' });
-                        const timeStr = slotDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-
-                        // New depot optgroup
-                        if (currentDepot !== slot.depot_name) {
-                            if (currentDepot !== null) html += '</optgroup>';
-                            html += `<optgroup label="━━━ ${slot.depot_name} ━━━">`;
-                            currentDepot = slot.depot_name;
-                            currentDate = null; // Reset date when changing depot
+                        const date = slot.date;
+                        if (!dateGroups[date]) {
+                            dateGroups[date] = { date: date, slots: [] };
                         }
-
-                        // Build option label showing time and which bays are available
-                        let label = `${dateStr} ${timeStr}`;
-
-                        // Show bay details for clarity
-                        if (slot.available_bays && slot.available_bays.length > 0) {
-                            const bayNames = slot.available_bays.map(b => b.bay_name || b.bay_code || 'Bay').join(', ');
-                            label += ` → Bays: ${bayNames}`;
-                        } else {
-                            label += ` → No bays available`;
-                        }
-
-                        // Use first slot ID as the value (system will assign proper bay on booking creation)
-                        const slotId = slot.slot_ids[0];
-
-                        html += `<option value="${slotId}">${label}</option>`;
+                        dateGroups[date].slots.push(slot);
                     });
 
-                    if (currentDepot !== null) html += '</optgroup>';
+                    // Render date buttons in sidebar
+                    if (adminDateSidebar) {
+                        let html = '';
+                        Object.keys(dateGroups).sort().forEach(date => {
+                            const slotCount = dateGroups[date].slots.length;
+                            const dateObj = new Date(date + 'T00:00:00');
+                            const formattedDate = dateObj.toLocaleDateString('en-GB', {
+                                weekday: 'short',
+                                day: '2-digit',
+                                month: 'short'
+                            });
 
-                    slotSelect.innerHTML = html;
-                    slotSelect.disabled = false;
+                            html += `
+                                <button type="button" onclick="selectAdminDate('${date}')"
+                                    data-date="${date}"
+                                    class="admin-date-btn w-full text-left p-3 rounded-lg hover:bg-blue-50 border border-gray-200 text-sm transition-all bg-white shadow-sm">
+                                    <div class="font-semibold text-gray-900">${formattedDate}</div>
+                                    <div class="text-xs text-gray-600 mt-1">${slotCount} slot${slotCount !== 1 ? 's' : ''} available</div>
+                                </button>
+                            `;
+                        });
+
+                        adminDateSidebar.innerHTML = html;
+                    }
+
+                    adminSlotSelect.innerHTML = '<option value="">← Click a date in the sidebar</option>';
+                    adminSlotSelect.disabled = false;
                 })
                 .catch(error => {
-                    console.error('Error loading slots:', error);
-                    slotSelect.innerHTML = '<option value="">❌ Error loading slots - check console</option>';
-                    slotSelect.disabled = true;
+                    console.error('Error loading dates:', error);
+                    if (adminDateSidebar) {
+                        adminDateSidebar.innerHTML = '<p class="text-red-500 text-sm">❌ Error loading dates</p>';
+                    }
+                    adminSlotSelect.innerHTML = '<option value="">Error loading slots</option>';
                 });
         }
+
+        // Function to load slots for selected date (global for onclick)
+        window.selectAdminDate = function(date) {
+            selectedDate = date;
+
+            // Highlight selected date button
+            document.querySelectorAll('.admin-date-btn').forEach(btn => {
+                if (btn.dataset.date === date) {
+                    btn.classList.remove('bg-white', 'hover:bg-blue-50', 'border-gray-200', 'shadow-sm');
+                    btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600', 'shadow-md');
+                } else {
+                    btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600', 'shadow-md');
+                    btn.classList.add('bg-white', 'hover:bg-blue-50', 'border-gray-200', 'shadow-sm');
+                }
+            });
+
+            // Also update text colors for selected state
+            document.querySelectorAll('.admin-date-btn').forEach(btn => {
+                const dateText = btn.querySelector('div:first-child');
+                const slotText = btn.querySelector('div:last-child');
+                if (btn.dataset.date === date) {
+                    dateText.classList.remove('text-gray-900');
+                    dateText.classList.add('text-white');
+                    slotText.classList.remove('text-gray-600');
+                    slotText.classList.add('text-blue-100');
+                } else {
+                    dateText.classList.remove('text-white');
+                    dateText.classList.add('text-gray-900');
+                    slotText.classList.remove('text-blue-100');
+                    slotText.classList.add('text-gray-600');
+                }
+            });
+
+            // Filter slots for this date
+            const dateSlots = allSlots.filter(slot => slot.date === date);
+
+            // Build slot dropdown
+            let html = '<option value="">– Choose time slot –</option>';
+
+            dateSlots.forEach(slot => {
+                const slotDate = new Date(slot.start_at);
+                const timeStr = slotDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+                let label = `${timeStr} - ${slot.depot_name}`;
+
+                // Show bay details
+                if (slot.available_bays && slot.available_bays.length > 0) {
+                    const bayNames = slot.available_bays.map(b => b.bay_name || b.bay_code).join(', ');
+                    label += ` (${bayNames})`;
+                }
+
+                // Use first slot ID
+                const slotId = slot.slot_ids[0];
+                html += `<option value="${slotId}">${label}</option>`;
+            });
+
+            adminSlotSelect.innerHTML = html;
+        };
 
         // Function to load and display expected bay
         function loadExpectedBay() {

@@ -440,10 +440,10 @@ class CustomerBookingController extends Controller
             return response()->json(['error' => 'Access denied'], 403);
         }
 
-        // Get the next 14 days with available slots
+        // Get the next 30 days with available slots
         $dates = [];
         $startDate = now();
-        $endDate = now()->addDays(14);
+        $endDate = now()->addDays(30);
 
         for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
             $dateString = $date->format('Y-m-d');

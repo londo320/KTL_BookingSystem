@@ -18,10 +18,14 @@ class UserSwitchController extends Controller
         // Apply admin role only to switchTo method
         $this->middleware('role:admin')->only('switchTo');
 
-        // Only allow in non-production environments - check in middleware, not constructor
+        // Only allow in production for specific authorized email with preference enabled
         $this->middleware(function ($request, $next) {
             if (app()->isProduction()) {
-                abort(404);
+                $user = Auth::user();
+                // Only allow paul.carr@knowleslogistics.com in production with switch_user_enabled = true
+                if (!$user || $user->email !== 'paul.carr@knowleslogistics.com' || !$user->switch_user_enabled) {
+                    abort(404);
+                }
             }
             return $next($request);
         });
@@ -75,7 +79,7 @@ class UserSwitchController extends Controller
         // Switch back to original admin
         Auth::login($originalAdmin);
 
-        return redirect()->route('admin.dashboard')
+        return redirect()->route('app.dashboard')
             ->with('success', "🔙 Switched back to admin: {$originalAdmin->name}");
     }
 
@@ -84,16 +88,20 @@ class UserSwitchController extends Controller
      */
     private function getRedirectRoute(User $user): string
     {
+        // Check roles in priority order
         if ($user->hasRole('admin')) {
-            return 'admin.dashboard';
-        } elseif ($user->hasRole('depot-admin')) {
-            return 'depot.dashboard';
+            return 'app.dashboard';
         } elseif ($user->hasRole('site-admin')) {
-            return 'site.dashboard';
+            return 'site.dashboard'; // Correct route name
+        } elseif ($user->hasRole('depot-admin')) {
+            return 'app.dashboard';
+        } elseif ($user->hasRole('warehouse')) {
+            return 'app.dashboard';
         } elseif ($user->hasRole('customer')) {
             return 'customer.bookings.index';
         }
 
-        return 'dashboard';
+        // Fallback to generic dashboard
+        return 'app.dashboard';
     }
 }

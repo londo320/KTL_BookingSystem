@@ -245,10 +245,10 @@
           </button>
         </form>
       </div>
-    @elseif(!app()->isProduction())
+    @elseif(auth()->check() && ((!app()->isProduction()) || (auth()->user()->email === 'paul.carr@knowleslogistics.com')) && (auth()->user()->switch_user_enabled ?? false))
       <div class="relative">
         <select onchange="switchUser(this.value)" class="text-sm border border-gray-300 rounded px-3 py-2 bg-white hover:border-gray-400 transition">
-          <option value="">🔄 Switch User (Testing)</option>
+          <option value="">🔄 Switch User</option>
           @foreach(\App\Models\User::with('roles')->get() as $user)
             <option value="{{ $user->id }}">
               {{ $user->name }} ({{ $user->roles->pluck('name')->join(', ') ?: 'No Role' }})

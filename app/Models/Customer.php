@@ -91,4 +91,12 @@ class Customer extends Model
     {
         return $this->hasMany(CustomerBayAssignment::class);
     }
+
+    /**
+     * Scope to get only active (non-deleted) customers
+     */
+    public function scopeActive($query)
+    {
+        return $query->whereNull('deleted_at');
+    }
 }

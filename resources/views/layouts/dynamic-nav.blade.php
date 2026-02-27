@@ -333,8 +333,8 @@
                             👤 Edit Profile
                         </a>
 
-                        {{-- User Switching (Testing Only) --}}
-                        @if(!app()->isProduction())
+                        {{-- User Switching (Authorized Users Only) --}}
+                        @if(auth()->check() && ((!app()->isProduction()) || (auth()->user()->email === 'paul.carr@knowleslogistics.com')) && (auth()->user()->switch_user_enabled ?? false))
                             <div class="border-t border-gray-100"></div>
                             @if(session('original_admin_id'))
                                 <form method="POST" action="{{ route('switch-back') }}">
@@ -346,7 +346,7 @@
                             @else
                                 <div class="px-4 py-2">
                                     <select onchange="switchUser(this.value)" class="w-full text-sm border border-gray-300 rounded px-2 py-1 bg-white">
-                                        <option value="">🔄 Switch User (Testing)</option>
+                                        <option value="">🔄 Switch User</option>
                                         @foreach(\App\Models\User::with('roles')->get() as $user)
                                             <option value="{{ $user->id }}">
                                                 {{ $user->name }} ({{ $user->roles->pluck('name')->join(', ') ?: 'No Role' }})

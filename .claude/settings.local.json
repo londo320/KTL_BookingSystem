@@ -11,7 +11,17 @@
       "mcp__ide__executeCode",
       "Bash(php:*)",
       "Bash(git pull:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(chmod +x /Users/londo/Herd/test/setup-cron.sh)",
+      "Bash(./setup-cron.sh)",
+      "Bash(cat setup-cron.sh)",
+      "Bash(chmod +x fix-cron-now.sh)",
+      "Bash(chmod +x start-cron-persistent.sh docker-entrypoint.sh)",
+      "Bash(chmod +x deploy-railway.sh)",
+      "Bash(curl -s \"http://test.test/api/slots/available?customer_id=1&booking_type_id=1&depot_id=1\")",
+      "Bash(cat .env)",
+      "Bash(curl -s \"http://test.test/customer/availability?depot_id=1\" -H \"Accept: application/json\")",
+      "Bash(curl -s \"http://test.test/api/slots/available?customer_id=1&booking_type_id=1&depot_id=1&days_ahead=30\" -H \"Accept: application/json\")"
     ],
     "deny": [],
     "ask": []

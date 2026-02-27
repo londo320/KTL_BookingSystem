@@ -9,14 +9,29 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // Laravel 12 Scheduling Configuration
-// Generate slots daily at 00:15 (12:15 AM) with 14 days ahead from templates
-// Templates support time gaps (e.g., 06:00-13:00, then 16:00-20:00 with lunch break)
-Schedule::command('slots:generate', ['--days' => 14])
+// Dynamic slot generation based on system setting
+// Check which method is configured and run the appropriate command
+Schedule::call(function () {
+    $method = \App\Models\Setting::getSlotGenerationMethod();
+
+    if ($method === 'bay') {
+        // Bay-based generation respects:
+        // - Per-bay operating hours
+        // - Equipment requirements (handball capability)
+        // - Customer bay assignments
+        // - Individual bay capacity
+        \Illuminate\Support\Facades\Artisan::call('slots:generate-by-bay', ['--days' => 30]);
+    } else {
+        // Template-based generation uses slot templates
+        \Illuminate\Support\Facades\Artisan::call('slots:generate', ['--days' => 30]);
+    }
+})
     ->dailyAt('00:15')
+    ->name('dynamic-slot-generation')
     ->withoutOverlapping()
     ->timezone('Europe/London')
     ->appendOutputTo(storage_path('logs/slots_generate.log'))
-    ->description('Auto-generate slots from templates for the next 14 days');
+    ->description('Auto-generate slots using configured method (bay or template)');
 
 // Auto-release slots every 15 minutes based on rules
 Schedule::command('app:auto-release-slots')

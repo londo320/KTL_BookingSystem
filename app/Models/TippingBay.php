@@ -15,6 +15,7 @@ class TippingBay extends Model
         'code',
         'description',
         'is_active',
+        'allow_public_bookings',
         'is_occupied',
         'equipment',
         'operational_start',
@@ -33,6 +34,7 @@ class TippingBay extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'allow_public_bookings' => 'boolean',
         'is_occupied' => 'boolean',
         'show_on_map' => 'boolean',
         'is_24_hour' => 'boolean',
@@ -53,6 +55,18 @@ class TippingBay extends Model
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
+    }
+
+    public function customerAssignments(): HasMany
+    {
+        return $this->hasMany(CustomerBayAssignment::class);
+    }
+
+    public function assignedCustomers()
+    {
+        return $this->belongsToMany(Customer::class, 'customer_bay_assignments')
+            ->withPivot('priority', 'is_active')
+            ->withTimestamps();
     }
 
     public function currentBooking()

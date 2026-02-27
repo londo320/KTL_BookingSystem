@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\BookingType;
+use App\Models\CustomerBayAssignment;
 use App\Models\Slot;
+use App\Services\SlotAvailabilityService;
 use App\Services\SlotBookingService;
 use Illuminate\Http\Request;
 
@@ -245,5 +247,154 @@ class BookingController extends Controller
             })
             ->orderBy('start_at')
             ->get();
+    }
+
+    /**
+     * Get available dates with slot counts for the date picker sidebar
+     */
+    public function getAvailability(Request $request, SlotAvailabilityService $slotService)
+    {
+        $depotId = $request->get('depot_id');
+        $customerId = auth()->user()->getCustomerId();
+
+        if (!$depotId) {
+            return response()->json([
+                'success' => false,
+                'dates' => [],
+            ]);
+        }
+
+        // Get customer's booking type (default to first available)
+        $bookingType = BookingType::first();
+        if (!$bookingType) {
+            return response()->json([
+                'success' => false,
+                'dates' => [],
+            ]);
+        }
+
+        $daysAhead = 30; // Show 30 days ahead
+
+        // Get customer's allowed bays
+        $allowedBayIds = CustomerBayAssignment::where('customer_id', $customerId)
+            ->where('is_active', true)
+            ->pluck('tipping_bay_id')
+            ->toArray();
+
+        // Build query
+        $query = Slot::select('start_at')
+            ->where('start_at', '>=', now())
+            ->where('start_at', '<=', now()->addDays($daysAhead))
+            ->where('is_blocked', false)
+            ->where('depot_id', $depotId);
+
+        if (!empty($allowedBayIds)) {
+            $query->whereIn('tipping_bay_id', $allowedBayIds);
+        }
+
+        $slots = $query->get();
+
+        // Group by date and count available slots per date
+        $dateGroups = [];
+        foreach ($slots as $slot) {
+            // Check availability using service
+            $availability = $slotService->isSlotAvailable(
+                $slot,
+                $customerId,
+                $bookingType->id
+            );
+
+            if ($availability['available']) {
+                $dateKey = $slot->start_at->format('Y-m-d');
+                if (!isset($dateGroups[$dateKey])) {
+                    $dateGroups[$dateKey] = [
+                        'date' => $dateKey,
+                        'available_slots' => 0,
+                    ];
+                }
+                $dateGroups[$dateKey]['available_slots']++;
+            }
+        }
+
+        // Convert to array and sort
+        $result = array_values($dateGroups);
+        usort($result, function ($a, $b) {
+            return strcmp($a['date'], $b['date']);
+        });
+
+        return response()->json([
+            'success' => true,
+            'dates' => $result,
+        ]);
+    }
+
+    /**
+     * Get available slots for a specific date
+     */
+    public function getSlots(Request $request, SlotAvailabilityService $slotService)
+    {
+        $depotId = $request->get('depot_id');
+        $date = $request->get('date');
+        $customerId = auth()->user()->getCustomerId();
+
+        if (!$depotId || !$date) {
+            return response()->json([
+                'success' => false,
+                'slots' => [],
+            ]);
+        }
+
+        // Get customer's booking type (default to first available)
+        $bookingType = BookingType::first();
+        if (!$bookingType) {
+            return response()->json([
+                'success' => false,
+                'slots' => [],
+            ]);
+        }
+
+        // Get customer's allowed bays
+        $allowedBayIds = CustomerBayAssignment::where('customer_id', $customerId)
+            ->where('is_active', true)
+            ->pluck('tipping_bay_id')
+            ->toArray();
+
+        // Build query for specific date
+        $query = Slot::with(['depot', 'tippingBay'])
+            ->whereDate('start_at', $date)
+            ->where('start_at', '>=', now())
+            ->where('is_blocked', false)
+            ->where('depot_id', $depotId);
+
+        if (!empty($allowedBayIds)) {
+            $query->whereIn('tipping_bay_id', $allowedBayIds);
+        }
+
+        $slots = $query->orderBy('start_at')->get();
+
+        // Format slots for the UI
+        $formattedSlots = [];
+        foreach ($slots as $slot) {
+            // Check availability
+            $availability = $slotService->isSlotAvailable(
+                $slot,
+                $customerId,
+                $bookingType->id
+            );
+
+            if ($availability['available']) {
+                $formattedSlots[] = [
+                    'id' => $slot->id,
+                    'time_range' => $slot->start_at->format('H:i') . ' - ' . $slot->end_at->format('H:i'),
+                    'is_restricted' => !empty($allowedBayIds),
+                    'customers_info' => $slot->tippingBay ? $slot->tippingBay->name : 'No Bay',
+                ];
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'slots' => $formattedSlots,
+        ]);
     }
 }

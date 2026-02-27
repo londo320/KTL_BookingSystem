@@ -61,6 +61,41 @@ class Setting extends Model
     }
 
     /**
+     * Get slot generation method (template or bay)
+     */
+    public static function getSlotGenerationMethod(): string
+    {
+        return static::get('slot_generation_method', 'bay');
+    }
+
+    /**
+     * Set slot generation method
+     */
+    public static function setSlotGenerationMethod(string $method): void
+    {
+        if (!in_array($method, ['template', 'bay'])) {
+            throw new \InvalidArgumentException('Slot generation method must be either "template" or "bay"');
+        }
+        static::set('slot_generation_method', $method, 'string');
+    }
+
+    /**
+     * Check if using bay-based slot generation
+     */
+    public static function isUsingBayBasedSlots(): bool
+    {
+        return static::getSlotGenerationMethod() === 'bay';
+    }
+
+    /**
+     * Check if using template-based slot generation
+     */
+    public static function isUsingTemplateBasedSlots(): bool
+    {
+        return static::getSlotGenerationMethod() === 'template';
+    }
+
+    /**
      * Get factory vehicle tipping time target in minutes for a specific depot and customer
      */
     public static function getFactoryTippingTimeTarget(int $depotId, ?int $customerId = null): int

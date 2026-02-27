@@ -78,7 +78,7 @@
                         <div class="space-y-4">
                             <div class="flex items-center">
                                 <input type="hidden" name="is_active" value="0">
-                                <input type="checkbox" name="is_active" id="is_active" value="1" 
+                                <input type="checkbox" name="is_active" id="is_active" value="1"
                                        {{ old('is_active', $tippingBay->is_active) ? 'checked' : '' }}
                                        class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                                 <label class="ml-2 block text-sm text-gray-700" for="is_active">
@@ -90,6 +90,18 @@
                                 @if($tippingBay->currentBooking())
                                     <br><span class="text-orange-600">⚠️ Warning: This bay currently has a booking</span>
                                 @endif
+                            </p>
+                            <div class="flex items-center mt-4">
+                                <input type="hidden" name="allow_public_bookings" value="0">
+                                <input type="checkbox" name="allow_public_bookings" id="allow_public_bookings" value="1"
+                                       {{ old('allow_public_bookings', $tippingBay->allow_public_bookings) ? 'checked' : '' }}
+                                       class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                <label class="ml-2 block text-sm text-gray-700" for="allow_public_bookings">
+                                    Allow public bookings when slots are released
+                                </label>
+                            </div>
+                            <p class="text-xs text-gray-500">
+                                When enabled, customer restrictions are ignored once slots become publicly available
                             </p>
                             <div class="flex items-center">
                                 <input type="hidden" name="show_on_map" value="0">
@@ -248,6 +260,55 @@
                             @endforelse
                         </div>
                         <p class="text-xs text-gray-500 mt-2">Select equipment available at this bay for booking type filtering</p>
+                    </div>
+
+                    <!-- Customer Restrictions -->
+                    <div class="border-t border-gray-200 pt-6">
+                        <h4 class="text-lg font-medium text-gray-800 mb-4">👥 Customer Access Restrictions</h4>
+                        <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="text-blue-400">ℹ️</div>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-blue-800">
+                                        <strong>How it works:</strong>
+                                    </p>
+                                    <ul class="mt-2 text-sm text-blue-700 space-y-1">
+                                        <li>• <strong>No customers selected:</strong> All customers can use this bay (default)</li>
+                                        <li>• <strong>Customers selected:</strong> Only selected customers can book this bay</li>
+                                        <li>• This allows you to reserve certain bays for specific customers</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        @php
+                            $assignedCustomerIds = old('customers', $tippingBay->customerAssignments->pluck('customer_id')->toArray());
+                        @endphp
+
+                        <div class="max-h-64 overflow-y-auto border border-gray-300 rounded-lg p-3">
+                            <div class="space-y-2">
+                                @forelse($customers as $customer)
+                                    <label class="flex items-center p-2 hover:bg-gray-50 cursor-pointer rounded">
+                                        <input type="checkbox"
+                                               name="customers[]"
+                                               value="{{ $customer->id }}"
+                                               class="mr-3 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                               @checked(in_array($customer->id, $assignedCustomerIds))>
+                                        <span class="text-sm">{{ $customer->name }}</span>
+                                        @if($customer->code)
+                                            <span class="ml-2 text-xs text-gray-500">({{ $customer->code }})</span>
+                                        @endif
+                                    </label>
+                                @empty
+                                    <p class="text-sm text-gray-500">No active customers found</p>
+                                @endforelse
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">
+                            Leave empty to allow all customers, or select specific customers to restrict access to this bay
+                        </p>
                     </div>
                 </div>
                 <div class="flex items-center justify-between pt-6 border-t border-gray-200">

@@ -87,9 +87,10 @@ class TippingBayController extends Controller
             'code' => 'nullable|string|max:50|unique:tipping_bays,code,NULL,id,depot_id,'.$request->depot_id,
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'allow_public_bookings' => 'boolean',
             'show_on_map' => 'boolean',
-            'map_x' => 'nullable|numeric|min:0|max:100',
-            'map_y' => 'nullable|numeric|min:0|max:100',
+            'map_x' => 'nullable|numeric|min:0|max:100|regex:/^\d+(\.\d{1,2})?$/',
+            'map_y' => 'nullable|numeric|min:0|max:100|regex:/^\d+(\.\d{1,2})?$/',
             'map_width' => 'nullable|integer|min:20|max:300',
             'map_height' => 'nullable|integer|min:15|max:200',
             'map_rotation' => 'nullable|numeric|min:0|max:360',
@@ -165,7 +166,13 @@ class TippingBayController extends Controller
         $depots = $this->getAllowedDepots();
         $equipmentTypes = \App\Models\EquipmentType::active()->ordered()->get();
 
-        return view('admin.tipping-bays.edit', compact('tippingBay', 'depots', 'equipmentTypes'));
+        // Get all active customers for bay assignment
+        $customers = \App\Models\Customer::active()->orderBy('name')->get();
+
+        // Load existing customer assignments
+        $tippingBay->load('customerAssignments.customer');
+
+        return view('admin.tipping-bays.edit', compact('tippingBay', 'depots', 'equipmentTypes', 'customers'));
     }
 
     public function update(Request $request, TippingBay $tippingBay)
@@ -180,9 +187,10 @@ class TippingBayController extends Controller
             'code' => 'nullable|string|max:50|unique:tipping_bays,code,'.$tippingBay->id.',id,depot_id,'.$request->depot_id,
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'allow_public_bookings' => 'boolean',
             'show_on_map' => 'boolean',
-            'map_x' => 'nullable|numeric|min:0|max:100',
-            'map_y' => 'nullable|numeric|min:0|max:100',
+            'map_x' => 'nullable|numeric|min:0|max:100|regex:/^\d+(\.\d{1,2})?$/',
+            'map_y' => 'nullable|numeric|min:0|max:100|regex:/^\d+(\.\d{1,2})?$/',
             'map_width' => 'nullable|integer|min:20|max:300',
             'map_height' => 'nullable|integer|min:15|max:200',
             'map_rotation' => 'nullable|numeric|min:0|max:360',
@@ -190,13 +198,15 @@ class TippingBayController extends Controller
             'text_color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'equipment' => 'nullable|array',
             'equipment.*' => 'nullable|string|max:255',
+            'customers' => 'nullable|array',
+            'customers.*' => 'exists:customers,id',
         ]);
 
         // Check depot access and default depot restrictions
         if (! in_array($request->depot_id, $allowedDepotIds) || ! in_array($tippingBay->depot_id, $allowedDepotIds)) {
             return back()->withErrors(['depot_id' => 'You do not have access to this depot.']);
         }
-        
+
         // Check if user can edit this depot (admins can edit any accessible depot, others need it to be their default)
         if (!$user->hasRole('admin') && ($tippingBay->depot_id !== $defaultDepotId || $request->depot_id !== $defaultDepotId)) {
             return back()->withErrors(['depot_id' => 'You can only edit tipping bays in your default depot.']);
@@ -205,6 +215,24 @@ class TippingBayController extends Controller
         $validated['equipment'] = array_filter($validated['equipment'] ?? []);
 
         $tippingBay->update($validated);
+
+        // Handle customer assignments
+        if ($request->has('customers')) {
+            // Remove existing assignments
+            \App\Models\CustomerBayAssignment::where('tipping_bay_id', $tippingBay->id)->delete();
+
+            // Create new assignments
+            if (!empty($request->customers)) {
+                foreach ($request->customers as $customerId) {
+                    \App\Models\CustomerBayAssignment::create([
+                        'customer_id' => $customerId,
+                        'tipping_bay_id' => $tippingBay->id,
+                        'priority' => 1,
+                        'is_active' => true,
+                    ]);
+                }
+            }
+        }
 
         return redirect()
             ->route('admin.tipping-bays.show', $tippingBay)

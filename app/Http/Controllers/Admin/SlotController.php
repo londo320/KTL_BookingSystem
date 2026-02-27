@@ -156,9 +156,41 @@ class SlotController extends Controller
             'is_blocked' => 'sometimes|boolean',
         ]);
 
+        // Auto-lock feature: if blocking this slot, block all other slots at same depot/time
+        if (isset($data['is_blocked']) && $data['is_blocked'] && !$slot->is_blocked) {
+            $this->autoLockRelatedSlots($slot);
+        }
+
+        // Auto-unlock feature: if unblocking this slot, unblock all other slots at same depot/time
+        if (isset($data['is_blocked']) && !$data['is_blocked'] && $slot->is_blocked) {
+            $this->autoUnlockRelatedSlots($slot);
+        }
+
         $slot->update($data);
 
         return redirect()->route('admin.slots.index')->with('success', 'Slot updated successfully.');
+    }
+
+    /**
+     * Auto-lock all slots at the same depot and time when one bay is blocked
+     */
+    private function autoLockRelatedSlots(Slot $slot): void
+    {
+        Slot::where('depot_id', $slot->depot_id)
+            ->where('start_at', $slot->start_at)
+            ->where('id', '!=', $slot->id)
+            ->update(['is_blocked' => true]);
+    }
+
+    /**
+     * Auto-unlock all slots at the same depot and time when a bay is unblocked
+     */
+    private function autoUnlockRelatedSlots(Slot $slot): void
+    {
+        Slot::where('depot_id', $slot->depot_id)
+            ->where('start_at', $slot->start_at)
+            ->where('id', '!=', $slot->id)
+            ->update(['is_blocked' => false]);
     }
 
     public function destroy(Slot $slot)

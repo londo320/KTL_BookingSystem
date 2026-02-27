@@ -47,6 +47,54 @@
             @endif
         </div>
 
+        {{-- Switch User Feature Toggle (Only for paul.carr@knowleslogistics.com) --}}
+        @if($user->email === 'paul.carr@knowleslogistics.com')
+            <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <h3 class="text-sm font-medium text-gray-900 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                            </svg>
+                            Switch User Feature
+                            @if($user->switch_user_enabled)
+                                <span class="ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">Currently Active</span>
+                            @else
+                                <span class="ml-2 px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full">Currently Inactive</span>
+                            @endif
+                        </h3>
+                        <p class="mt-1 text-sm text-gray-600">
+                            Enable the ability to switch to other user accounts for testing and support purposes.
+                            When disabled, the switch user dropdown will not appear in your navigation.
+                        </p>
+                    </div>
+                    <div class="ml-4 flex-shrink-0">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="hidden" name="switch_user_enabled" value="0">
+                            <input type="checkbox"
+                                   id="switch_user_toggle"
+                                   name="switch_user_enabled"
+                                   value="1"
+                                   {{ old('switch_user_enabled', $user->switch_user_enabled) ? 'checked' : '' }}
+                                   class="sr-only peer"
+                                   onchange="updateToggleLabel(this)">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            <span id="toggle_label" class="ml-3 text-sm font-medium text-gray-900">
+                                {{ old('switch_user_enabled', $user->switch_user_enabled) ? 'Enabled' : 'Disabled' }}
+                            </span>
+                        </label>
+                    </div>
+
+                    <script>
+                    function updateToggleLabel(checkbox) {
+                        const label = document.getElementById('toggle_label');
+                        label.textContent = checkbox.checked ? 'Enabled' : 'Disabled';
+                    }
+                    </script>
+                </div>
+            </div>
+        @endif
+
         <div class="flex items-center gap-4">
             <x-primary-button>{{ __('Save') }}</x-primary-button>
 

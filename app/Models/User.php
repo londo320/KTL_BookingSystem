@@ -24,6 +24,7 @@ class User extends Authenticatable
         'email_verified_at',
         'depot_id',
         'is_active',
+        'switch_user_enabled',
     ];
 
     /**
@@ -33,6 +34,7 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'is_active' => 'boolean',
+        'switch_user_enabled' => 'boolean',
     ];
 
     // Relationship with depots (many-to-many for access)

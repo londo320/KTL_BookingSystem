@@ -50,7 +50,7 @@ class SlotAvailabilityController extends Controller
         }
 
         // Get customer's allowed bays
-        $allowedBayIds = CustomerBayAssignment::where('customer_id', $customerId)
+        $customerBayAssignments = CustomerBayAssignment::where('customer_id', $customerId)
             ->where('is_active', true)
             ->pluck('tipping_bay_id')
             ->toArray();
@@ -65,9 +65,29 @@ class SlotAvailabilityController extends Controller
             $query->where('depot_id', $depotId);
         }
 
-        if (!empty($allowedBayIds)) {
-            // Filter slots by customer's allowed bays
-            $query->whereIn('tipping_bay_id', $allowedBayIds);
+        if (!empty($customerBayAssignments)) {
+            // Get bays that allow public bookings for released slots
+            $publicBayIds = TippingBay::where('allow_public_bookings', true)
+                ->where('is_active', true)
+                ->pluck('id')
+                ->toArray();
+
+            // Filter slots: either customer's assigned bays OR public bays with released slots
+            $query->where(function ($q) use ($customerBayAssignments, $publicBayIds) {
+                // Always include customer's assigned bays
+                $q->whereIn('tipping_bay_id', $customerBayAssignments);
+
+                // Also include public bays if slots are already released
+                if (!empty($publicBayIds)) {
+                    $q->orWhere(function ($subQ) use ($publicBayIds) {
+                        $subQ->whereIn('tipping_bay_id', $publicBayIds)
+                            ->where(function ($releaseQ) {
+                                $releaseQ->whereNull('released_at')
+                                    ->orWhere('released_at', '<=', now());
+                            });
+                    });
+                }
+            });
         }
         // If customer has no bay assignments, show all slots (backwards compatibility)
         // This allows customers without bay restrictions to book any slot

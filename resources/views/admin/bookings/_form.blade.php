@@ -50,25 +50,28 @@
         @error('booking_type_id')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
       </div>
 
-      {{-- Slot --}}
+      {{-- Slot Selection --}}
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Slot <span class="text-red-500">*</span>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Time Slot <span class="text-red-500">*</span>
           @if($booking->exists)
             <span class="text-xs text-red-600 ml-1">⚠️ Use Rebook</span>
           @endif
         </label>
-        <select name="slot_id" required @if($booking->exists) disabled @endif class="block w-full border-gray-300 rounded text-sm py-2 @if($booking->exists) bg-gray-100 text-gray-500 cursor-not-allowed @else bg-white @endif">
-          @if($booking->exists && $booking->slot)
-            <option value="{{ $booking->slot->id }}" selected>
-              {{ $booking->slot->depot->name }} - {{ $booking->slot->start_at->format('D d-M H:i') }} → {{ $booking->slot->end_at->format('H:i') }}
-            </option>
-          @else
-            <option value="">– Select customer & booking type first –</option>
-          @endif
-        </select>
+
         @if($booking->exists && $booking->slot)
+          {{-- Editing existing booking - show locked slot --}}
+          <div class="p-3 bg-gray-100 border border-gray-300 rounded text-sm">
+            {{ $booking->slot->depot->name }} - {{ $booking->slot->start_at->format('D d-M H:i') }} → {{ $booking->slot->end_at->format('H:i') }}
+          </div>
           <input type="hidden" name="slot_id" value="{{ $booking->slot->id }}">
+        @else
+          {{-- New booking - simple slot dropdown (dates shown in sidebar) --}}
+          <select name="slot_id" id="admin-slot-select" required class="block w-full border-gray-300 rounded text-sm py-2 bg-white">
+            <option value="">– Select customer, type & date →</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-1">💡 Click a date in the sidebar to see available slots</p>
         @endif
+
         @error('slot_id')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
       </div>
     </div>

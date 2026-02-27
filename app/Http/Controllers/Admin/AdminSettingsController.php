@@ -19,20 +19,24 @@ class AdminSettingsController extends Controller
     {
         $depots = Depot::orderBy('name')->get();
         $tippingWorkflowEnabled = Setting::isTippingWorkflowEnabled();
-        
+
         // Module toggles
         $outboundModuleEnabled = Setting::get('outbound_module_enabled', false);
         $inboundModuleEnabled = Setting::get('inbound_module_enabled', true); // Default true for existing functionality
 
         // User approval settings
         $adminApprovalEmails = Setting::get('admin_approval_emails', '');
-        
+
+        // Slot generation method
+        $slotGenerationMethod = Setting::getSlotGenerationMethod();
+
         return view('admin.settings.dashboard', compact(
-            'depots', 
+            'depots',
             'tippingWorkflowEnabled',
             'outboundModuleEnabled',
             'inboundModuleEnabled',
-            'adminApprovalEmails'
+            'adminApprovalEmails',
+            'slotGenerationMethod'
         ));
     }
 
@@ -80,7 +84,7 @@ class AdminSettingsController extends Controller
         $request->validate([
             'admin_approval_emails' => 'nullable|string|max:1000',
         ]);
-        
+
         // Clean up email list - remove spaces, validate format
         $emails = $request->admin_approval_emails;
         if ($emails) {
@@ -90,10 +94,23 @@ class AdminSettingsController extends Controller
             });
             $emails = implode(', ', $validEmails);
         }
-        
+
         Setting::set('admin_approval_emails', $emails ?: '');
-        
+
         return back()->with('success', 'Admin approval email addresses updated successfully.');
+    }
+
+    public function updateSlotGenerationMethod(Request $request)
+    {
+        $request->validate([
+            'slot_generation_method' => 'required|in:template,bay',
+        ]);
+
+        Setting::setSlotGenerationMethod($request->slot_generation_method);
+
+        $methodName = $request->slot_generation_method === 'bay' ? 'Bay-Based' : 'Template-Based';
+
+        return back()->with('success', "Slot generation method changed to {$methodName}.");
     }
 
     public function palletTypes()
