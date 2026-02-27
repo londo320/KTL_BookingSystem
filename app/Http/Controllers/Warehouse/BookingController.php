@@ -1826,7 +1826,7 @@ class BookingController extends Controller
         $recentBookings = $query->take(20)->get()->map(function($booking) {
             return [
                 'id' => $booking->id,
-                'customer_name' => $booking->customer->name,
+                'customer_name' => $booking->customer ? $booking->customer->name : 'Unknown Customer',
                 'slot_time' => $booking->slot ? $booking->slot->start_at->format('D d-M H:i') : 'No slot',
                 'booking_type' => $booking->bookingType->name ?? 'N/A'
             ];
