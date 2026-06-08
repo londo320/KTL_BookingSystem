@@ -21,8 +21,14 @@ class SchedulerController extends Controller
         Artisan::call('schedule:list');
         $output = Artisan::output();
 
+        // Debug: Log the output
+        \Log::info('Schedule list output:', ['output' => $output, 'length' => strlen($output)]);
+
         // Parse the schedule:list output to extract task information
         $scheduledTasks = $this->parseScheduleListOutput($output);
+
+        // Debug: Log parsed tasks
+        \Log::info('Parsed tasks:', ['count' => count($scheduledTasks), 'tasks' => $scheduledTasks]);
 
         // If parsing failed or returned empty, fall back to direct Schedule access
         if (empty($scheduledTasks)) {
