@@ -187,8 +187,8 @@ class SlotAvailabilityController extends Controller
             'slots' => $result,
             'total' => count($result),
             'debug' => array_merge($debugInfo, [
-                'customer_allowed_bays' => $allowedBayIds,
-                'has_bay_restrictions' => !empty($allowedBayIds),
+                'customer_allowed_bays' => $customerBayAssignments,
+                'has_bay_restrictions' => !empty($customerBayAssignments),
             ]),
             'booking_type_time_restrictions' => [
                 'global_start' => $bookingType->booking_start_time,

@@ -224,6 +224,10 @@
                                 @if(auth()->user()->hasFunction('settings.manage'))
                                     <div class="border-t border-gray-100 my-1"></div>
                                     <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase">System</div>
+                                    <a href="{{ route('admin.scheduler.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.scheduler.*') ? 'bg-indigo-50 text-indigo-600 font-medium' : '' }}">
+                                        ⏰ Scheduler
+                                        <div class="text-xs text-gray-500 mt-0.5">Manage scheduled tasks</div>
+                                    </a>
                                     <a href="{{ route('app.settings.dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                         🛠️ System Settings
                                     </a>

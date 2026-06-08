@@ -1,0 +1,21 @@
+[Unit]
+Description=Laravel Scheduler Daemon
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/html
+ExecStart=/usr/bin/php /var/www/html/artisan scheduler:run --daemon --interval=60
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/www/html/storage/logs/scheduler.log
+StandardError=append:/var/www/html/storage/logs/scheduler-error.log
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

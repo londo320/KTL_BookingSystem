@@ -562,6 +562,18 @@ Route::middleware('auth')->group(function () {
 
         Route::get('slot-usage', [SlotUsageController::class, 'index'])->name('slot-usage.index');
 
+        // Scheduler Management
+        Route::prefix('scheduler')->as('scheduler.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\SchedulerController::class, 'index'])->name('index');
+            Route::post('/run', [\App\Http\Controllers\Admin\SchedulerController::class, 'runScheduler'])->name('run');
+            Route::post('/run-command', [\App\Http\Controllers\Admin\SchedulerController::class, 'runCommand'])->name('run-command');
+            Route::get('/logs', [\App\Http\Controllers\Admin\SchedulerController::class, 'getLogs'])->name('logs');
+            Route::get('/status', [\App\Http\Controllers\Admin\SchedulerController::class, 'checkStatus'])->name('status');
+            Route::post('/start', [\App\Http\Controllers\Admin\SchedulerController::class, 'startDaemon'])->name('start');
+            Route::post('/stop', [\App\Http\Controllers\Admin\SchedulerController::class, 'stopDaemon'])->name('stop');
+            Route::post('/restart', [\App\Http\Controllers\Admin\SchedulerController::class, 'restartDaemon'])->name('restart');
+        });
+
         Route::get('settings/dashboard', [AdminSettingsController::class, 'dashboard'])->name('settings.dashboard');
         Route::post('settings/tipping-workflow', [AdminSettingsController::class, 'updateTippingWorkflow'])->name('settings.tipping-workflow');
         Route::post('settings/outbound-module', [AdminSettingsController::class, 'updateOutboundModule'])->name('settings.outbound-module');
