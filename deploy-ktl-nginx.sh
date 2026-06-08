@@ -287,15 +287,16 @@ docker run -d \
     --restart unless-stopped \
     nginx:alpine
 
-echo "⏰ Creating Scheduler container..."
-docker run -d \
-    --name "$SCHEDULER_CONTAINER" \
-    --link "$MYSQL_CONTAINER":mysql \
-    -v "$PROJECT_DIR":/var/www/html \
-    -w /var/www/html \
-    --restart unless-stopped \
-    php:8.2-fpm \
-    php artisan scheduler:run --daemon --interval=60
+echo "⏰ Starting Scheduler inside PHP-FPM container..."
+docker exec -d "$APP_CONTAINER" php artisan scheduler:run --daemon --interval=60
+sleep 2
+
+# Verify scheduler is running
+if docker exec "$APP_CONTAINER" ps aux | grep -q "scheduler:run"; then
+    echo "✅ Scheduler daemon started successfully"
+else
+    echo "⚠️ Scheduler may not have started - check logs"
+fi
 
 echo "🔍 Testing application..."
 sleep 5
@@ -328,7 +329,7 @@ echo "   User: $MYSQL_USER"
 echo "   Password: $MYSQL_PASSWORD"
 echo "============================================="
 echo "⚡ Using Nginx + PHP-FPM for maximum performance!"
-echo "⏰ Scheduler daemon running automatically!"
+echo "⏰ Scheduler daemon running inside PHP-FPM container!"
 echo "✅ OPcache enabled for faster PHP execution"
 echo "✅ Gzip compression enabled"
 echo "✅ Static asset caching enabled"
@@ -337,6 +338,14 @@ echo "============================================="
 echo ""
 echo "🐳 Container Status:"
 docker ps --filter "name=ktl-booking" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+echo ""
+echo "📊 Scheduler Process Status:"
+if docker exec "$APP_CONTAINER" ps aux | grep -E "scheduler:run" | grep -v grep; then
+    echo "✅ Scheduler is running"
+else
+    echo "⚠️ Scheduler not detected"
+fi
 
 send_notification "Setup Complete" "KTL Booking System is running at http://$UNRAID_IP:8088"
 
@@ -347,4 +356,5 @@ echo "📝 Next Steps:"
 echo "   1. Visit http://$UNRAID_IP:8088 to access the application"
 echo "   2. Check scheduler at http://$UNRAID_IP:8088/admin/scheduler"
 echo "   3. All 4 scheduled tasks should be running automatically"
+echo "   4. Scheduler runs inside the PHP-FPM container with --restart unless-stopped"
 echo ""
