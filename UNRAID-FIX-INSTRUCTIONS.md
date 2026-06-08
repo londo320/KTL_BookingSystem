@@ -62,14 +62,29 @@ All 4 containers should show "Up":
 - ktl-booking-nginx
 - ktl-booking-scheduler
 
+## If Getting HTTP 500 Error
+
+If containers are running but you get a 500 error, run:
+```bash
+bash FIX-500-ERROR.sh
+```
+
+This will:
+- Generate APP_KEY
+- Clear all caches
+- Fix permissions
+- Run migrations if needed
+- Optimize Laravel
+- Restart PHP-FPM
+
 ## If Still Having Issues
 
 Run the debug script:
 ```bash
-bash DEBUG-DEPLOYMENT.sh > debug-output.txt
+bash CHECK-LARAVEL-LOGS.sh
 ```
 
-Then share the `debug-output.txt` file.
+This will show detailed Laravel error logs and configuration.
 
 ## Quick Verification
 
