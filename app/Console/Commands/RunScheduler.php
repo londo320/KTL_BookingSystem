@@ -52,12 +52,17 @@ class RunScheduler extends Command
     {
         $this->info('[' . now()->format('Y-m-d H:i:s') . '] Running scheduled tasks...');
 
-        $exitCode = $this->call('schedule:run');
+        try {
+            $exitCode = $this->call('schedule:run');
 
-        if ($exitCode === 0) {
-            $this->info('[' . now()->format('Y-m-d H:i:s') . '] Scheduler completed successfully.');
-        } else {
-            $this->error('[' . now()->format('Y-m-d H:i:s') . '] Scheduler failed with exit code: ' . $exitCode);
+            if ($exitCode === 0) {
+                $this->info('[' . now()->format('Y-m-d H:i:s') . '] Scheduler completed successfully.');
+            } else {
+                $this->error('[' . now()->format('Y-m-d H:i:s') . '] Scheduler failed with exit code: ' . $exitCode);
+            }
+        } catch (\Exception $e) {
+            $this->error('[' . now()->format('Y-m-d H:i:s') . '] Scheduler exception: ' . $e->getMessage());
+            // Continue running even if there's an exception
         }
     }
 }
