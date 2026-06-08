@@ -19,10 +19,9 @@ class SchedulerController extends Controller
         // Boot the Console Kernel to load scheduled tasks from routes/console.php
         $kernel = app(\Illuminate\Contracts\Console\Kernel::class);
 
-        // Force load console routes (Laravel 12)
-        if (file_exists(base_path('routes/console.php'))) {
-            require base_path('routes/console.php');
-        }
+        // Bootstrap Artisan to ensure all commands and schedules are loaded
+        // This is crucial in Laravel 12 where schedules are defined in routes/console.php
+        $kernel->bootstrap();
 
         // Get all scheduled events from Laravel
         $schedule = app(Schedule::class);
