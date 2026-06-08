@@ -55,19 +55,16 @@ else
 fi
 echo ""
 
-echo "🔍 Step 3: Validating .env file..."
-docker exec "$APP_CONTAINER" php -r "
-try {
-    \$dotenv = Dotenv\Dotenv::createImmutable('/var/www/html');
-    \$dotenv->load();
-    echo '✅ .env file is valid\n';
-} catch (Exception \$e) {
-    echo '❌ .env still invalid: ' . \$e->getMessage() . '\n';
-    exit(1);
-}
-" 2>&1
+echo "🔍 Step 3: Validating .env file with Laravel..."
+if docker exec "$APP_CONTAINER" php artisan config:clear 2>&1 | grep -q "invalid"; then
+    echo "❌ .env file is still invalid"
+    ENV_VALID=false
+else
+    echo "✅ .env file is valid"
+    ENV_VALID=true
+fi
 
-if [ $? -eq 0 ]; then
+if [ "$ENV_VALID" = "true" ]; then
     echo ""
     echo "🔑 Step 4: Generating new APP_KEY..."
     docker exec "$APP_CONTAINER" php artisan key:generate --force
