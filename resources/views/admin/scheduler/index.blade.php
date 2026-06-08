@@ -112,6 +112,15 @@
         <div class="bg-white shadow rounded-lg p-6">
             <h3 class="text-lg font-bold mb-4">📅 Scheduled Tasks ({{ count($scheduledTasks) }} tasks)</h3>
 
+            {{-- Debug output --}}
+            @if(count($scheduledTasks) === 0)
+                <div class="bg-yellow-50 border border-yellow-200 p-4 rounded mb-4">
+                    <p class="text-yellow-800">Debug: Tasks array is empty</p>
+                    <p class="text-sm text-yellow-600 mt-2">Variable type: {{ gettype($scheduledTasks) }}</p>
+                    <p class="text-sm text-yellow-600">Is array: {{ is_array($scheduledTasks) ? 'Yes' : 'No' }}</p>
+                </div>
+            @endif
+
             <div class="space-y-4">
                 @foreach($scheduledTasks as $task)
                     <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
