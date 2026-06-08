@@ -135,6 +135,21 @@ class SchedulerController extends Controller
     public function startDaemon()
     {
         try {
+            // Check if running in Docker
+            $isInDocker = file_exists('/.dockerenv') || (file_exists('/proc/1/cgroup') && strpos(file_get_contents('/proc/1/cgroup'), 'docker') !== false);
+
+            if ($isInDocker) {
+                // In Docker, start scheduler as background process in same container
+                exec('nohup php artisan scheduler:run --daemon --interval=60 >> /var/www/html/storage/logs/scheduler.log 2>&1 & echo $!', $output);
+                $pid = isset($output[0]) ? trim($output[0]) : null;
+
+                if ($pid) {
+                    return back()->with('success', "Scheduler started in Docker container (PID: $pid)\n\nRefresh the page to see the updated status.");
+                } else {
+                    return back()->with('error', 'Failed to start scheduler in Docker container. Try running: bash start-scheduler-docker.sh');
+                }
+            }
+
             $pidFile = storage_path('scheduler.pid');
 
             // Check if already running
