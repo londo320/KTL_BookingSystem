@@ -16,12 +16,16 @@ class SchedulerController extends Controller
      */
     public function index()
     {
-        // Get all scheduled events from Laravel
-        // The schedule is automatically loaded by the Console Kernel
-        $schedule = app(Schedule::class);
+        // Boot the Console Kernel to load scheduled tasks from routes/console.php
+        $kernel = app(\Illuminate\Contracts\Console\Kernel::class);
 
-        // Ensure the schedule is populated by calling the Kernel's schedule method
-        app(\Illuminate\Contracts\Console\Kernel::class);
+        // Force load console routes (Laravel 12)
+        if (file_exists(base_path('routes/console.php'))) {
+            require base_path('routes/console.php');
+        }
+
+        // Get all scheduled events from Laravel
+        $schedule = app(Schedule::class);
 
         $events = $schedule->events();
 
