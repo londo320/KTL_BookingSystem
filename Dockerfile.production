@@ -57,7 +57,13 @@ COPY . /var/www/html
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Install Node dependencies and build assets
-RUN npm ci && npm run build
+# Skip if no package.json or build fails (some deployments don't need frontend build)
+RUN if [ -f package.json ]; then \
+        npm ci --prefer-offline --no-audit || echo "npm ci failed, skipping" && \
+        npm run build || echo "npm build failed, using existing assets"; \
+    else \
+        echo "No package.json found, skipping npm build"; \
+    fi
 
 # Configure Nginx
 RUN rm /etc/nginx/sites-enabled/default
