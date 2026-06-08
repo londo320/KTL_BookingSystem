@@ -44,9 +44,14 @@ class CleanupIncompleteBookings extends Command
         }
 
         foreach ($incompleteBookings as $booking) {
-            // Release occupied slots before deleting
-            $booking->occupiedSlots()->detach();
-            $booking->delete();
+            try {
+                // Release occupied slots before deleting
+                $booking->occupiedSlots()->detach();
+                $booking->delete();
+            } catch (\Exception $e) {
+                // Continue even if one booking fails to delete
+                continue;
+            }
         }
 
         $this->info("Deleted {$incompleteBookings->count()} incomplete bookings");

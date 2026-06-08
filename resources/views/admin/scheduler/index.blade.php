@@ -230,18 +230,23 @@
     </div>
 
     {{-- Log Viewer Modal --}}
-    <div id="logModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg shadow-xl w-11/12 max-w-4xl max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center p-4 border-b">
-                <h3 class="text-lg font-bold" id="logModalTitle">Log Viewer</h3>
-                <button onclick="closeLogModal()" class="text-gray-500 hover:text-gray-700">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div id="logModal" onclick="closeLogModalIfBackdrop(event)" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl flex flex-col" style="width: 800px; height: 600px;" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center p-3 border-b flex-shrink-0">
+                <h3 class="text-base font-bold" id="logModalTitle">Log Viewer</h3>
+                <button onclick="closeLogModal()" class="text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
-            <div class="flex-1 overflow-auto p-4">
-                <pre id="logModalContent" class="text-xs bg-gray-50 p-4 rounded overflow-x-auto"></pre>
+            <div class="flex-1 overflow-y-auto overflow-x-auto p-3" style="min-height: 0;">
+                <pre id="logModalContent" class="text-xs whitespace-pre font-mono"></pre>
+            </div>
+            <div class="flex-shrink-0 p-3 border-t bg-gray-50">
+                <button onclick="closeLogModal()" class="px-4 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700">
+                    Close
+                </button>
             </div>
         </div>
     </div>
@@ -282,6 +287,19 @@
         function closeLogModal() {
             document.getElementById('logModal').classList.add('hidden');
         }
+
+        function closeLogModalIfBackdrop(event) {
+            if (event.target.id === 'logModal') {
+                closeLogModal();
+            }
+        }
+
+        // Close modal on ESC key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeLogModal();
+            }
+        });
 
         // Auto-refresh status every 30 seconds
         setInterval(checkStatus, 30000);
