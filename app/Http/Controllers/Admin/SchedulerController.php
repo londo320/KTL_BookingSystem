@@ -537,27 +537,35 @@ class SchedulerController extends Controller
         $lines = explode("\n", $output);
 
         foreach ($lines as $line) {
-            // Skip header lines and empty lines
-            if (empty(trim($line)) || strpos($line, '─') !== false) {
+            // Skip empty lines
+            if (empty(trim($line))) {
                 continue;
             }
 
-            // Try to parse lines that contain cron expressions
-            // Format: "  15   0 * * *  Description .... Next Due: in X hours"
-            if (preg_match('/^\s*(\S+\s+\S+\s+\S+\s+\S+\s+\S+)\s+(.+?)\s+(?:\.{2,}|\s{2,})Next Due:\s*(.+)$/i', $line, $matches)) {
-                $expression = trim($matches[1]);
-                $description = trim($matches[2]);
-                $nextDue = trim($matches[3]);
+            // Try to parse lines that contain "Next Due:"
+            // Format examples:
+            // "  15   0 * * *  Auto-generate slots using configured method (bay or template)  Next Due: in 5 hours"
+            // "  */15 * * * *  php artisan app:auto-release-slots .... Next Due: in 4 minutes"
+            if (strpos($line, 'Next Due:') !== false) {
+                // Extract cron expression (first 5 fields)
+                if (preg_match('/^\s*([\d\*\/,-]+\s+[\d\*\/,-]+\s+[\d\*\/,-]+\s+[\d\*\/,-]+\s+[\d\*\/,-]+)\s+(.+?)\s+Next Due:\s*(.+)$/i', $line, $matches)) {
+                    $expression = trim($matches[1]);
+                    $description = trim($matches[2]);
+                    $nextDue = trim($matches[3]);
 
-                $tasks[] = [
-                    'command' => $description,
-                    'description' => $description,
-                    'expression' => $expression,
-                    'timezone' => config('app.timezone'),
-                    'next_run' => $nextDue,
-                    'mutex' => null,
-                    'without_overlapping' => strpos($description, 'without overlapping') !== false,
-                ];
+                    // Clean up description (remove extra dots)
+                    $description = preg_replace('/\s*\.{2,}\s*$/', '', $description);
+
+                    $tasks[] = [
+                        'command' => $description,
+                        'description' => $description,
+                        'expression' => $expression,
+                        'timezone' => config('app.timezone'),
+                        'next_run' => $nextDue,
+                        'mutex' => null,
+                        'without_overlapping' => strpos($description, 'without overlapping') !== false,
+                    ];
+                }
             }
         }
 
