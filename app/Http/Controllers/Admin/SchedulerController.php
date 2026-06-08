@@ -17,38 +17,26 @@ class SchedulerController extends Controller
     public function index()
     {
         // In Laravel 12, scheduled tasks are defined in routes/console.php
-        // The most reliable way to get them is to run schedule:list command
-        Artisan::call('schedule:list');
-        $output = Artisan::output();
+        // Bootstrap the kernel to load them
+        $kernel = app(\Illuminate\Contracts\Console\Kernel::class);
+        $kernel->bootstrap();
 
-        // Debug: Log the output
-        \Log::info('Schedule list output:', ['output' => $output, 'length' => strlen($output)]);
+        // Get the Schedule instance and all registered events
+        $schedule = app(Schedule::class);
+        $events = $schedule->events();
 
-        // Parse the schedule:list output to extract task information
-        $scheduledTasks = $this->parseScheduleListOutput($output);
+        $scheduledTasks = [];
 
-        // Debug: Log parsed tasks
-        \Log::info('Parsed tasks:', ['count' => count($scheduledTasks), 'tasks' => $scheduledTasks]);
-
-        // If parsing failed or returned empty, fall back to direct Schedule access
-        if (empty($scheduledTasks)) {
-            $kernel = app(\Illuminate\Contracts\Console\Kernel::class);
-            $kernel->bootstrap();
-
-            $schedule = app(Schedule::class);
-            $events = $schedule->events();
-
-            foreach ($events as $event) {
-                $scheduledTasks[] = [
-                    'command' => $event->command ?? $event->description ?? 'Closure',
-                    'description' => $event->description ?? 'No description',
-                    'expression' => $event->expression,
-                    'timezone' => $event->timezone ?? config('app.timezone'),
-                    'next_run' => $this->getNextRunDate($event->expression, $event->timezone ?? config('app.timezone')),
-                    'mutex' => $event->mutex,
-                    'without_overlapping' => property_exists($event, 'withoutOverlapping') ? (bool) $event->withoutOverlapping : false,
-                ];
-            }
+        foreach ($events as $event) {
+            $scheduledTasks[] = [
+                'command' => $event->command ?? $event->description ?? 'Closure',
+                'description' => $event->description ?? 'No description',
+                'expression' => $event->expression,
+                'timezone' => $event->timezone ?? config('app.timezone'),
+                'next_run' => $this->getNextRunDate($event->expression, $event->timezone ?? config('app.timezone')),
+                'mutex' => $event->mutex,
+                'without_overlapping' => property_exists($event, 'withoutOverlapping') ? (bool) $event->withoutOverlapping : false,
+            ];
         }
 
         // Get scheduler daemon status
