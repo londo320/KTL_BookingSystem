@@ -16,30 +16,33 @@ class SchedulerController extends Controller
      */
     public function index()
     {
-        // Boot the Console Kernel to load scheduled tasks from routes/console.php
-        $kernel = app(\Illuminate\Contracts\Console\Kernel::class);
+        // In Laravel 12, scheduled tasks are defined in routes/console.php
+        // The most reliable way to get them is to run schedule:list command
+        Artisan::call('schedule:list');
+        $output = Artisan::output();
 
-        // Bootstrap Artisan to ensure all commands and schedules are loaded
-        // This is crucial in Laravel 12 where schedules are defined in routes/console.php
-        $kernel->bootstrap();
+        // Parse the schedule:list output to extract task information
+        $scheduledTasks = $this->parseScheduleListOutput($output);
 
-        // Get all scheduled events from Laravel
-        $schedule = app(Schedule::class);
+        // If parsing failed or returned empty, fall back to direct Schedule access
+        if (empty($scheduledTasks)) {
+            $kernel = app(\Illuminate\Contracts\Console\Kernel::class);
+            $kernel->bootstrap();
 
-        $events = $schedule->events();
+            $schedule = app(Schedule::class);
+            $events = $schedule->events();
 
-        $scheduledTasks = [];
-
-        foreach ($events as $event) {
-            $scheduledTasks[] = [
-                'command' => $event->command ?? $event->description ?? 'Closure',
-                'description' => $event->description ?? 'No description',
-                'expression' => $event->expression,
-                'timezone' => $event->timezone ?? config('app.timezone'),
-                'next_run' => $this->getNextRunDate($event->expression, $event->timezone ?? config('app.timezone')),
-                'mutex' => $event->mutex,
-                'without_overlapping' => property_exists($event, 'withoutOverlapping') ? (bool) $event->withoutOverlapping : false,
-            ];
+            foreach ($events as $event) {
+                $scheduledTasks[] = [
+                    'command' => $event->command ?? $event->description ?? 'Closure',
+                    'description' => $event->description ?? 'No description',
+                    'expression' => $event->expression,
+                    'timezone' => $event->timezone ?? config('app.timezone'),
+                    'next_run' => $this->getNextRunDate($event->expression, $event->timezone ?? config('app.timezone')),
+                    'mutex' => $event->mutex,
+                    'without_overlapping' => property_exists($event, 'withoutOverlapping') ? (bool) $event->withoutOverlapping : false,
+                ];
+            }
         }
 
         // Get scheduler daemon status
@@ -523,5 +526,41 @@ class SchedulerController extends Controller
         }
 
         return null; // No Docker scheduler found, fall back to PID detection
+    }
+
+    /**
+     * Parse the output of schedule:list command
+     */
+    protected function parseScheduleListOutput($output)
+    {
+        $tasks = [];
+        $lines = explode("\n", $output);
+
+        foreach ($lines as $line) {
+            // Skip header lines and empty lines
+            if (empty(trim($line)) || strpos($line, '─') !== false) {
+                continue;
+            }
+
+            // Try to parse lines that contain cron expressions
+            // Format: "  15   0 * * *  Description .... Next Due: in X hours"
+            if (preg_match('/^\s*(\S+\s+\S+\s+\S+\s+\S+\s+\S+)\s+(.+?)\s+(?:\.{2,}|\s{2,})Next Due:\s*(.+)$/i', $line, $matches)) {
+                $expression = trim($matches[1]);
+                $description = trim($matches[2]);
+                $nextDue = trim($matches[3]);
+
+                $tasks[] = [
+                    'command' => $description,
+                    'description' => $description,
+                    'expression' => $expression,
+                    'timezone' => config('app.timezone'),
+                    'next_run' => $nextDue,
+                    'mutex' => null,
+                    'without_overlapping' => strpos($description, 'without overlapping') !== false,
+                ];
+            }
+        }
+
+        return $tasks;
     }
 }
