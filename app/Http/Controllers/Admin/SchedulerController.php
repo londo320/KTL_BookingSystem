@@ -463,6 +463,19 @@ class SchedulerController extends Controller
             return null; // Not in Docker, use regular PID detection
         }
 
+        // Check if scheduler process is running in THIS container
+        exec('ps aux 2>/dev/null | grep -E "scheduler:run|schedule:run" | grep -v grep', $processOutput);
+
+        if (!empty($processOutput)) {
+            return [
+                'running' => true,
+                'message' => "Scheduler running in this container",
+                'pid' => 'docker-same-container',
+                'color' => 'green',
+                'deployment_type' => 'docker'
+            ];
+        }
+
         // If SCHEDULER_MODE is set to 'docker', assume scheduler runs in separate container
         if (env('SCHEDULER_MODE') === 'docker') {
             return [
