@@ -15,17 +15,15 @@ class AutoReleaseSlots extends Command
 
     public function handle()
     {
-        $this->info('[DEBUG] AutoReleaseSlots ran at '.now());
-
         $now = now();
         $rules = SlotReleaseRule::with('customers', 'depot')->orderByDesc('priority')->get();
         $processedDepotIds = [];
         $depotsWithRules = $rules->pluck('depot_id')->unique();
+        $totalReleased = 0;
 
         // === RULE-BASED RELEASE ===
         foreach ($rules as $rule) {
             $depotName = $rule->depot->name ?? 'Unknown Depot';
-            $this->line("🔍 Checking rule for depot '{$depotName}' (release day: {$rule->release_day}, time: {$rule->release_time})...");
 
             $releaseDayOfWeek = is_numeric($rule->release_day)
                 ? (int) $rule->release_day
@@ -35,7 +33,7 @@ class AutoReleaseSlots extends Command
             $cutoffTime = Carbon::parse($rule->lock_cutoff_time);
 
             $daysUntilNext = (7 + $releaseDayOfWeek - $now->dayOfWeek) % 7;
-            $daysUntilNext = $daysUntilNext === 0 ? 7 : $daysUntilNext; // Always go to next week's same day
+            $daysUntilNext = $daysUntilNext === 0 ? 7 : $daysUntilNext;
             $releaseWindowEnd = $now->copy()->addDays($daysUntilNext)->startOfDay();
 
             $scheduledRelease = $now->copy()->startOfWeek()->addDays(($releaseDayOfWeek - 1))->setTimeFromTimeString($releaseTime->format('H:i'));
@@ -46,8 +44,6 @@ class AutoReleaseSlots extends Command
                     ->get();
 
                 if ($slots->isEmpty()) {
-                    $this->line("ℹ️  No slots to release for depot '{$depotName}' today.");
-
                     continue;
                 }
 
@@ -61,14 +57,11 @@ class AutoReleaseSlots extends Command
 
                     // At release time, slots become public — remove customer restrictions
                     $slot->allowed_customers()->detach();
-
-                    $this->info("✅ Released slot ID {$slot->id} for depot '{$depotName}'");
                 }
 
-                $this->line("➡️  Total released for depot '{$depotName}': {$slots->count()}");
+                $this->info("Released {$slots->count()} slots for {$depotName}");
+                $totalReleased += $slots->count();
                 $processedDepotIds[] = $rule->depot_id;
-            } else {
-                $this->line('⏭️  Skipping: Today is not the release day or time not reached yet.');
             }
         }
 
@@ -85,8 +78,6 @@ class AutoReleaseSlots extends Command
                 ->get();
 
             if ($slots->isEmpty()) {
-                $this->line("ℹ️  No fallback slots to release for depot ID {$depotId}.");
-
                 continue;
             }
 
@@ -95,15 +86,15 @@ class AutoReleaseSlots extends Command
                 $slot->locked_at = $slot->start_at->copy()->subDays(1)->setTime(16, 0);
                 $slot->save();
 
-                $slot->allowed_customers()->detach(); // make public
-                $this->info("🌐 Fallback released slot ID {$slot->id} for depot ID {$depotId}");
+                $slot->allowed_customers()->detach();
             }
 
-            $this->line("🟢 Fallback released {$slots->count()} slots for depot ID {$depotId}.");
+            $this->info("Fallback released {$slots->count()} slots for depot ID {$depotId}");
+            $totalReleased += $slots->count();
         }
 
-        $this->info('🏁 Slot release process completed.');
-        $this->line("📊 Processed {$rules->count()} rules across ".count($processedDepotIds).' rule-based depots.');
-        $this->line('📊 Fallback processed depots: '.implode(', ', $fallbackDepotIds->toArray()));
+        if ($totalReleased > 0) {
+            $this->info("Total slots released: {$totalReleased}");
+        }
     }
 }

@@ -1,101 +1,112 @@
-<x-app-layout>
-    <x-slot name="header">
+<?php if (isset($component)) { $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54 = $attributes; } ?>
+<?php $component = App\View\Components\AppLayout::resolve([] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('app-layout'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\App\View\Components\AppLayout::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
+     <?php $__env->slot('header', null, []); ?> 
         <div class="flex justify-between items-center">
             <h2 class="text-xl font-semibold">⏰ Scheduler Management</h2>
             <div class="flex gap-2">
                 <button onclick="checkStatus()" class="px-3 py-1.5 bg-gray-500 text-white text-sm rounded hover:bg-gray-600">
                     🔄 Refresh Status
                 </button>
-                <form action="{{ route('admin.scheduler.run') }}" method="POST" class="inline">
-                    @csrf
+                <form action="<?php echo e(route('admin.scheduler.run')); ?>" method="POST" class="inline">
+                    <?php echo csrf_field(); ?>
                     <button type="submit" class="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
                         ▶️ Run All Tasks Now
                     </button>
                 </form>
             </div>
         </div>
-    </x-slot>
+     <?php $__env->endSlot(); ?>
 
     <div class="py-6 max-w-7xl mx-auto space-y-6">
-        {{-- Success/Error Messages --}}
-        @if(session('success'))
+        
+        <?php if(session('success')): ?>
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
-                <pre class="text-sm whitespace-pre-wrap">{{ session('success') }}</pre>
+                <pre class="text-sm whitespace-pre-wrap"><?php echo e(session('success')); ?></pre>
             </div>
-        @endif
+        <?php endif; ?>
 
-        @if(session('warning'))
+        <?php if(session('warning')): ?>
             <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative">
-                <strong>Warning:</strong> {{ session('warning') }}
-            </div>
-        @endif
+                <strong>Warning:</strong> <?php echo e(session('warning')); ?>
 
-        @if(session('error'))
+            </div>
+        <?php endif; ?>
+
+        <?php if(session('error')): ?>
             <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-                <strong>Error:</strong> {{ session('error') }}
-            </div>
-        @endif
+                <strong>Error:</strong> <?php echo e(session('error')); ?>
 
-        {{-- Daemon Status --}}
+            </div>
+        <?php endif; ?>
+
+        
         <div class="bg-white shadow rounded-lg p-6">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold">
-                    @if($daemonStatus['running'])
+                    <?php if($daemonStatus['running']): ?>
                         🟢 Scheduler Daemon Status
-                    @else
+                    <?php else: ?>
                         🔴 Scheduler Daemon Status
-                    @endif
+                    <?php endif; ?>
                 </h3>
-                @if(($daemonStatus['deployment_type'] ?? 'local') === 'local')
+                <?php if(($daemonStatus['deployment_type'] ?? 'local') === 'local'): ?>
                     <div class="flex gap-2">
-                        @if($daemonStatus['running'])
-                            <form action="{{ route('admin.scheduler.stop') }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to stop the scheduler daemon?')">
-                                @csrf
+                        <?php if($daemonStatus['running']): ?>
+                            <form action="<?php echo e(route('admin.scheduler.stop')); ?>" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to stop the scheduler daemon?')">
+                                <?php echo csrf_field(); ?>
                                 <button type="submit" class="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700">
                                     ⏹️ Stop
                                 </button>
                             </form>
-                            <form action="{{ route('admin.scheduler.restart') }}" method="POST" class="inline">
-                                @csrf
+                            <form action="<?php echo e(route('admin.scheduler.restart')); ?>" method="POST" class="inline">
+                                <?php echo csrf_field(); ?>
                                 <button type="submit" class="px-3 py-1.5 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700">
                                     🔄 Restart
                                 </button>
                             </form>
-                        @else
-                            <form action="{{ route('admin.scheduler.start') }}" method="POST" class="inline">
-                                @csrf
+                        <?php else: ?>
+                            <form action="<?php echo e(route('admin.scheduler.start')); ?>" method="POST" class="inline">
+                                <?php echo csrf_field(); ?>
                                 <button type="submit" class="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700">
                                     ▶️ Start Daemon
                                 </button>
                             </form>
-                        @endif
+                        <?php endif; ?>
                     </div>
-                @endif
+                <?php endif; ?>
             </div>
 
             <div id="daemon-status" class="flex items-center gap-3">
-                <div class="w-3 h-3 rounded-full {{ $daemonStatus['running'] ? 'bg-green-500' : 'bg-red-500' }}"></div>
+                <div class="w-3 h-3 rounded-full <?php echo e($daemonStatus['running'] ? 'bg-green-500' : 'bg-red-500'); ?>"></div>
                 <div>
-                    <p class="font-semibold">{{ $daemonStatus['message'] }}</p>
-                    @if($daemonStatus['running'])
-                        @if(($daemonStatus['deployment_type'] ?? 'local') === 'docker')
+                    <p class="font-semibold"><?php echo e($daemonStatus['message']); ?></p>
+                    <?php if($daemonStatus['running']): ?>
+                        <?php if(($daemonStatus['deployment_type'] ?? 'local') === 'docker'): ?>
                             <p class="text-sm text-gray-600">🐳 Running in Docker container - managed via Docker</p>
-                            <p class="text-sm text-gray-500 mt-1">Container: <code class="bg-gray-100 px-2 py-0.5 rounded">{{ $daemonStatus['container'] ?? 'scheduler' }}</code></p>
-                        @else
+                            <p class="text-sm text-gray-500 mt-1">Container: <code class="bg-gray-100 px-2 py-0.5 rounded"><?php echo e($daemonStatus['container'] ?? 'scheduler'); ?></code></p>
+                        <?php else: ?>
                             <p class="text-sm text-gray-600">The scheduler daemon is checking for tasks every 60 seconds</p>
-                        @endif
-                    @else
-                        @if(($daemonStatus['deployment_type'] ?? 'local') === 'docker')
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <?php if(($daemonStatus['deployment_type'] ?? 'local') === 'docker'): ?>
                             <p class="text-sm text-red-600">🐳 Docker scheduler container not found or not running</p>
                             <p class="text-sm text-gray-500 mt-1">Check Docker container status: <code class="bg-gray-100 px-2 py-0.5 rounded">docker ps | grep scheduler</code></p>
-                        @else
+                        <?php else: ?>
                             <p class="text-sm text-red-600">Click the "Start Daemon" button above to start the scheduler</p>
-                        @endif
-                    @endif
+                        <?php endif; ?>
+                    <?php endif; ?>
                 </div>
             </div>
 
-            @if(!$daemonStatus['running'])
+            <?php if(!$daemonStatus['running']): ?>
                 <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
                     <p class="text-sm text-yellow-800 font-semibold mb-2">⚠️ Scheduler Not Running</p>
                     <p class="text-sm text-gray-700 mb-2">The scheduler daemon is not running. Your scheduled tasks will not execute automatically.</p>
@@ -105,55 +116,55 @@
                         <p><strong>Production:</strong> See <code class="bg-gray-100 px-2 py-1 rounded">SCHEDULER-SETUP.md</code> for systemd/Docker setup</p>
                     </div>
                 </div>
-            @endif
+            <?php endif; ?>
         </div>
 
-        {{-- Scheduled Tasks --}}
+        
         <div class="bg-white shadow rounded-lg p-6">
-            <h3 class="text-lg font-bold mb-3">📅 Scheduled Tasks ({{ count($scheduledTasks) }} tasks)</h3>
+            <h3 class="text-lg font-bold mb-3">📅 Scheduled Tasks (<?php echo e(count($scheduledTasks)); ?> tasks)</h3>
 
             <div class="space-y-2">
-                @foreach($scheduledTasks as $task)
+                <?php $__currentLoopData = $scheduledTasks; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $task): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <div class="border border-gray-200 rounded p-3 hover:bg-gray-50">
                         <div class="flex justify-between items-start gap-3">
                             <div class="flex-1 min-w-0">
-                                <h4 class="font-semibold text-gray-900 text-sm">{{ $task['description'] }}</h4>
+                                <h4 class="font-semibold text-gray-900 text-sm"><?php echo e($task['description']); ?></h4>
                                 <div class="flex items-center gap-2 mt-1">
-                                    <code class="text-xs text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">{{ $task['expression'] }}</code>
-                                    <span class="text-xs text-gray-500">Next: {{ $task['next_run'] }}</span>
-                                    @if(str_contains($task['command'], 'generate'))
+                                    <code class="text-xs text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded"><?php echo e($task['expression']); ?></code>
+                                    <span class="text-xs text-gray-500">Next: <?php echo e($task['next_run']); ?></span>
+                                    <?php if(str_contains($task['command'], 'generate')): ?>
                                         <button onclick="viewLog('slots_generate.log')" class="text-xs text-blue-600 hover:underline">
                                             📄 slots_generate.log
                                         </button>
-                                    @elseif(str_contains($task['command'], 'auto-release'))
+                                    <?php elseif(str_contains($task['command'], 'auto-release')): ?>
                                         <button onclick="viewLog('auto_release_slots.log')" class="text-xs text-blue-600 hover:underline">
                                             📄 auto_release_slots.log
                                         </button>
-                                    @elseif(str_contains($task['command'], 'sync-occupancy'))
+                                    <?php elseif(str_contains($task['command'], 'sync-occupancy')): ?>
                                         <button onclick="viewLog('bay_sync.log')" class="text-xs text-blue-600 hover:underline">
                                             📄 bay_sync.log
                                         </button>
-                                    @elseif(str_contains($task['command'], 'cleanup'))
+                                    <?php elseif(str_contains($task['command'], 'cleanup')): ?>
                                         <button onclick="viewLog('booking_cleanup.log')" class="text-xs text-blue-600 hover:underline">
                                             📄 booking_cleanup.log
                                         </button>
-                                    @endif
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                            <form action="{{ route('admin.scheduler.run-command') }}" method="POST" class="flex-shrink-0">
-                                @csrf
-                                <input type="hidden" name="command" value="{{ $task['command'] }}">
+                            <form action="<?php echo e(route('admin.scheduler.run-command')); ?>" method="POST" class="flex-shrink-0">
+                                <?php echo csrf_field(); ?>
+                                <input type="hidden" name="command" value="<?php echo e($task['command']); ?>">
                                 <button type="submit" class="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 whitespace-nowrap">
                                     ▶️ Run Now
                                 </button>
                             </form>
                         </div>
                     </div>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
         </div>
 
-        {{-- Cron Expression Reference --}}
+        
         <div class="bg-white shadow rounded-lg p-6">
             <h3 class="text-lg font-bold mb-4">📖 Cron Expression Reference</h3>
             <div class="text-sm space-y-2">
@@ -186,13 +197,13 @@
             </div>
         </div>
 
-        {{-- Recent Logs --}}
+        
         <div class="bg-white shadow rounded-lg p-6">
             <h3 class="text-lg font-bold mb-3">📋 Recent Log Activity</h3>
 
             <div class="space-y-2">
-                @foreach($recentLogs as $logFile => $logData)
-                    @php
+                <?php $__currentLoopData = $recentLogs; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $logFile => $logData): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php
                         $taskName = match($logFile) {
                             'slots_generate.log' => 'Slot Generation',
                             'auto_release_slots.log' => 'Auto-Release Slots',
@@ -200,36 +211,37 @@
                             'booking_cleanup.log' => 'Booking Cleanup',
                             default => $logFile
                         };
-                    @endphp
+                    ?>
                     <div class="border border-gray-200 rounded p-2">
                         <div class="flex justify-between items-center">
                             <div class="flex items-center gap-2">
-                                <h4 class="font-semibold text-sm">{{ $taskName }}</h4>
-                                <code class="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{{ $logFile }}</code>
+                                <h4 class="font-semibold text-sm"><?php echo e($taskName); ?></h4>
+                                <code class="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded"><?php echo e($logFile); ?></code>
                             </div>
                             <div class="flex gap-2 items-center">
-                                @if($logData['exists'])
+                                <?php if($logData['exists']): ?>
                                     <span class="text-xs text-gray-500">
-                                        {{ $logData['last_modified'] }}
+                                        <?php echo e($logData['last_modified']); ?>
+
                                     </span>
-                                    <button onclick="viewLog('{{ $logFile }}')" class="text-xs text-blue-600 hover:underline">
+                                    <button onclick="viewLog('<?php echo e($logFile); ?>')" class="text-xs text-blue-600 hover:underline">
                                         View Full
                                     </button>
-                                @else
+                                <?php else: ?>
                                     <span class="text-xs text-gray-400">No log yet</span>
-                                @endif
+                                <?php endif; ?>
                             </div>
                         </div>
-                        @if($logData['exists'])
-                            <pre class="text-xs bg-gray-50 p-2 rounded overflow-x-auto max-h-24 mt-1">{{ $logData['content'] }}</pre>
-                        @endif
+                        <?php if($logData['exists']): ?>
+                            <pre class="text-xs bg-gray-50 p-2 rounded overflow-x-auto max-h-24 mt-1"><?php echo e($logData['content']); ?></pre>
+                        <?php endif; ?>
                     </div>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
         </div>
     </div>
 
-    {{-- Log Viewer Modal --}}
+    
     <div id="logModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg shadow-xl w-11/12 max-w-4xl max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center p-4 border-b">
@@ -248,7 +260,7 @@
 
     <script>
         function checkStatus() {
-            fetch('{{ route('admin.scheduler.status') }}')
+            fetch('<?php echo e(route('admin.scheduler.status')); ?>')
                 .then(response => response.json())
                 .then(data => {
                     location.reload();
@@ -267,7 +279,7 @@
             content.textContent = 'Loading log file...';
             modal.classList.remove('hidden');
 
-            fetch('{{ route('admin.scheduler.logs') }}?log_file=' + logFile)
+            fetch('<?php echo e(route('admin.scheduler.logs')); ?>?log_file=' + logFile)
                 .then(response => response.json())
                 .then(data => {
                     title.textContent = data.file;
@@ -286,4 +298,14 @@
         // Auto-refresh status every 30 seconds
         setInterval(checkStatus, 30000);
     </script>
-</x-app-layout>
+ <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
+<?php $attributes = $__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
+<?php unset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
+<?php $component = $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
+<?php unset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
+<?php endif; ?>
+<?php /**PATH /Users/londo/Herd/test/resources/views/admin/scheduler/index.blade.php ENDPATH**/ ?>

@@ -1,0 +1,203 @@
+================================================================================
+               SCHEDULER ADMIN PANEL - VISUAL GUIDE
+================================================================================
+
+URL: http://test.test/admin/scheduler
+Navigation: Configuration menu → ⏰ Scheduler
+
+================================================================================
+                        WHEN SCHEDULER IS RUNNING
+================================================================================
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│ ⏰ Scheduler Management                                                   │
+│                                            [🔄 Refresh] [▶️ Run All Tasks]│
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 🔴 Scheduler Daemon Status                    [⏹️ Stop] [🔄 Restart]     │
+│                                                                           │
+│  ● Running (PID: 12345)                                                  │
+│  The scheduler daemon is checking for tasks every 60 seconds             │
+│                                                                           │
+└──────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+                       WHEN SCHEDULER IS STOPPED
+================================================================================
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│ ⏰ Scheduler Management                                                   │
+│                                            [🔄 Refresh] [▶️ Run All Tasks]│
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 🔴 Scheduler Daemon Status                         [▶️ Start Daemon]     │
+│                                                                           │
+│  ● Not Running                                                           │
+│  Click the "Start Daemon" button above to start the scheduler            │
+│                                                                           │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │ ⚠️ Scheduler Not Running                                            │ │
+│  │                                                                     │ │
+│  │ The scheduler daemon is not running. Your scheduled tasks will     │ │
+│  │ not execute automatically.                                         │ │
+│  │                                                                     │ │
+│  │ Quick Start: Click the [▶️ Start Daemon] button above              │ │
+│  │ Command Line: Run bash start-scheduler.sh                          │ │
+│  │ Production: See SCHEDULER-SETUP.md for systemd/Docker setup        │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                                                                           │
+└──────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+                              BUTTON ACTIONS
+================================================================================
+
+[▶️ Start Daemon]  →  Starts the scheduler daemon
+                     • Appears when scheduler is stopped (red status)
+                     • Green button
+                     • No confirmation required
+                     • Takes 2-3 seconds
+                     • Shows success message with PID
+
+[⏹️ Stop]          →  Stops the scheduler daemon
+                     • Appears when scheduler is running (green status)
+                     • Red button
+                     • Asks for confirmation: "Are you sure?"
+                     • Graceful shutdown
+                     • Shows success message
+
+[🔄 Restart]       →  Restarts the scheduler daemon
+                     • Appears when scheduler is running (green status)
+                     • Yellow button
+                     • No confirmation required
+                     • Stops then starts automatically
+                     • Assigns new PID
+                     • Shows success message
+
+[🔄 Refresh]       →  Refreshes the status
+                     • Always visible (top right)
+                     • Gray button
+                     • Reloads page to check current status
+                     • Updates every 30 seconds automatically
+
+[▶️ Run All Tasks] →  Executes all scheduled tasks immediately
+                     • Always visible (top right)
+                     • Blue button
+                     • Runs scheduler once (not daemon)
+                     • Shows output from all tasks
+
+================================================================================
+                          SUCCESS MESSAGES
+================================================================================
+
+After Starting:
+┌──────────────────────────────────────────────────────────────────────────┐
+│ ✅ Scheduler daemon started successfully! (PID: 12345)                    │
+│                                                                           │
+│ Logs will be written to: /Users/londo/Herd/test/storage/logs/scheduler.log│
+└──────────────────────────────────────────────────────────────────────────┘
+
+After Stopping:
+┌──────────────────────────────────────────────────────────────────────────┐
+│ ✅ Scheduler daemon stopped successfully (PID: 12345)                     │
+└──────────────────────────────────────────────────────────────────────────┘
+
+After Restarting:
+┌──────────────────────────────────────────────────────────────────────────┐
+│ ✅ Scheduler daemon restarted successfully! (New PID: 12346)              │
+└──────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+                           WARNING MESSAGES
+================================================================================
+
+Already Running:
+┌──────────────────────────────────────────────────────────────────────────┐
+│ ⚠️ Warning: Scheduler daemon is already running (PID: 12345)              │
+└──────────────────────────────────────────────────────────────────────────┘
+
+Not Running:
+┌──────────────────────────────────────────────────────────────────────────┐
+│ ⚠️ Warning: Scheduler daemon is not running (no PID file found)           │
+└──────────────────────────────────────────────────────────────────────────┘
+
+Stale Process:
+┌──────────────────────────────────────────────────────────────────────────┐
+│ ⚠️ Warning: Scheduler daemon was not running (stale PID: 12345).          │
+│    Cleaned up PID file.                                                   │
+└──────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+                       CONFIRMATION DIALOGS
+================================================================================
+
+When clicking [⏹️ Stop]:
+
+    ┌─────────────────────────────────────────────────┐
+    │  Are you sure you want to stop the scheduler    │
+    │  daemon?                                        │
+    │                                                 │
+    │              [Cancel]      [OK]                 │
+    └─────────────────────────────────────────────────┘
+
+Click [Cancel] → Nothing happens
+Click [OK]     → Scheduler stops
+
+================================================================================
+                         QUICK REFERENCE
+================================================================================
+
+Task                          | Action
+------------------------------|----------------------------------------
+Start scheduler               | Click [▶️ Start Daemon]
+Stop scheduler                | Click [⏹️ Stop] → Confirm
+Restart scheduler             | Click [🔄 Restart]
+Check if running              | Look at the dot (● green = running)
+Refresh status                | Click [🔄 Refresh] or wait 30 seconds
+Run all tasks once            | Click [▶️ Run All Tasks]
+Run single task               | Scroll down, click [▶️ Run Now]
+View logs                     | Scroll down, click [📄 View Log]
+
+================================================================================
+                            TYPICAL WORKFLOW
+================================================================================
+
+First Time:
+  1. Visit /admin/scheduler
+  2. See red dot and yellow warning
+  3. Click [▶️ Start Daemon]
+  4. Wait 2 seconds
+  5. See green dot and success message
+  6. Done!
+
+After Server Restart:
+  1. Visit /admin/scheduler
+  2. See red dot (scheduler stopped)
+  3. Click [▶️ Start Daemon]
+  4. Scheduler resumes
+
+After Changing Config:
+  1. Edit routes/console.php
+  2. Visit /admin/scheduler
+  3. Click [🔄 Restart]
+  4. Changes take effect
+
+Troubleshooting:
+  1. Visit /admin/scheduler
+  2. Click [📄 View Log] on problem task
+  3. See what's wrong
+  4. Fix the issue
+  5. Click [🔄 Restart]
+  6. Test with [▶️ Run Now]
+
+================================================================================
+                              THAT'S IT!
+================================================================================
+
+Everything you need is right there in your browser.
+
+No SSH. No command line. Just buttons. Easy! 🎉
+
+================================================================================

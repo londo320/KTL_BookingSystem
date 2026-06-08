@@ -30,8 +30,6 @@ class CleanupIncompleteBookings extends Command
         $minutes = $this->option('minutes');
         $cutoffTime = Carbon::now()->subMinutes($minutes);
 
-        $this->info("Finding bookings created before {$cutoffTime->toDateTimeString()} with no PO details...");
-
         // Find bookings that:
         // 1. Were created more than X minutes ago
         // 2. Have no PO numbers attached
@@ -42,26 +40,16 @@ class CleanupIncompleteBookings extends Command
             ->get();
 
         if ($incompleteBookings->isEmpty()) {
-            $this->info('No incomplete bookings found to delete.');
             return 0;
         }
 
-        $this->info("Found {$incompleteBookings->count()} incomplete bookings to delete:");
-
-        $deletedCount = 0;
-
         foreach ($incompleteBookings as $booking) {
-            $this->line("  - Booking #{$booking->id} (Customer: {$booking->customer->name}, Created: {$booking->created_at->diffForHumans()})");
-
             // Release occupied slots before deleting
             $booking->occupiedSlots()->detach();
-
-            // Delete the booking
             $booking->delete();
-            $deletedCount++;
         }
 
-        $this->info("Successfully deleted {$deletedCount} incomplete bookings.");
+        $this->info("Deleted {$incompleteBookings->count()} incomplete bookings");
 
         return 0;
     }

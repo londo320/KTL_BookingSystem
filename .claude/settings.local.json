@@ -1,27 +1,17 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Read(///**)",
-      "Read(//Users/londo/Library/Application Support/Herd/config/php/84/**)",
-      "Bash(python3:*)",
-      "Bash(pip3 install:*)",
-      "mcp__ide__executeCode",
-      "Bash(php:*)",
-      "Bash(git pull:*)",
-      "Bash(git stash:*)",
-      "Bash(chmod +x /Users/londo/Herd/test/setup-cron.sh)",
-      "Bash(./setup-cron.sh)",
-      "Bash(cat setup-cron.sh)",
-      "Bash(chmod +x fix-cron-now.sh)",
-      "Bash(chmod +x start-cron-persistent.sh docker-entrypoint.sh)",
-      "Bash(chmod +x deploy-railway.sh)",
-      "Bash(curl -s \"http://test.test/api/slots/available?customer_id=1&booking_type_id=1&depot_id=1\")",
-      "Bash(cat .env)",
-      "Bash(curl -s \"http://test.test/customer/availability?depot_id=1\" -H \"Accept: application/json\")",
-      "Bash(curl -s \"http://test.test/api/slots/available?customer_id=1&booking_type_id=1&depot_id=1&days_ahead=30\" -H \"Accept: application/json\")"
+      "Bash(chmod +x deploy-ktl-nginx.sh)",
+      "Bash(chmod +x DEBUG-DEPLOYMENT.sh)",
+      "Bash(chmod +x FIX-DEPLOYMENT.sh)",
+      "Bash(chmod +x FIX-DEPLOYMENT-V2.sh)",
+      "Bash(chmod +x CHECK-LARAVEL-LOGS.sh)",
+      "Bash(chmod +x FIX-500-ERROR.sh)",
+      "Bash(chmod +x CHECK-SCHEDULER-CONTAINER.sh)",
+      "Bash(chmod +x FIX-ENV-FILE.sh)",
+      "Bash(chmod +x REBUILD-ENV.sh)",
+      "Bash(chmod +x start-scheduler-docker.sh)",
+      "Bash(cat .dockerignore)"
     ],
     "deny": [],
     "ask": []
