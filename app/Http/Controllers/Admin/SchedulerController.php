@@ -413,13 +413,23 @@ class SchedulerController extends Controller
      */
     protected function extractCommandName($command)
     {
-        // Handle "php artisan command:name"
-        if (preg_match('/php\s+artisan\s+([^\s]+)/', $command, $matches)) {
+        // Handle "'/usr/local/bin/php' 'artisan' command:name"
+        if (preg_match("/'php'\\s+'artisan'\\s+([^\\s]+)/", $command, $matches)) {
             return $matches[1];
         }
 
         // Handle "'artisan' command:name"
-        if (preg_match("/'artisan'\s+([^\s]+)/", $command, $matches)) {
+        if (preg_match("/'artisan'\\s+([^\\s]+)/", $command, $matches)) {
+            return $matches[1];
+        }
+
+        // Handle "php artisan command:name"
+        if (preg_match('/php\\s+artisan\\s+([^\\s]+)/', $command, $matches)) {
+            return $matches[1];
+        }
+
+        // Handle "'/path/to/php' 'artisan' command:name"
+        if (preg_match("/'[^']*php'\\s+'artisan'\\s+([^\\s]+)/", $command, $matches)) {
             return $matches[1];
         }
 
