@@ -294,6 +294,13 @@ class SchedulerController extends Controller
      */
     protected function getSchedulerDaemonStatus()
     {
+        // First, check if running in Docker with dedicated scheduler container
+        $dockerSchedulerStatus = $this->checkDockerSchedulerContainer();
+        if ($dockerSchedulerStatus) {
+            return $dockerSchedulerStatus;
+        }
+
+        // Otherwise, check for local process via PID file
         $pidFile = storage_path('scheduler.pid');
 
         if (!File::exists($pidFile)) {
@@ -301,7 +308,8 @@ class SchedulerController extends Controller
                 'running' => false,
                 'message' => 'Scheduler daemon is not running',
                 'pid' => null,
-                'color' => 'red'
+                'color' => 'red',
+                'deployment_type' => 'local'
             ];
         }
 
@@ -441,5 +449,51 @@ class SchedulerController extends Controller
 
         fclose($handle);
         return array_reverse($text);
+    }
+
+    /**
+     * Check if scheduler is running in a Docker container
+     */
+    protected function checkDockerSchedulerContainer()
+    {
+        // Check if we're inside a Docker container
+        $isInDocker = file_exists('/.dockerenv') || (file_exists('/proc/1/cgroup') && strpos(file_get_contents('/proc/1/cgroup'), 'docker') !== false);
+
+        if (!$isInDocker) {
+            return null; // Not in Docker, use regular PID detection
+        }
+
+        // Try to check if scheduler container exists and is running
+        // This command checks for a container with "scheduler" in the name
+        exec('docker ps --filter "name=scheduler" --format "{{.Names}}" 2>/dev/null', $output, $returnCode);
+
+        // If docker command is not available or fails, fall back to checking local process
+        if ($returnCode !== 0) {
+            return null;
+        }
+
+        $schedulerContainers = array_filter($output, function($name) {
+            return stripos($name, 'scheduler') !== false;
+        });
+
+        if (!empty($schedulerContainers)) {
+            $containerName = reset($schedulerContainers);
+
+            // Check if the scheduler process is running inside the container
+            exec("docker exec $containerName ps aux 2>/dev/null | grep -E 'scheduler:run|schedule:run' | grep -v grep", $processOutput);
+
+            if (!empty($processOutput)) {
+                return [
+                    'running' => true,
+                    'message' => "Scheduler running in Docker container: $containerName",
+                    'pid' => 'docker',
+                    'container' => $containerName,
+                    'color' => 'green',
+                    'deployment_type' => 'docker'
+                ];
+            }
+        }
+
+        return null; // No Docker scheduler found, fall back to PID detection
     }
 }

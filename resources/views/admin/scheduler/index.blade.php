@@ -39,30 +39,38 @@
         {{-- Daemon Status --}}
         <div class="bg-white shadow rounded-lg p-6">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold">🔴 Scheduler Daemon Status</h3>
-                <div class="flex gap-2">
+                <h3 class="text-lg font-bold">
                     @if($daemonStatus['running'])
-                        <form action="{{ route('admin.scheduler.stop') }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to stop the scheduler daemon?')">
-                            @csrf
-                            <button type="submit" class="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700">
-                                ⏹️ Stop
-                            </button>
-                        </form>
-                        <form action="{{ route('admin.scheduler.restart') }}" method="POST" class="inline">
-                            @csrf
-                            <button type="submit" class="px-3 py-1.5 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700">
-                                🔄 Restart
-                            </button>
-                        </form>
+                        🟢 Scheduler Daemon Status
                     @else
-                        <form action="{{ route('admin.scheduler.start') }}" method="POST" class="inline">
-                            @csrf
-                            <button type="submit" class="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700">
-                                ▶️ Start Daemon
-                            </button>
-                        </form>
+                        🔴 Scheduler Daemon Status
                     @endif
-                </div>
+                </h3>
+                @if(($daemonStatus['deployment_type'] ?? 'local') === 'local')
+                    <div class="flex gap-2">
+                        @if($daemonStatus['running'])
+                            <form action="{{ route('admin.scheduler.stop') }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to stop the scheduler daemon?')">
+                                @csrf
+                                <button type="submit" class="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700">
+                                    ⏹️ Stop
+                                </button>
+                            </form>
+                            <form action="{{ route('admin.scheduler.restart') }}" method="POST" class="inline">
+                                @csrf
+                                <button type="submit" class="px-3 py-1.5 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700">
+                                    🔄 Restart
+                                </button>
+                            </form>
+                        @else
+                            <form action="{{ route('admin.scheduler.start') }}" method="POST" class="inline">
+                                @csrf
+                                <button type="submit" class="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700">
+                                    ▶️ Start Daemon
+                                </button>
+                            </form>
+                        @endif
+                    </div>
+                @endif
             </div>
 
             <div id="daemon-status" class="flex items-center gap-3">
@@ -70,9 +78,19 @@
                 <div>
                     <p class="font-semibold">{{ $daemonStatus['message'] }}</p>
                     @if($daemonStatus['running'])
-                        <p class="text-sm text-gray-600">The scheduler daemon is checking for tasks every 60 seconds</p>
+                        @if(($daemonStatus['deployment_type'] ?? 'local') === 'docker')
+                            <p class="text-sm text-gray-600">🐳 Running in Docker container - managed via Docker</p>
+                            <p class="text-sm text-gray-500 mt-1">Container: <code class="bg-gray-100 px-2 py-0.5 rounded">{{ $daemonStatus['container'] ?? 'scheduler' }}</code></p>
+                        @else
+                            <p class="text-sm text-gray-600">The scheduler daemon is checking for tasks every 60 seconds</p>
+                        @endif
                     @else
-                        <p class="text-sm text-red-600">Click the "Start Daemon" button above to start the scheduler</p>
+                        @if(($daemonStatus['deployment_type'] ?? 'local') === 'docker')
+                            <p class="text-sm text-red-600">🐳 Docker scheduler container not found or not running</p>
+                            <p class="text-sm text-gray-500 mt-1">Check Docker container status: <code class="bg-gray-100 px-2 py-0.5 rounded">docker ps | grep scheduler</code></p>
+                        @else
+                            <p class="text-sm text-red-600">Click the "Start Daemon" button above to start the scheduler</p>
+                        @endif
                     @endif
                 </div>
             </div>
