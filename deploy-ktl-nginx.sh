@@ -94,33 +94,35 @@ if [ $mysql_ready -eq 0 ]; then
 fi
 
 echo "⚙️ Setting up environment file..."
+
+# Remove old .env file if it exists and backup
+if [ -f ".env" ]; then
+    echo "📋 Backing up existing .env..."
+    cp .env .env.backup.$(date +%s)
+    rm .env
+fi
+
 if [ -f ".env.example" ]; then
+    echo "📝 Creating fresh .env from .env.example..."
     cp .env.example .env
 
-    # Update database configuration
-    sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
-    sed -i 's/DB_HOST=.*/DB_HOST=mysql/' .env
-    sed -i 's/DB_PORT=.*/DB_PORT=3306/' .env
-    sed -i "s/DB_DATABASE=.*/DB_DATABASE=$MYSQL_DATABASE/" .env
-    sed -i "s/DB_USERNAME=.*/DB_USERNAME=$MYSQL_USER/" .env
-    sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$MYSQL_PASSWORD/" .env
+    # Update database configuration using proper sed syntax
+    sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
+    sed -i 's/^DB_HOST=.*/DB_HOST=mysql/' .env
+    sed -i 's/^DB_PORT=.*/DB_PORT=3306/' .env
+    sed -i "s/^DB_DATABASE=.*/DB_DATABASE=$MYSQL_DATABASE/" .env
+    sed -i "s/^DB_USERNAME=.*/DB_USERNAME=$MYSQL_USER/" .env
+    sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=$MYSQL_PASSWORD/" .env
 
     # Update app configuration
-    sed -i 's/APP_ENV=.*/APP_ENV=production/' .env
-    sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/' .env
+    sed -i 's/^APP_ENV=.*/APP_ENV=production/' .env
+    sed -i 's/^APP_DEBUG=.*/APP_DEBUG=false/' .env
 
-    # Set scheduler mode to docker for Docker deployments
-    if grep -q "SCHEDULER_MODE=" .env; then
-        sed -i 's/SCHEDULER_MODE=.*/SCHEDULER_MODE=docker/' .env
-    else
-        echo "SCHEDULER_MODE=docker" >> .env
-    fi
-
-    if grep -q "SCHEDULER_CONTAINER_NAME=" .env; then
-        sed -i "s/SCHEDULER_CONTAINER_NAME=.*/SCHEDULER_CONTAINER_NAME=$SCHEDULER_CONTAINER/" .env
-    else
-        echo "SCHEDULER_CONTAINER_NAME=$SCHEDULER_CONTAINER" >> .env
-    fi
+    # Add scheduler settings on new lines at the end
+    echo "" >> .env
+    echo "# Docker Scheduler Configuration" >> .env
+    echo "SCHEDULER_MODE=docker" >> .env
+    echo "SCHEDULER_CONTAINER_NAME=$SCHEDULER_CONTAINER" >> .env
 
     echo "✅ Environment configured with correct database credentials"
 else
