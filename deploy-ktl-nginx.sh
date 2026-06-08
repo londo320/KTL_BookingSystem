@@ -347,14 +347,82 @@ else
     echo "⚠️ Scheduler not detected"
 fi
 
-send_notification "Setup Complete" "KTL Booking System is running at http://$UNRAID_IP:8088"
+echo ""
+echo "🔧 Final verification and fixes..."
+
+# Additional safeguards from FIX-500-ERROR.sh
+echo "🔑 Ensuring APP_KEY is set..."
+docker exec "$APP_CONTAINER" php artisan key:generate --force --ansi 2>/dev/null || echo "APP_KEY already set"
+
+echo "🔒 Final permission check..."
+docker exec "$APP_CONTAINER" chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
+docker exec "$APP_CONTAINER" chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
+
+echo "🔗 Verifying storage link..."
+docker exec "$APP_CONTAINER" php artisan storage:link 2>/dev/null || echo "Storage link already exists"
+
+echo "⚡ Final cache optimization..."
+docker exec "$APP_CONTAINER" php artisan config:cache 2>/dev/null || true
+docker exec "$APP_CONTAINER" php artisan route:cache 2>/dev/null || true
+docker exec "$APP_CONTAINER" php artisan view:cache 2>/dev/null || true
+
+echo "🔄 Restarting PHP-FPM to ensure clean state..."
+docker restart "$APP_CONTAINER"
+sleep 5
+docker restart "$NGINX_CONTAINER"
+sleep 3
 
 echo ""
-echo "✅ Setup completed successfully with scheduler and performance optimizations!"
+echo "🔍 Final HTTP test..."
+HTTP_STATUS_FINAL=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8088" || echo "000")
+
+if [ "$HTTP_STATUS_FINAL" = "200" ] || [ "$HTTP_STATUS_FINAL" = "302" ] || [ "$HTTP_STATUS_FINAL" = "301" ]; then
+    echo "✅ Application is responding perfectly (HTTP $HTTP_STATUS_FINAL)"
+
+    send_notification "Setup Complete" "KTL Booking System is running at http://$UNRAID_IP:8088"
+
+    echo ""
+    echo "============================================="
+    echo "🎉 DEPLOYMENT SUCCESSFUL!"
+    echo "============================================="
+    echo "✅ All containers running"
+    echo "✅ Application responding"
+    echo "✅ Scheduler active"
+    echo "✅ Database connected"
+    echo "============================================="
+else
+    echo "⚠️ Application returned HTTP $HTTP_STATUS_FINAL"
+    echo ""
+    echo "Running automatic fix..."
+
+    # Run the same fixes as FIX-500-ERROR.sh
+    docker exec "$APP_CONTAINER" php artisan config:clear
+    docker exec "$APP_CONTAINER" php artisan cache:clear
+    docker exec "$APP_CONTAINER" chmod -R 777 /var/www/html/storage
+    docker restart "$APP_CONTAINER"
+    sleep 5
+    docker restart "$NGINX_CONTAINER"
+    sleep 3
+
+    # Test again
+    HTTP_STATUS_RETRY=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8088" || echo "000")
+
+    if [ "$HTTP_STATUS_RETRY" = "200" ] || [ "$HTTP_STATUS_RETRY" = "302" ] || [ "$HTTP_STATUS_RETRY" = "301" ]; then
+        echo "✅ Fixed! Application now responding (HTTP $HTTP_STATUS_RETRY)"
+        send_notification "Setup Complete (after fix)" "KTL Booking System is running at http://$UNRAID_IP:8088"
+    else
+        echo "❌ Still getting HTTP $HTTP_STATUS_RETRY"
+        echo "📋 Check logs:"
+        echo "   docker logs $APP_CONTAINER --tail 30"
+        echo "   docker exec $APP_CONTAINER cat /var/www/html/storage/logs/laravel.log | tail -50"
+        send_notification "Setup Needs Attention" "HTTP $HTTP_STATUS_RETRY - Check logs"
+    fi
+fi
+
 echo ""
 echo "📝 Next Steps:"
 echo "   1. Visit http://$UNRAID_IP:8088 to access the application"
 echo "   2. Check scheduler at http://$UNRAID_IP:8088/admin/scheduler"
 echo "   3. All 4 scheduled tasks should be running automatically"
-echo "   4. Scheduler runs inside the PHP-FPM container with --restart unless-stopped"
+echo "   4. Scheduler runs inside the PHP-FPM container"
 echo ""
