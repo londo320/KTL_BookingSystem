@@ -109,6 +109,19 @@ if [ -f ".env.example" ]; then
     sed -i 's/APP_ENV=.*/APP_ENV=production/' .env
     sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/' .env
 
+    # Set scheduler mode to docker for Docker deployments
+    if grep -q "SCHEDULER_MODE=" .env; then
+        sed -i 's/SCHEDULER_MODE=.*/SCHEDULER_MODE=docker/' .env
+    else
+        echo "SCHEDULER_MODE=docker" >> .env
+    fi
+
+    if grep -q "SCHEDULER_CONTAINER_NAME=" .env; then
+        sed -i "s/SCHEDULER_CONTAINER_NAME=.*/SCHEDULER_CONTAINER_NAME=$SCHEDULER_CONTAINER/" .env
+    else
+        echo "SCHEDULER_CONTAINER_NAME=$SCHEDULER_CONTAINER" >> .env
+    fi
+
     echo "✅ Environment configured with correct database credentials"
 else
     echo "❌ .env.example not found"

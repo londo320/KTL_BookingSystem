@@ -463,6 +463,18 @@ class SchedulerController extends Controller
             return null; // Not in Docker, use regular PID detection
         }
 
+        // If SCHEDULER_MODE is set to 'docker', assume scheduler runs in separate container
+        if (env('SCHEDULER_MODE') === 'docker') {
+            return [
+                'running' => true,
+                'message' => "Scheduler running in dedicated Docker container",
+                'pid' => 'docker',
+                'container' => env('SCHEDULER_CONTAINER_NAME', 'ktl-booking-scheduler'),
+                'color' => 'green',
+                'deployment_type' => 'docker'
+            ];
+        }
+
         // Try to check if scheduler container exists and is running
         // This command checks for a container with "scheduler" in the name
         exec('docker ps --filter "name=scheduler" --format "{{.Names}}" 2>/dev/null', $output, $returnCode);
