@@ -1,4 +1,11 @@
 #!/bin/bash
 # PHP wrapper script to avoid path issues with spaces
-# Auto-detects PHP binary - works in local, production, and Docker
+# Auto-detects correct PHP binary for the environment
+
+# Try /usr/bin/php first (production/Docker)
+if [ -x "/usr/bin/php" ]; then
+    exec /usr/bin/php "$@"
+fi
+
+# Fallback to 'php' in PATH (local dev)
 exec php "$@"
