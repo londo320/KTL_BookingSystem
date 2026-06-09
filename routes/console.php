@@ -11,21 +11,7 @@ Artisan::command('inspire', function () {
 // Laravel 12 Scheduling Configuration
 // Dynamic slot generation based on system setting
 // Check which method is configured and run the appropriate command
-Schedule::call(function () {
-    $method = \App\Models\Setting::getSlotGenerationMethod();
-
-    if ($method === 'bay') {
-        // Bay-based generation respects:
-        // - Per-bay operating hours
-        // - Equipment requirements (handball capability)
-        // - Customer bay assignments
-        // - Individual bay capacity
-        \Illuminate\Support\Facades\Artisan::call('slots:generate-by-bay', ['--days' => 30]);
-    } else {
-        // Template-based generation uses slot templates
-        \Illuminate\Support\Facades\Artisan::call('slots:generate', ['--days' => 30]);
-    }
-})
+Schedule::command('slots:generate-dynamic', ['--days' => 30])
     ->dailyAt('00:15')
     ->name('dynamic-slot-generation')
     ->withoutOverlapping()

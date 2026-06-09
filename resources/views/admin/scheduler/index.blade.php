@@ -253,6 +253,12 @@
 
     <script>
         function checkStatus() {
+            // Don't auto-refresh if modal is open
+            const modal = document.getElementById('logModal');
+            if (modal && !modal.classList.contains('hidden')) {
+                return;
+            }
+
             fetch('{{ route('admin.scheduler.status') }}')
                 .then(response => response.json())
                 .then(data => {

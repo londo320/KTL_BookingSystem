@@ -6,6 +6,14 @@ use Symfony\Component\Console\Input\ArgvInput;
 
 define('LARAVEL_START', microtime(true));
 
+// Override PHP binary to use wrapper script (fixes spaces in path)
+$wrapperPath = __DIR__ . '/php-wrapper';
+if (file_exists($wrapperPath)) {
+    putenv('PHP_BINARY=' . $wrapperPath);
+    $_ENV['PHP_BINARY'] = $wrapperPath;
+    $_SERVER['PHP_BINARY'] = $wrapperPath;
+}
+
 // Register the Composer autoloader...
 require __DIR__.'/vendor/autoload.php';
 

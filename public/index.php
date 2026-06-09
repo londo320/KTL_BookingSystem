@@ -5,6 +5,14 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
+// Override PHP binary to use wrapper script (fixes spaces in path)
+$wrapperPath = dirname(__DIR__) . '/php-wrapper';
+if (file_exists($wrapperPath)) {
+    putenv('PHP_BINARY=' . $wrapperPath);
+    $_ENV['PHP_BINARY'] = $wrapperPath;
+    $_SERVER['PHP_BINARY'] = $wrapperPath;
+}
+
 /*
 |--------------------------------------------------------------------------
 | Check If The Application Is Under Maintenance

@@ -60,18 +60,59 @@ class SchedulerController extends Controller
         $command = $request->input('command');
 
         try {
-            // Extract command name from full command string
-            $commandName = $this->extractCommandName($command);
+            // Check daemon status before running command
+            $pidFile = storage_path('scheduler.pid');
+            $daemonPidBefore = File::exists($pidFile) ? trim(File::get($pidFile)) : 'none';
 
-            if (!$commandName) {
-                return back()->with('error', 'Invalid command format');
+            // Extract command name and parameters from full command string
+            $parsed = $this->extractCommandAndParams($command);
+
+            if (!$parsed) {
+                return back()->with('error', 'Invalid command format: ' . $command);
             }
 
-            // Run the command
-            Artisan::call($commandName);
-            $output = Artisan::output();
+            // Run the command with parameters
+            $startTime = microtime(true);
 
-            return back()->with('success', "Command executed successfully!\n\nOutput:\n" . $output);
+            // Create output buffer to capture command output
+            $outputBuffer = new \Symfony\Component\Console\Output\BufferedOutput();
+            Artisan::call($parsed['command'], $parsed['params'], $outputBuffer);
+
+            $output = trim($outputBuffer->fetch());
+            $duration = round((microtime(true) - $startTime) * 1000, 2);
+
+            // Check daemon status after running command
+            $daemonPidAfter = File::exists($pidFile) ? trim(File::get($pidFile)) : 'none';
+            $stillRunning = $daemonPidAfter !== 'none' && $this->isProcessRunning($daemonPidAfter);
+
+            // Check for command-specific log files if there's no direct output
+            $logHint = '';
+            if (empty($output)) {
+                $logFile = $this->getLogFileForCommand($parsed['command']);
+                if ($logFile && File::exists(storage_path("logs/{$logFile}"))) {
+                    $logLines = $this->tail(storage_path("logs/{$logFile}"), 10);
+                    $logContent = implode("\n", $logLines);
+                    if (!empty(trim($logContent))) {
+                        $logHint = "\n\n📄 Recent log entries from {$logFile}:\n" .
+                                   "─────────────────────────────────────\n" .
+                                   $logContent . "\n" .
+                                   "─────────────────────────────────────";
+                    }
+                }
+            }
+
+            $debugInfo = "\n\n" .
+                "═══════════════════════════════════════\n" .
+                "Debug Info:\n" .
+                "Command: {$parsed['command']}\n" .
+                "Parameters: " . json_encode($parsed['params']) . "\n" .
+                "Duration: {$duration}ms\n" .
+                "Daemon PID before: {$daemonPidBefore}\n" .
+                "Daemon PID after: {$daemonPidAfter}\n" .
+                "Daemon still running: " . ($stillRunning ? 'YES ✅' : 'NO ❌') . "\n" .
+                "═══════════════════════════════════════";
+
+            return back()->with('success', "Command executed successfully!\n\nOutput:\n" . ($output ?: '(command completed silently)') . $logHint . $debugInfo);
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to run command: ' . $e->getMessage());
         }
@@ -167,21 +208,28 @@ class SchedulerController extends Controller
 
             // Start the scheduler daemon
             $logPath = storage_path('logs/scheduler.log');
-            $phpBinary = PHP_BINARY;
+            // Use wrapper script from custom Application class to avoid issues with spaces in PHP path
+            $phpBinary = app()->phpBinary();
             $artisanPath = base_path('artisan');
 
+            // Use escapeshellarg to properly handle paths with spaces
             $command = sprintf(
-                'nohup "%s" "%s" scheduler:run --daemon --interval=60 >> "%s" 2>&1 & echo $!',
-                $phpBinary,
-                $artisanPath,
-                $logPath
+                'nohup %s %s scheduler:run --daemon --interval=60 >> %s 2>&1 & echo $!',
+                escapeshellarg($phpBinary),
+                escapeshellarg($artisanPath),
+                escapeshellarg($logPath)
             );
 
             $pid = exec($command);
 
             if ($pid) {
                 File::put($pidFile, $pid);
-                return back()->with('success', "Scheduler daemon started successfully! (PID: $pid)\n\nLogs will be written to: $logPath");
+                return back()->with('success',
+                    "Scheduler daemon started successfully! (PID: $pid)\n\n" .
+                    "PHP Binary: $phpBinary\n" .
+                    "Logs: $logPath\n\n" .
+                    "Command: $command"
+                );
             } else {
                 return back()->with('error', 'Failed to start scheduler daemon. Please check permissions.');
             }
@@ -267,14 +315,16 @@ class SchedulerController extends Controller
 
             // Start fresh
             $logPath = storage_path('logs/scheduler.log');
-            $phpBinary = PHP_BINARY;
+            // Use wrapper script from custom Application class to avoid issues with spaces in PHP path
+            $phpBinary = app()->phpBinary();
             $artisanPath = base_path('artisan');
 
+            // Use escapeshellarg to properly handle paths with spaces
             $command = sprintf(
-                'nohup "%s" "%s" scheduler:run --daemon --interval=60 >> "%s" 2>&1 & echo $!',
-                $phpBinary,
-                $artisanPath,
-                $logPath
+                'nohup %s %s scheduler:run --daemon --interval=60 >> %s 2>&1 & echo $!',
+                escapeshellarg($phpBinary),
+                escapeshellarg($artisanPath),
+                escapeshellarg($logPath)
             );
 
             $pid = exec($command);
@@ -342,18 +392,28 @@ class SchedulerController extends Controller
         }
 
         if ($running) {
+            // Double-check by looking at the actual process
+            exec("ps -p $pid -o command=", $processCommand);
+            $commandLine = implode('', $processCommand);
+
             return [
                 'running' => true,
                 'message' => "Scheduler daemon is running (PID: $pid)",
                 'pid' => $pid,
-                'color' => 'green'
+                'color' => 'green',
+                'debug' => substr($commandLine, 0, 100)
             ];
         } else {
+            // Check if any scheduler:run processes are actually running
+            exec("ps aux | grep 'scheduler:run' | grep -v grep | wc -l", $count);
+            $actualCount = (int) trim(implode('', $count));
+
             return [
                 'running' => false,
                 'message' => "Scheduler daemon is not running (stale PID: $pid)",
                 'pid' => $pid,
-                'color' => 'orange'
+                'color' => 'orange',
+                'debug' => "Found $actualCount scheduler:run processes"
             ];
         }
     }
@@ -409,7 +469,77 @@ class SchedulerController extends Controller
     }
 
     /**
-     * Extract command name from full command string
+     * Extract command name and parameters from full command string
+     */
+    protected function extractCommandAndParams($command)
+    {
+        $params = [];
+
+        // Handle "'/path/to/php' 'artisan' command:name --param=value"
+        // This is the format from Laravel's scheduler
+        if (preg_match("/'[^']*php[^']*'\\s+'artisan'\\s+([^\\s]+)(.*)$/", $command, $matches)) {
+            $commandName = $matches[1];
+            $paramString = trim($matches[2] ?? '');
+
+            // Parse parameters
+            if ($paramString) {
+                // Match --param=value or --param value
+                if (preg_match_all('/--([^\s=]+)(?:=([^\s]+))?/', $paramString, $paramMatches, PREG_SET_ORDER)) {
+                    foreach ($paramMatches as $match) {
+                        $paramName = $match[1];
+                        $paramValue = $match[2] ?? true;
+                        $params['--' . $paramName] = $paramValue;
+                    }
+                }
+            }
+
+            return ['command' => $commandName, 'params' => $params];
+        }
+
+        // Handle "php artisan command:name --param=value"
+        if (preg_match('/php\s+artisan\s+([^\s]+)(.*)/', $command, $matches)) {
+            $commandName = $matches[1];
+            $paramString = trim($matches[2] ?? '');
+
+            // Parse parameters
+            if ($paramString) {
+                // Match --param=value or --param value
+                if (preg_match_all('/--([^\s=]+)(?:=([^\s]+))?/', $paramString, $paramMatches, PREG_SET_ORDER)) {
+                    foreach ($paramMatches as $match) {
+                        $paramName = $match[1];
+                        $paramValue = $match[2] ?? true;
+                        $params['--' . $paramName] = $paramValue;
+                    }
+                }
+            }
+
+            return ['command' => $commandName, 'params' => $params];
+        }
+
+        // Handle direct command name with params
+        if (preg_match('/^([a-z0-9:-]+)(.*)$/i', $command, $matches)) {
+            $commandName = $matches[1];
+            $paramString = trim($matches[2] ?? '');
+
+            // Parse parameters
+            if ($paramString) {
+                if (preg_match_all('/--([^\s=]+)(?:=([^\s]+))?/', $paramString, $paramMatches, PREG_SET_ORDER)) {
+                    foreach ($paramMatches as $match) {
+                        $paramName = $match[1];
+                        $paramValue = $match[2] ?? true;
+                        $params['--' . $paramName] = $paramValue;
+                    }
+                }
+            }
+
+            return ['command' => $commandName, 'params' => $params];
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract command name from full command string (legacy method)
      */
     protected function extractCommandName($command)
     {
@@ -439,6 +569,23 @@ class SchedulerController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Get the log file name for a given command
+     */
+    protected function getLogFileForCommand($command)
+    {
+        $mapping = [
+            'slots:generate-dynamic' => 'slots_generate.log',
+            'slots:generate' => 'slots_generate.log',
+            'slots:generate-by-bay' => 'slots_generate.log',
+            'app:auto-release-slots' => 'auto_release_slots.log',
+            'bays:sync-occupancy' => 'bay_sync.log',
+            'bookings:cleanup-incomplete' => 'booking_cleanup.log',
+        ];
+
+        return $mapping[$command] ?? null;
     }
 
     /**

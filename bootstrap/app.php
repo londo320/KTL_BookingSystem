@@ -1,9 +1,11 @@
 <?php
 
-use Illuminate\Foundation\Application;
+use App\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 
+// Use custom Application class that overrides phpBinary()
+// to use wrapper script instead of PHP_BINARY (fixes spaces in path)
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
