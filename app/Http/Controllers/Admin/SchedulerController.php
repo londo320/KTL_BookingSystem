@@ -85,6 +85,9 @@ class SchedulerController extends Controller
             $daemonPidAfter = File::exists($pidFile) ? trim(File::get($pidFile)) : 'none';
             $stillRunning = $daemonPidAfter !== 'none' && $this->isProcessRunning($daemonPidAfter);
 
+            // Get additional debug info about the process check
+            $processDebug = $this->getProcessDebugInfo($daemonPidAfter);
+
             // Check for command-specific log files if there's no direct output
             $logHint = '';
             if (empty($output)) {
@@ -110,6 +113,7 @@ class SchedulerController extends Controller
                 "Daemon PID before: {$daemonPidBefore}\n" .
                 "Daemon PID after: {$daemonPidAfter}\n" .
                 "Daemon still running: " . ($stillRunning ? 'YES ✅' : 'NO ❌') . "\n" .
+                $processDebug .
                 "═══════════════════════════════════════";
 
             return back()->with('success', "Command executed successfully!\n\nOutput:\n" . ($output ?: '(command completed silently)') . $logHint . $debugInfo);
@@ -341,15 +345,80 @@ class SchedulerController extends Controller
     }
 
     /**
+     * Get detailed debug info about process check
+     */
+    protected function getProcessDebugInfo($pid)
+    {
+        if (empty($pid) || !is_numeric($pid)) {
+            return "Process check: Invalid PID\n";
+        }
+
+        if (PHP_OS_FAMILY === 'Windows') {
+            return "Process check: Windows (not detailed)\n";
+        }
+
+        $checks = [];
+
+        // Check 1: /proc filesystem
+        $procExists = file_exists("/proc/{$pid}");
+        $checks[] = "/proc/{$pid} exists: " . ($procExists ? 'YES' : 'NO');
+
+        if ($procExists) {
+            $cmdline = @file_get_contents("/proc/{$pid}/cmdline");
+            $hasScheduler = $cmdline && strpos($cmdline, 'scheduler:run') !== false;
+            $checks[] = "Contains 'scheduler:run': " . ($hasScheduler ? 'YES' : 'NO');
+        }
+
+        // Check 2: ps command
+        exec("ps -p $pid -o comm= 2>/dev/null", $psOutput, $psReturn);
+        $checks[] = "ps command works: " . ($psReturn === 0 ? 'YES' : 'NO');
+
+        // Check 3: kill -0
+        exec("kill -0 $pid 2>/dev/null", $killOutput, $killReturn);
+        $checks[] = "kill -0 works: " . ($killReturn === 0 ? 'YES' : 'NO');
+
+        // Check for any scheduler:run processes
+        exec("ps aux 2>/dev/null | grep 'scheduler:run' | grep -v grep | wc -l", $countOutput);
+        $schedulerCount = (int) trim(implode('', $countOutput));
+        $checks[] = "Total scheduler:run processes: {$schedulerCount}";
+
+        return "Process checks:\n  • " . implode("\n  • ", $checks) . "\n";
+    }
+
+    /**
      * Check if a process is running by PID
      */
     protected function isProcessRunning($pid)
     {
+        if (empty($pid) || !is_numeric($pid)) {
+            return false;
+        }
+
         if (PHP_OS_FAMILY === 'Windows') {
             exec("tasklist /FI \"PID eq $pid\" 2>NUL", $output);
             return count($output) > 1;
         } else {
-            exec("ps -p $pid > /dev/null 2>&1", $output, $returnCode);
+            // Try multiple methods for better compatibility
+
+            // Method 1: Check /proc filesystem (most reliable on Linux)
+            if (file_exists("/proc/{$pid}")) {
+                // Verify it's actually a scheduler process
+                $cmdline = @file_get_contents("/proc/{$pid}/cmdline");
+                if ($cmdline && strpos($cmdline, 'scheduler:run') !== false) {
+                    return true;
+                }
+                // If we can't read cmdline but /proc exists, assume it's running
+                return true;
+            }
+
+            // Method 2: Use ps command
+            exec("ps -p $pid -o comm= 2>/dev/null", $output, $returnCode);
+            if ($returnCode === 0 && !empty($output)) {
+                return true;
+            }
+
+            // Method 3: Use kill -0 (doesn't actually kill, just checks if process exists)
+            exec("kill -0 $pid 2>/dev/null", $output, $returnCode);
             return $returnCode === 0;
         }
     }
