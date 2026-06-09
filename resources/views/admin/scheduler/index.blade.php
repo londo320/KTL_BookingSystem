@@ -74,9 +74,12 @@
             </div>
 
             <div id="daemon-status" class="flex items-center gap-3">
-                <div class="w-3 h-3 rounded-full {{ $daemonStatus['running'] ? 'bg-green-500' : 'bg-red-500' }}"></div>
+                <div class="w-3 h-3 rounded-full {{ $daemonStatus['running'] ? 'bg-green-500' : ($daemonStatus['color'] === 'orange' ? 'bg-orange-500' : 'bg-red-500') }}"></div>
                 <div>
                     <p class="font-semibold">{{ $daemonStatus['message'] }}</p>
+                    @if(isset($daemonStatus['warning']))
+                        <p class="text-sm text-orange-600 mt-1">⚠️ {{ $daemonStatus['warning'] }}</p>
+                    @endif
                     @if($daemonStatus['running'])
                         @if(($daemonStatus['deployment_type'] ?? 'local') === 'docker')
                             <p class="text-sm text-gray-600">🐳 Running in separate Docker container - managed via Docker</p>

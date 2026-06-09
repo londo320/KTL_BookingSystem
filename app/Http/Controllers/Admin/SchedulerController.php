@@ -715,15 +715,37 @@ class SchedulerController extends Controller
         }
 
         // Check if scheduler process is running in THIS container
+        // Don't just check if ANY scheduler exists - check our PID file matches reality
+        $pidFile = storage_path('scheduler.pid');
+
+        if (File::exists($pidFile)) {
+            $pid = trim(File::get($pidFile));
+
+            // Check if this specific PID is running
+            exec("ps -p $pid -o command= 2>/dev/null | grep scheduler:run", $specificProcess);
+
+            if (!empty($specificProcess)) {
+                return [
+                    'running' => true,
+                    'message' => "Scheduler daemon running (PID: $pid)",
+                    'pid' => $pid,
+                    'color' => 'green',
+                    'deployment_type' => 'local' // Same container = allow control
+                ];
+            }
+        }
+
+        // If no valid PID file, check for any scheduler process
         exec('ps aux 2>/dev/null | grep -E "scheduler:run|schedule:run" | grep -v grep', $processOutput);
 
         if (!empty($processOutput)) {
             return [
-                'running' => true,
-                'message' => "Scheduler running in this container",
-                'pid' => 'docker-same-container',
-                'color' => 'green',
-                'deployment_type' => 'local' // Same container = allow control
+                'running' => false, // Not our daemon, but one exists
+                'message' => "Scheduler process found but not managed by admin panel",
+                'pid' => null,
+                'color' => 'orange',
+                'deployment_type' => 'local',
+                'warning' => 'A scheduler is running but not controlled by this panel'
             ];
         }
 
