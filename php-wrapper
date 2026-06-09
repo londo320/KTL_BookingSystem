@@ -1,3 +1,4 @@
 #!/bin/bash
 # PHP wrapper script to avoid path issues with spaces
-exec '/Users/londo/Library/Application Support/Herd/bin/php84' "$@"
+# Auto-detects PHP binary - works in local, production, and Docker
+exec php "$@"
