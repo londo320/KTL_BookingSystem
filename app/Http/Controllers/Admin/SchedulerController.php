@@ -83,10 +83,20 @@ class SchedulerController extends Controller
 
             // Check daemon status after running command
             $daemonPidAfter = File::exists($pidFile) ? trim(File::get($pidFile)) : 'none';
-            $stillRunning = $daemonPidAfter !== 'none' && $this->isProcessRunning($daemonPidAfter);
 
-            // Get additional debug info about the process check
-            $processDebug = $this->getProcessDebugInfo($daemonPidAfter);
+            // In Docker/production, trust the daemon status if we can't check processes
+            $daemonStatus = $this->getSchedulerDaemonStatus();
+            $isDockerOrCannotCheck = ($daemonStatus['deployment_type'] ?? 'local') === 'docker';
+
+            if ($isDockerOrCannotCheck) {
+                // In Docker, trust that daemon is running if status shows it
+                $stillRunning = $daemonStatus['running'];
+                $processDebug = "Environment: Docker/Production\nDaemon check: Trusting daemon status (container isolation)\n";
+            } else {
+                // Local environment - do detailed process check
+                $stillRunning = $daemonPidAfter !== 'none' && $this->isProcessRunning($daemonPidAfter);
+                $processDebug = $this->getProcessDebugInfo($daemonPidAfter);
+            }
 
             // Check for command-specific log files if there's no direct output
             $logHint = '';
