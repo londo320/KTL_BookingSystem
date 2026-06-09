@@ -79,8 +79,11 @@
                     <p class="font-semibold">{{ $daemonStatus['message'] }}</p>
                     @if($daemonStatus['running'])
                         @if(($daemonStatus['deployment_type'] ?? 'local') === 'docker')
-                            <p class="text-sm text-gray-600">🐳 Running in Docker container - managed via Docker</p>
+                            <p class="text-sm text-gray-600">🐳 Running in separate Docker container - managed via Docker</p>
                             <p class="text-sm text-gray-500 mt-1">Container: <code class="bg-gray-100 px-2 py-0.5 rounded">{{ $daemonStatus['container'] ?? 'scheduler' }}</code></p>
+                        @elseif($daemonStatus['pid'] === 'docker-same-container')
+                            <p class="text-sm text-gray-600">🐳 Running in this Docker container (controllable via buttons above)</p>
+                            <p class="text-sm text-gray-500 mt-1">The scheduler daemon is checking for tasks every 60 seconds</p>
                         @else
                             <p class="text-sm text-gray-600">The scheduler daemon is checking for tasks every 60 seconds</p>
                         @endif

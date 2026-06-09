@@ -86,14 +86,14 @@ class SchedulerController extends Controller
 
             // In Docker/production, trust the daemon status if we can't check processes
             $daemonStatus = $this->getSchedulerDaemonStatus();
-            $isDockerOrCannotCheck = ($daemonStatus['deployment_type'] ?? 'local') === 'docker';
+            $isDockerSeparateContainer = ($daemonStatus['deployment_type'] ?? 'local') === 'docker';
 
-            if ($isDockerOrCannotCheck) {
-                // In Docker, trust that daemon is running if status shows it
+            if ($isDockerSeparateContainer) {
+                // Separate Docker container - trust daemon status (can't check processes across containers)
                 $stillRunning = $daemonStatus['running'];
-                $processDebug = "Environment: Docker/Production\nDaemon check: Trusting daemon status (container isolation)\n";
+                $processDebug = "Environment: Separate Docker container\nDaemon check: Trusting daemon status (container isolation)\n";
             } else {
-                // Local environment - do detailed process check
+                // Local or same container - do detailed process check
                 $stillRunning = $daemonPidAfter !== 'none' && $this->isProcessRunning($daemonPidAfter);
                 $processDebug = $this->getProcessDebugInfo($daemonPidAfter);
             }
@@ -723,7 +723,7 @@ class SchedulerController extends Controller
                 'message' => "Scheduler running in this container",
                 'pid' => 'docker-same-container',
                 'color' => 'green',
-                'deployment_type' => 'docker'
+                'deployment_type' => 'local' // Same container = allow control
             ];
         }
 
