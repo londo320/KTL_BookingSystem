@@ -12,7 +12,7 @@ GIT_BRANCH="main"
 DOCKER_NETWORK="furynet"
 
 # Target your External MariaDB Container Connection Settings
-MARIADB_HOST="MariaDB-Official"       # Must match the exact name of your Unraid MariaDB container
+MARIADB_HOST="mysql"       # Must match the exact name of your Unraid MariaDB container
 MARIADB_DATABASE="ktl_booking"
 MARIADB_USER="londo"
 MARIADB_PASSWORD="centuri1"
