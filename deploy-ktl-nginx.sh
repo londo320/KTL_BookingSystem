@@ -85,6 +85,7 @@ if [ -f ".env.example" ]; then
     # Update app configuration
     sed -i 's/^APP_ENV=.*/APP_ENV=production/' .env
     sed -i 's/^APP_DEBUG=.*/APP_DEBUG=false/' .env
+    sed -i 's|^APP_URL=.*|APP_URL=https://bookingsuat.fury.me.uk|' .env
 
     # Add scheduler settings on new lines at the end
     echo "" >> .env
