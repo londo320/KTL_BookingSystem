@@ -141,7 +141,11 @@ docker run -d \
     php:8.2-fpm
 
 echo "📦 Installing system dependencies in PHP container..."
-docker exec "$APP_CONTAINER" apt-get install -y -qq \
+echo "📦 Installing system dependencies in PHP container..."
+
+docker exec "$APP_CONTAINER" apt-get update
+
+docker exec "$APP_CONTAINER" apt-get install -y \
     default-mysql-client \
     libpng-dev \
     libjpeg-dev \
