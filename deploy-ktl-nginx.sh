@@ -142,8 +142,12 @@ docker run -d \
     php:8.2-fpm
 
 echo "📦 Installing system dependencies in PHP container..."
-echo "📦 Installing system dependencies in PHP container..."
 
+# 1. Install ca-certificates first while ignoring initial SSL/expired issues to kickstart it
+docker exec "$APP_CONTAINER" apt-get update -o Acquire::https::Verify-Peer=false
+docker exec "$APP_CONTAINER" apt-get install -y -o Acquire::https::Verify-Peer=false ca-certificates
+
+# 2. Now run a clean update and install your dependencies safely
 docker exec "$APP_CONTAINER" apt-get update
 
 docker exec "$APP_CONTAINER" apt-get install -y \
