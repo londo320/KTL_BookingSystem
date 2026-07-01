@@ -69,6 +69,7 @@ docker run -d \
     -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
     -p "$MYSQL_PORT":3306 \
     -v ktl-mysql-data:/var/lib/mysql \
+    -v "$PROJECT_DIR/my.cnf:/etc/mysql/conf.d/my.cnf" \
     --restart unless-stopped \
     mysql:8.0
 
