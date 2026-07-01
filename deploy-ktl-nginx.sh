@@ -7,15 +7,19 @@ echo "===== KTL Booking System - Nginx + PHP-FPM Setup ====="
 PROJECT_DIR="/mnt/user/appdata/ktl-booking"
 GIT_REPO="git@github.com:londo320/KTL_BookingSystem.git"
 GIT_BRANCH="main"
-MYSQL_CONTAINER="ktl-booking-mysql"
-MYSQL_ROOT_PASSWORD="ktl123456"
-MYSQL_DATABASE="ktl_booking"
-MYSQL_USER="ktl_user"
-MYSQL_PASSWORD="ktl_password"
+
+# Custom Docker network name for Unraid
+DOCKER_NETWORK="furynet"
+
+# Target your External MariaDB Container Connection Settings
+MARIADB_HOST="MariaDB-Official"       # Must match the exact name of your Unraid MariaDB container
+MARIADB_DATABASE="ktl_booking"
+MARIADB_USER="londo"
+MARIADB_PASSWORD="centuri1"
+
 APP_CONTAINER="ktl-booking-app"
 NGINX_CONTAINER="ktl-booking-nginx"
 SCHEDULER_CONTAINER="ktl-booking-scheduler"
-MYSQL_PORT="3307"
 
 # Function to send notifications
 send_notification() {
@@ -24,23 +28,19 @@ send_notification() {
     /usr/local/emhttp/webGui/scripts/notify -e "KTL Booking" -s "$title" -d "$message" -l "normal" 2>/dev/null || true
 }
 
-echo "🔍 Checking for port conflicts..."
-if netstat -ln | grep -q ":3306 "; then
-    echo "⚠️  Port 3306 is in use, using port $MYSQL_PORT for MySQL instead"
-else
-    MYSQL_PORT="3306"
-    echo "✅ Port 3306 is available"
+# Automatically handle the Custom Docker network creation if it doesn't exist
+if ! docker network inspect "$DOCKER_NETWORK" >/dev/null 2>&1; then
+    echo "🌐 Creating custom docker network: $DOCKER_NETWORK..."
+    docker network create "$DOCKER_NETWORK"
 fi
 
-echo "🧹 Cleaning up any existing setup..."
+echo "🧹 Cleaning up existing application setup..."
 docker stop "$SCHEDULER_CONTAINER" 2>/dev/null || true
 docker rm "$SCHEDULER_CONTAINER" 2>/dev/null || true
 docker stop "$NGINX_CONTAINER" 2>/dev/null || true
 docker rm "$NGINX_CONTAINER" 2>/dev/null || true
 docker stop "$APP_CONTAINER" 2>/dev/null || true
 docker rm "$APP_CONTAINER" 2>/dev/null || true
-docker stop "$MYSQL_CONTAINER" 2>/dev/null || true
-docker rm "$MYSQL_CONTAINER" 2>/dev/null || true
 
 # Repository check
 if [ ! -d "$PROJECT_DIR" ] || [ ! -f "$PROJECT_DIR/composer.json" ]; then
@@ -60,40 +60,6 @@ fi
 
 echo "✅ Repository ready!"
 
-echo "🐳 Creating MySQL container on port $MYSQL_PORT..."
-docker run -d \
-    --name "$MYSQL_CONTAINER" \
-    -e MYSQL_ROOT_PASSWORD="$MYSQL_ROOT_PASSWORD" \
-    -e MYSQL_DATABASE="$MYSQL_DATABASE" \
-    -e MYSQL_USER="$MYSQL_USER" \
-    -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
-    -p "$MYSQL_PORT":3306 \
-    -v ktl-mysql-data:/var/lib/mysql \
-    -v "$PROJECT_DIR/my.cnf:/etc/mysql/conf.d/my.cnf" \
-    --restart unless-stopped \
-    mysql:8.0
-
-echo "⏳ Waiting for MySQL to initialize..."
-sleep 30
-
-echo "🔍 Checking MySQL readiness..."
-mysql_ready=0
-for i in {1..20}; do
-    if docker exec "$MYSQL_CONTAINER" mysqladmin ping -u root -p"$MYSQL_ROOT_PASSWORD" --silent 2>/dev/null; then
-        mysql_ready=1
-        echo "✅ MySQL is ready!"
-        break
-    fi
-    echo "⏳ Attempt $i/20 - waiting for MySQL..."
-    sleep 3
-done
-
-if [ $mysql_ready -eq 0 ]; then
-    echo "❌ MySQL failed to start"
-    send_notification "Deployment Failed" "MySQL failed to start"
-    exit 1
-fi
-
 echo "⚙️ Setting up environment file..."
 
 # Remove old .env file if it exists and backup
@@ -107,13 +73,14 @@ if [ -f ".env.example" ]; then
     echo "📝 Creating fresh .env from .env.example..."
     cp .env.example .env
 
-    # Update database configuration using proper sed syntax
+    # Update configuration targeting external MariaDB
     sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
-    sed -i 's/^DB_HOST=.*/DB_HOST=mysql/' .env
+    sed -i "s/^DB_HOST=.*/DB_HOST=$MARIADB_HOST/" .env
     sed -i 's/^DB_PORT=.*/DB_PORT=3306/' .env
-    sed -i "s/^DB_DATABASE=.*/DB_DATABASE=$MYSQL_DATABASE/" .env
-    sed -i "s/^DB_USERNAME=.*/DB_USERNAME=$MYSQL_USER/" .env
-    sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=$MYSQL_PASSWORD/" .env
+    rm -f "$PROJECT_DIR/database/schema/mysql-schema.sql"
+    sed -i "s/^DB_DATABASE=.*/DB_DATABASE=$MARIADB_DATABASE/" .env
+    sed -i "s/^DB_USERNAME=.*/DB_USERNAME=$MARIADB_USER/" .env
+    sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=$MARIADB_PASSWORD/" .env
 
     # Update app configuration
     sed -i 's/^APP_ENV=.*/APP_ENV=production/' .env
@@ -125,29 +92,25 @@ if [ -f ".env.example" ]; then
     echo "SCHEDULER_MODE=docker" >> .env
     echo "SCHEDULER_CONTAINER_NAME=$SCHEDULER_CONTAINER" >> .env
 
-    echo "✅ Environment configured with correct database credentials"
+    echo "✅ Environment configured with external MariaDB credentials"
 else
     echo "❌ .env.example not found"
     send_notification "Deployment Failed" ".env.example not found"
     exit 1
 fi
 
-echo "🐳 Creating PHP-FPM container..."
+echo "🐳 Creating PHP-FPM container on network $DOCKER_NETWORK..."
 docker run -d \
     --name "$APP_CONTAINER" \
-    --link "$MYSQL_CONTAINER":mysql \
+    --network "$DOCKER_NETWORK" \
     -v "$PROJECT_DIR":/var/www/html \
     -w /var/www/html \
     --restart unless-stopped \
     php:8.2-fpm
 
 echo "📦 Installing system dependencies in PHP container..."
-
-# 1. Install ca-certificates first while ignoring initial SSL/expired issues to kickstart it
 docker exec "$APP_CONTAINER" apt-get update -o Acquire::https::Verify-Peer=false
 docker exec "$APP_CONTAINER" apt-get install -y -o Acquire::https::Verify-Peer=false ca-certificates
-
-# 2. Now run a clean update and install your dependencies safely
 docker exec "$APP_CONTAINER" apt-get update
 
 docker exec "$APP_CONTAINER" apt-get install -y \
@@ -248,18 +211,15 @@ server {
 
     index index.php index.html;
 
-    # Gzip compression
     gzip on;
     gzip_vary on;
     gzip_min_length 1024;
     gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json;
 
-    # Security headers
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-XSS-Protection "1; mode=block" always;
 
-    # Client body size
     client_max_body_size 20M;
 
     location / {
@@ -274,32 +234,28 @@ server {
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         fastcgi_param PATH_INFO $fastcgi_path_info;
 
-        # PHP-FPM timeouts
         fastcgi_read_timeout 300;
         fastcgi_send_timeout 300;
 
-        # Buffer settings for better performance
         fastcgi_buffers 16 16k;
         fastcgi_buffer_size 32k;
     }
 
-    # Cache static assets
     location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
 
-    # Deny access to sensitive files
     location ~ /\.(?!well-known).* {
         deny all;
     }
 }
 EOF
 
-echo "🐳 Creating Nginx container..."
+echo "🐳 Creating Nginx container on network $DOCKER_NETWORK..."
 docker run -d \
     --name "$NGINX_CONTAINER" \
-    --link "$APP_CONTAINER":php-fpm \
+    --network "$DOCKER_NETWORK" \
     -p 8088:80 \
     -v "$PROJECT_DIR":/var/www/html:ro \
     -v "$PROJECT_DIR/nginx.conf":/etc/nginx/conf.d/default.conf:ro \
@@ -310,7 +266,6 @@ echo "⏰ Starting Scheduler inside PHP-FPM container..."
 docker exec -d "$APP_CONTAINER" php artisan scheduler:run --daemon --interval=60
 sleep 2
 
-# Verify scheduler is running
 if docker exec "$APP_CONTAINER" ps aux | grep -q "scheduler:run"; then
     echo "✅ Scheduler daemon started successfully"
 else
@@ -321,8 +276,6 @@ echo "🔍 Testing application..."
 sleep 5
 
 UNRAID_IP=$(hostname -I | awk '{print $1}')
-
-# Test the application
 HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8088" || echo "000")
 
 if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "302" ]; then
@@ -342,16 +295,7 @@ echo "============================================="
 echo "🌐 Application URL: http://$UNRAID_IP:8088"
 echo "🔧 Admin Panel: http://$UNRAID_IP:8088/app/dashboard"
 echo "⏰ Scheduler Panel: http://$UNRAID_IP:8088/admin/scheduler"
-echo "🗄️  MySQL: $UNRAID_IP:$MYSQL_PORT"
-echo "   Database: $MYSQL_DATABASE"
-echo "   User: $MYSQL_USER"
-echo "   Password: $MYSQL_PASSWORD"
-echo "============================================="
-echo "⚡ Using Nginx + PHP-FPM for maximum performance!"
-echo "⏰ Scheduler daemon running inside PHP-FPM container!"
-echo "✅ OPcache enabled for faster PHP execution"
-echo "✅ Gzip compression enabled"
-echo "✅ Static asset caching enabled"
+echo "🗄️  Using External MariaDB Host: $MARIADB_HOST"
 echo "============================================="
 
 echo ""
@@ -359,28 +303,12 @@ echo "🐳 Container Status:"
 docker ps --filter "name=ktl-booking" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
 echo ""
-echo "📊 Scheduler Process Status:"
-if docker exec "$APP_CONTAINER" ps aux | grep -E "scheduler:run" | grep -v grep; then
-    echo "✅ Scheduler is running"
-else
-    echo "⚠️ Scheduler not detected"
-fi
-
-echo ""
 echo "🔧 Final verification and fixes..."
 
-# Additional safeguards from FIX-500-ERROR.sh
-echo "🔑 Ensuring APP_KEY is set..."
 docker exec "$APP_CONTAINER" php artisan key:generate --force --ansi 2>/dev/null || echo "APP_KEY already set"
-
-echo "🔒 Final permission check..."
 docker exec "$APP_CONTAINER" chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
 docker exec "$APP_CONTAINER" chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
-
-echo "🔗 Verifying storage link..."
 docker exec "$APP_CONTAINER" php artisan storage:link 2>/dev/null || echo "Storage link already exists"
-
-echo "⚡ Final cache optimization..."
 docker exec "$APP_CONTAINER" php artisan config:cache 2>/dev/null || true
 docker exec "$APP_CONTAINER" php artisan route:cache 2>/dev/null || true
 docker exec "$APP_CONTAINER" php artisan view:cache 2>/dev/null || true
@@ -397,24 +325,11 @@ HTTP_STATUS_FINAL=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:808
 
 if [ "$HTTP_STATUS_FINAL" = "200" ] || [ "$HTTP_STATUS_FINAL" = "302" ] || [ "$HTTP_STATUS_FINAL" = "301" ]; then
     echo "✅ Application is responding perfectly (HTTP $HTTP_STATUS_FINAL)"
-
     send_notification "Setup Complete" "KTL Booking System is running at http://$UNRAID_IP:8088"
-
-    echo ""
-    echo "============================================="
-    echo "🎉 DEPLOYMENT SUCCESSFUL!"
-    echo "============================================="
-    echo "✅ All containers running"
-    echo "✅ Application responding"
-    echo "✅ Scheduler active"
-    echo "✅ Database connected"
-    echo "============================================="
 else
     echo "⚠️ Application returned HTTP $HTTP_STATUS_FINAL"
     echo ""
     echo "Running automatic fix..."
-
-    # Run the same fixes as FIX-500-ERROR.sh
     docker exec "$APP_CONTAINER" php artisan config:clear
     docker exec "$APP_CONTAINER" php artisan cache:clear
     docker exec "$APP_CONTAINER" chmod -R 777 /var/www/html/storage
@@ -422,26 +337,4 @@ else
     sleep 5
     docker restart "$NGINX_CONTAINER"
     sleep 3
-
-    # Test again
-    HTTP_STATUS_RETRY=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8088" || echo "000")
-
-    if [ "$HTTP_STATUS_RETRY" = "200" ] || [ "$HTTP_STATUS_RETRY" = "302" ] || [ "$HTTP_STATUS_RETRY" = "301" ]; then
-        echo "✅ Fixed! Application now responding (HTTP $HTTP_STATUS_RETRY)"
-        send_notification "Setup Complete (after fix)" "KTL Booking System is running at http://$UNRAID_IP:8088"
-    else
-        echo "❌ Still getting HTTP $HTTP_STATUS_RETRY"
-        echo "📋 Check logs:"
-        echo "   docker logs $APP_CONTAINER --tail 30"
-        echo "   docker exec $APP_CONTAINER cat /var/www/html/storage/logs/laravel.log | tail -50"
-        send_notification "Setup Needs Attention" "HTTP $HTTP_STATUS_RETRY - Check logs"
-    fi
 fi
-
-echo ""
-echo "📝 Next Steps:"
-echo "   1. Visit http://$UNRAID_IP:8088 to access the application"
-echo "   2. Check scheduler at http://$UNRAID_IP:8088/admin/scheduler"
-echo "   3. All 4 scheduled tasks should be running automatically"
-echo "   4. Scheduler runs inside the PHP-FPM container"
-echo ""
