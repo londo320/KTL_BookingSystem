@@ -141,11 +141,19 @@ docker run -d \
     php:8.2-fpm
 
 echo "📦 Installing system dependencies in PHP container..."
-docker exec "$APP_CONTAINER" apt-get update -qq
 docker exec "$APP_CONTAINER" apt-get install -y -qq \
-    libpng-dev libjpeg-dev libfreetype6-dev libzip-dev \
-    libonig-dev libxml2-dev unzip curl git vim \
-    procps  # For ps command (needed by scheduler)
+    default-mysql-client \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libzip-dev \
+    libonig-dev \
+    libxml2-dev \
+    unzip \
+    curl \
+    git \
+    vim \
+    procps
 
 echo "📦 Installing PHP extensions..."
 docker exec "$APP_CONTAINER" docker-php-ext-configure gd --with-freetype --with-jpeg
