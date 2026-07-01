@@ -175,12 +175,13 @@ docker exec -w /var/www/html "$APP_CONTAINER" chown -R www-data:www-data storage
 echo "🚀 Setting up Laravel..."
 docker exec -w /var/www/html "$APP_CONTAINER" php artisan key:generate --force
 
-docker exec -w /var/www/html "$APP_CONTAINER" php artisan config:clear
-docker exec -w /var/www/html "$APP_CONTAINER" php artisan cache:clear
-docker exec -w /var/www/html "$APP_CONTAINER" php artisan view:clear
-docker exec -w /var/www/html "$APP_CONTAINER" php artisan route:clear
+# Force clear cache configuration files purely from local storage to keep bootstrap completely clean
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan config:clear || true
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan route:clear || true
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan view:clear || true
 
-docker exec -w /var/www/html "$APP_CONTAINER" php artisan storage:link || echo "Storage link already exists"
+# Force clear the application cache drivers completely using flush to bypass database structures
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan cache:clear || true
 
 echo "🚀 Running database migrations..."
 if docker exec -w /var/www/html "$APP_CONTAINER" php artisan migrate --force; then
@@ -193,16 +194,18 @@ else
     exit 1
 fi
 
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan storage:link || echo "Storage link already exists"
+
 echo "🚀 Optimizing Laravel..."
-docker exec -w /var/www/html "$APP_CONTAINER" php artisan config:cache
-docker exec -w /var/www/html "$APP_CONTAINER" php artisan route:cache
-docker exec -w /var/www/html "$APP_CONTAINER" php artisan view:cache
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan config:cache || true
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan route:cache || true
+docker exec -w /var/www/html "$APP_CONTAINER" php artisan view:cache || true
 
 echo "🔒 Final permission verification..."
 docker exec -w /var/www/html "$APP_CONTAINER" chown -R www-data:www-data storage bootstrap/cache
 docker exec -w /var/www/html "$APP_CONTAINER" chmod -R 775 storage bootstrap/cache
 
-echo "🌐 Creating Nginx configuration..."
+# 🌐 Creating Nginx configuration...
 cat > "$PROJECT_DIR/nginx.conf" <<'EOF'
 server {
     listen 80;
@@ -309,9 +312,6 @@ docker exec "$APP_CONTAINER" php artisan key:generate --force --ansi 2>/dev/null
 docker exec "$APP_CONTAINER" chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
 docker exec "$APP_CONTAINER" chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
 docker exec "$APP_CONTAINER" php artisan storage:link 2>/dev/null || echo "Storage link already exists"
-docker exec "$APP_CONTAINER" php artisan config:cache 2>/dev/null || true
-docker exec "$APP_CONTAINER" php artisan route:cache 2>/dev/null || true
-docker exec "$APP_CONTAINER" php artisan view:cache 2>/dev/null || true
 
 echo "🔄 Restarting PHP-FPM to ensure clean state..."
 docker restart "$APP_CONTAINER"
@@ -330,9 +330,9 @@ else
     echo "⚠️ Application returned HTTP $HTTP_STATUS_FINAL"
     echo ""
     echo "Running automatic fix..."
-    docker exec "$APP_CONTAINER" php artisan config:clear
-    docker exec "$APP_CONTAINER" php artisan cache:clear
-    docker exec "$APP_CONTAINER" chmod -R 777 /var/www/html/storage
+    docker exec "$APP_CONTAINER" php artisan config:clear || true
+    docker exec "$APP_CONTAINER" php artisan cache:clear || true
+    docker exec "$APP_CONTAINER" chmod -R 777 /var/www/html/storage || true
     docker restart "$APP_CONTAINER"
     sleep 5
     docker restart "$NGINX_CONTAINER"
