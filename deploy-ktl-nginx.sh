@@ -289,15 +289,27 @@ docker run -d \
     --restart unless-stopped \
     nginx:alpine
 
-echo "⏰ Starting Scheduler inside PHP-FPM container..."
-docker exec -d "$APP_CONTAINER" php artisan scheduler:run --daemon --interval=60
-sleep 2
+echo "⏰ Setting up Scheduler with Cron..."
+# Install cron
+docker exec "$APP_CONTAINER" apt-get install -y -qq cron
 
-# Verify scheduler is running
-if docker exec "$APP_CONTAINER" ps aux | grep -q "scheduler:run"; then
-    echo "✅ Scheduler daemon started successfully"
+# Create cron job to run Laravel scheduler every minute
+docker exec "$APP_CONTAINER" bash -c 'cat > /etc/cron.d/laravel-scheduler <<EOF
+* * * * * www-data cd /var/www/html && php artisan schedule:run >> /var/www/html/storage/logs/scheduler-cron.log 2>&1
+EOF'
+
+# Set permissions
+docker exec "$APP_CONTAINER" chmod 0644 /etc/cron.d/laravel-scheduler
+
+# Start cron service
+docker exec "$APP_CONTAINER" service cron start
+
+# Verify cron is running
+if docker exec "$APP_CONTAINER" service cron status | grep -q "running"; then
+    echo "✅ Cron-based scheduler started successfully"
 else
-    echo "⚠️ Scheduler may not have started - check logs"
+    echo "⚠️ Cron may not have started - retrying..."
+    docker exec "$APP_CONTAINER" service cron restart
 fi
 
 echo "🔍 Testing application..."
@@ -331,7 +343,7 @@ echo "   User: $MYSQL_USER"
 echo "   Password: $MYSQL_PASSWORD"
 echo "============================================="
 echo "⚡ Using Nginx + PHP-FPM for maximum performance!"
-echo "⏰ Scheduler daemon running inside PHP-FPM container!"
+echo "⏰ Scheduler running via cron (every minute) inside PHP-FPM container!"
 echo "✅ OPcache enabled for faster PHP execution"
 echo "✅ Gzip compression enabled"
 echo "✅ Static asset caching enabled"
@@ -342,11 +354,15 @@ echo "🐳 Container Status:"
 docker ps --filter "name=ktl-booking" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
 echo ""
-echo "📊 Scheduler Process Status:"
-if docker exec "$APP_CONTAINER" ps aux | grep -E "scheduler:run" | grep -v grep; then
-    echo "✅ Scheduler is running"
+echo "📊 Scheduler Status:"
+if docker exec "$APP_CONTAINER" service cron status 2>/dev/null | grep -q "running"; then
+    echo "✅ Cron service is running"
+    if docker exec "$APP_CONTAINER" test -f /etc/cron.d/laravel-scheduler; then
+        echo "✅ Laravel scheduler cron job is configured"
+        echo "📄 Cron job: Runs every minute"
+    fi
 else
-    echo "⚠️ Scheduler not detected"
+    echo "⚠️ Cron service not detected"
 fi
 
 echo ""
@@ -371,6 +387,10 @@ docker exec "$APP_CONTAINER" php artisan view:cache 2>/dev/null || true
 echo "🔄 Restarting PHP-FPM to ensure clean state..."
 docker restart "$APP_CONTAINER"
 sleep 5
+
+echo "⏰ Restarting cron service after container restart..."
+docker exec "$APP_CONTAINER" service cron start
+
 docker restart "$NGINX_CONTAINER"
 sleep 3
 
@@ -425,6 +445,7 @@ echo ""
 echo "📝 Next Steps:"
 echo "   1. Visit http://$UNRAID_IP:8088 to access the application"
 echo "   2. Check scheduler at http://$UNRAID_IP:8088/admin/scheduler"
-echo "   3. All 4 scheduled tasks should be running automatically"
-echo "   4. Scheduler runs inside the PHP-FPM container"
+echo "   3. All 4 scheduled tasks run automatically every minute via cron"
+echo "   4. Verify scheduler: bash verify-scheduler.sh"
+echo "   5. View scheduler logs: docker exec $APP_CONTAINER tail -f /var/www/html/storage/logs/scheduler-cron.log"
 echo ""
