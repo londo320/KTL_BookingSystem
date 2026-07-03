@@ -36,17 +36,25 @@
             </div>
         @endif
 
-        {{-- Daemon Status --}}
+        {{-- Scheduler Status --}}
         <div class="bg-white shadow rounded-lg p-6">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold">
                     @if($daemonStatus['running'])
-                        🟢 Scheduler Daemon Status
+                        🟢 Scheduler Status
                     @else
-                        🔴 Scheduler Daemon Status
+                        🔴 Scheduler Status
                     @endif
                 </h3>
-                @if(($daemonStatus['deployment_type'] ?? 'local') === 'local')
+                @if(($daemonStatus['deployment_type'] ?? 'local') === 'cron')
+                    {{-- Cron mode - show cron log viewer --}}
+                    <div class="flex gap-2">
+                        <button onclick="viewLog('scheduler-cron.log')" class="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                            📄 View Cron Log
+                        </button>
+                    </div>
+                @elseif(($daemonStatus['deployment_type'] ?? 'local') === 'local')
+                    {{-- Local daemon mode - show start/stop controls --}}
                     <div class="flex gap-2">
                         @if($daemonStatus['running'])
                             <form action="{{ route('admin.scheduler.stop') }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to stop the scheduler daemon?')">
@@ -81,7 +89,13 @@
                         <p class="text-sm text-orange-600 mt-1">⚠️ {{ $daemonStatus['warning'] }}</p>
                     @endif
                     @if($daemonStatus['running'])
-                        @if(($daemonStatus['deployment_type'] ?? 'local') === 'docker')
+                        @if(($daemonStatus['deployment_type'] ?? 'local') === 'cron')
+                            <p class="text-sm text-gray-600">⏰ {{ $daemonStatus['detail'] ?? 'Tasks execute via cron job' }}</p>
+                            @if(isset($daemonStatus['last_run']))
+                                <p class="text-sm text-gray-500 mt-1">Last execution: <code class="bg-gray-100 px-2 py-0.5 rounded">{{ $daemonStatus['last_run'] }}</code></p>
+                            @endif
+                            <p class="text-sm text-gray-500 mt-1">Cron file: <code class="bg-gray-100 px-2 py-0.5 rounded">{{ $daemonStatus['cron_file'] ?? '/etc/cron.d/laravel-scheduler' }}</code></p>
+                        @elseif(($daemonStatus['deployment_type'] ?? 'local') === 'docker')
                             <p class="text-sm text-gray-600">🐳 Running in separate Docker container - managed via Docker</p>
                             <p class="text-sm text-gray-500 mt-1">Container: <code class="bg-gray-100 px-2 py-0.5 rounded">{{ $daemonStatus['container'] ?? 'scheduler' }}</code></p>
                         @elseif($daemonStatus['pid'] === 'docker-same-container')
@@ -91,7 +105,10 @@
                             <p class="text-sm text-gray-600">The scheduler daemon is checking for tasks every 60 seconds</p>
                         @endif
                     @else
-                        @if(($daemonStatus['deployment_type'] ?? 'local') === 'docker')
+                        @if(($daemonStatus['deployment_type'] ?? 'local') === 'cron')
+                            <p class="text-sm text-red-600">⚠️ {{ $daemonStatus['detail'] ?? 'Cron service not running' }}</p>
+                            <p class="text-sm text-gray-500 mt-1">Start cron: <code class="bg-gray-100 px-2 py-0.5 rounded">docker exec ktl-booking-app service cron start</code></p>
+                        @elseif(($daemonStatus['deployment_type'] ?? 'local') === 'docker')
                             <p class="text-sm text-red-600">🐳 Docker scheduler container not found or not running</p>
                             <p class="text-sm text-gray-500 mt-1">Check Docker container status: <code class="bg-gray-100 px-2 py-0.5 rounded">docker ps | grep scheduler</code></p>
                         @else
@@ -104,12 +121,21 @@
             @if(!$daemonStatus['running'])
                 <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
                     <p class="text-sm text-yellow-800 font-semibold mb-2">⚠️ Scheduler Not Running</p>
-                    <p class="text-sm text-gray-700 mb-2">The scheduler daemon is not running. Your scheduled tasks will not execute automatically.</p>
-                    <div class="text-sm space-y-1">
-                        <p><strong>Quick Start:</strong> Click the <span class="bg-green-600 text-white px-2 py-0.5 rounded text-xs">▶️ Start Daemon</span> button above</p>
-                        <p><strong>Command Line:</strong> Run <code class="bg-gray-100 px-2 py-1 rounded">bash start-scheduler.sh</code></p>
-                        <p><strong>Production:</strong> See <code class="bg-gray-100 px-2 py-1 rounded">SCHEDULER-SETUP.md</code> for systemd/Docker setup</p>
-                    </div>
+                    @if(($daemonStatus['deployment_type'] ?? 'local') === 'cron')
+                        <p class="text-sm text-gray-700 mb-2">The cron service is not running. Your scheduled tasks will not execute automatically.</p>
+                        <div class="text-sm space-y-1">
+                            <p><strong>Restart Cron:</strong> <code class="bg-gray-100 px-2 py-1 rounded">docker exec ktl-booking-app service cron start</code></p>
+                            <p><strong>Or use script:</strong> <code class="bg-gray-100 px-2 py-1 rounded">bash start-scheduler-persistent.sh</code></p>
+                            <p><strong>Documentation:</strong> See <code class="bg-gray-100 px-2 py-1 rounded">SCHEDULER-FIX-UNRAID.md</code> for details</p>
+                        </div>
+                    @else
+                        <p class="text-sm text-gray-700 mb-2">The scheduler daemon is not running. Your scheduled tasks will not execute automatically.</p>
+                        <div class="text-sm space-y-1">
+                            <p><strong>Quick Start:</strong> Click the <span class="bg-green-600 text-white px-2 py-0.5 rounded text-xs">▶️ Start Daemon</span> button above</p>
+                            <p><strong>Command Line:</strong> Run <code class="bg-gray-100 px-2 py-1 rounded">bash start-scheduler.sh</code></p>
+                            <p><strong>Production:</strong> See <code class="bg-gray-100 px-2 py-1 rounded">SCHEDULER-SETUP.md</code> for systemd/Docker setup</p>
+                        </div>
+                    @endif
                 </div>
             @endif
         </div>
@@ -200,6 +226,8 @@
                 @foreach($recentLogs as $logFile => $logData)
                     @php
                         $taskName = match($logFile) {
+                            'scheduler.log' => 'Scheduler Daemon Log',
+                            'scheduler-cron.log' => 'Scheduler Cron Log',
                             'slots_generate.log' => 'Slot Generation',
                             'auto_release_slots.log' => 'Auto-Release Slots',
                             'bay_sync.log' => 'Bay Occupancy Sync',

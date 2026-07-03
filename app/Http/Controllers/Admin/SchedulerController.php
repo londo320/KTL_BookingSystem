@@ -438,7 +438,13 @@ class SchedulerController extends Controller
      */
     protected function getSchedulerDaemonStatus()
     {
-        // First, check if running in Docker with dedicated scheduler container
+        // First, check if using cron-based scheduling
+        $cronStatus = $this->checkCronScheduler();
+        if ($cronStatus) {
+            return $cronStatus;
+        }
+
+        // Check if running in Docker with dedicated scheduler container
         $dockerSchedulerStatus = $this->checkDockerSchedulerContainer();
         if ($dockerSchedulerStatus) {
             return $dockerSchedulerStatus;
@@ -498,12 +504,76 @@ class SchedulerController extends Controller
     }
 
     /**
+     * Check if scheduler is running via cron
+     */
+    protected function checkCronScheduler()
+    {
+        // Check if cron job file exists
+        $cronFile = '/etc/cron.d/laravel-scheduler';
+
+        if (!file_exists($cronFile)) {
+            return null; // Not using cron
+        }
+
+        // Check if cron service is running
+        exec('service cron status 2>/dev/null', $output, $returnCode);
+        $cronRunning = $returnCode === 0;
+
+        // Check scheduler-cron.log for recent activity
+        $cronLog = storage_path('logs/scheduler-cron.log');
+        $lastRun = null;
+        $recentActivity = false;
+
+        if (File::exists($cronLog)) {
+            $lastModified = filemtime($cronLog);
+            $lastRun = date('Y-m-d H:i:s', $lastModified);
+            // Consider recent if modified within last 2 minutes
+            $recentActivity = (time() - $lastModified) < 120;
+        }
+
+        if ($cronRunning && $recentActivity) {
+            return [
+                'running' => true,
+                'message' => 'Scheduler running via Cron',
+                'pid' => 'cron',
+                'color' => 'green',
+                'deployment_type' => 'cron',
+                'last_run' => $lastRun,
+                'cron_file' => $cronFile,
+                'detail' => 'Tasks execute every minute via cron job'
+            ];
+        } elseif ($cronRunning && !$recentActivity) {
+            return [
+                'running' => true,
+                'message' => 'Cron service running (waiting for next execution)',
+                'pid' => 'cron',
+                'color' => 'green',
+                'deployment_type' => 'cron',
+                'warning' => 'No recent scheduler activity detected. Wait up to 1 minute.',
+                'cron_file' => $cronFile,
+                'detail' => 'Cron is active but scheduler hasn\'t run yet'
+            ];
+        } else {
+            return [
+                'running' => false,
+                'message' => 'Cron service is not running',
+                'pid' => null,
+                'color' => 'red',
+                'deployment_type' => 'cron',
+                'cron_file' => $cronFile,
+                'detail' => 'Cron job configured but cron service is stopped'
+            ];
+        }
+    }
+
+    /**
      * Get recent logs from various scheduler log files
      */
     protected function getRecentLogs()
     {
         $logFiles = [
             'scheduler.log',
+            'scheduler-cron.log', // Add cron log
             'slots_generate.log',
             'auto_release_slots.log',
             'bay_sync.log',
