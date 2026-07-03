@@ -270,9 +270,9 @@ echo "⏰ Setting up Scheduler with Cron..."
 # Install cron
 docker exec "$APP_CONTAINER" apt-get install -y -qq cron
 
-# Create cron job to run Laravel scheduler every minute
+# Create cron job to run Laravel scheduler every minute (use full PHP path for cron)
 docker exec "$APP_CONTAINER" bash -c 'cat > /etc/cron.d/laravel-scheduler <<EOF
-* * * * * www-data cd /var/www/html && php artisan schedule:run >> /var/www/html/storage/logs/scheduler-cron.log 2>&1
+* * * * * www-data cd /var/www/html && /usr/local/bin/php artisan schedule:run >> /var/www/html/storage/logs/scheduler-cron.log 2>&1
 EOF'
 
 # Set permissions

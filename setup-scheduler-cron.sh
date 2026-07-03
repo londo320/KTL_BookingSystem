@@ -20,7 +20,7 @@ docker exec "$APP_CONTAINER" apt-get install -y -qq cron
 # Create the cron job
 echo "⏰ Setting up cron job to run every minute..."
 docker exec "$APP_CONTAINER" bash -c 'cat > /etc/cron.d/laravel-scheduler <<EOF
-* * * * * www-data cd /var/www/html && php artisan schedule:run >> /var/www/html/storage/logs/scheduler-cron.log 2>&1
+* * * * * www-data cd /var/www/html && /usr/local/bin/php artisan schedule:run >> /var/www/html/storage/logs/scheduler-cron.log 2>&1
 EOF'
 
 # Set proper permissions on cron file
