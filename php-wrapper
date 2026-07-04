@@ -2,7 +2,12 @@
 # PHP wrapper script to avoid path issues with spaces
 # Auto-detects correct PHP binary for the environment
 
-# Try /usr/bin/php first (production/Docker)
+# Try /usr/local/bin/php first (Docker PHP-FPM container)
+if [ -x "/usr/local/bin/php" ]; then
+    exec /usr/local/bin/php "$@"
+fi
+
+# Try /usr/bin/php (some production environments)
 if [ -x "/usr/bin/php" ]; then
     exec /usr/bin/php "$@"
 fi
