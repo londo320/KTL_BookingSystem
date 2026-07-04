@@ -314,6 +314,13 @@ class TippingBayController extends Controller
 
         // Process each day
         foreach ($request->schedules as $index => $scheduleData) {
+            $dayOfWeek = $scheduleData['day_of_week'];
+            $dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+            \Log::info("Processing schedule for {$dayNames[$dayOfWeek]} (day {$dayOfWeek})", [
+                'data' => $scheduleData
+            ]);
+
             // Check if this day is marked as closed
             // Checkbox can send: "1", "on", true, or be absent entirely
             $isClosed = isset($scheduleData['is_closed']) &&
@@ -322,6 +329,8 @@ class TippingBayController extends Controller
             // Get raw time values for validation
             $rawStartTime = $scheduleData['operational_start'] ?? null;
             $rawEndTime = $scheduleData['operational_end'] ?? null;
+
+            \Log::info("  Closed: " . ($isClosed ? 'YES' : 'NO') . ", Start: " . ($rawStartTime ?: 'EMPTY') . ", End: " . ($rawEndTime ?: 'EMPTY'));
 
             // Only validate times if day is NOT closed and times are provided
             if (!$isClosed && (!empty($rawStartTime) || !empty($rawEndTime))) {
