@@ -150,6 +150,7 @@ upload_max_filesize=20M
 post_max_size=20M
 max_execution_time=300
 memory_limit=512M
+max_input_vars=5000
 EOF'
 
 echo "🎼 Installing Composer..."
