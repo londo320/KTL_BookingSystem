@@ -261,36 +261,63 @@ class SlotController extends Controller
      */
     public function bulkDeleteSelected(Request $request)
     {
-        $request->validate([
-            'slot_ids' => 'required|array',
-            'slot_ids.*' => 'exists:slots,id',
-        ]);
+        try {
+            Log::info('Bulk delete selected started', [
+                'slot_ids' => $request->slot_ids ?? [],
+                'user_id' => auth()->id(),
+            ]);
 
-        $user = auth()->user();
-        $defaultDepotId = $user->depot_id;
+            $request->validate([
+                'slot_ids' => 'required|array',
+                'slot_ids.*' => 'exists:slots,id',
+            ]);
 
-        if (!$defaultDepotId) {
-            return back()->with('error', 'No default depot assigned.');
+            $user = auth()->user();
+            $defaultDepotId = $user->depot_id;
+
+            if (!$defaultDepotId) {
+                Log::warning('No default depot assigned for user', ['user_id' => auth()->id()]);
+                return back()->with('error', 'No default depot assigned.');
+            }
+
+            Log::info('Attempting to delete slots', [
+                'depot_id' => $defaultDepotId,
+                'slot_ids_count' => count($request->slot_ids),
+                'slot_ids' => $request->slot_ids,
+            ]);
+
+            // Only delete slots that:
+            // 1. Are in the selected IDs
+            // 2. Belong to the user's default depot
+            // 3. Have no bookings
+            $deletedCount = Slot::whereIn('id', $request->slot_ids)
+                ->where('depot_id', $defaultDepotId)
+                ->whereDoesntHave('occupyingBookings')
+                ->delete();
+
+            $attemptedCount = count($request->slot_ids);
+            $skippedCount = $attemptedCount - $deletedCount;
+
+            Log::info('Bulk delete completed', [
+                'deleted' => $deletedCount,
+                'attempted' => $attemptedCount,
+                'skipped' => $skippedCount,
+            ]);
+
+            $message = "Deleted {$deletedCount} slot(s)";
+            if ($skippedCount > 0) {
+                $message .= " ({$skippedCount} skipped - had bookings or wrong depot)";
+            }
+
+            return back()->with('success', $message);
+        } catch (\Exception $e) {
+            Log::error('Error in bulk delete selected', [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->with('error', 'Error deleting slots: ' . $e->getMessage());
         }
-
-        // Only delete slots that:
-        // 1. Are in the selected IDs
-        // 2. Belong to the user's default depot
-        // 3. Have no bookings
-        $deletedCount = Slot::whereIn('id', $request->slot_ids)
-            ->where('depot_id', $defaultDepotId)
-            ->whereDoesntHave('occupyingBookings')
-            ->delete();
-
-        $attemptedCount = count($request->slot_ids);
-        $skippedCount = $attemptedCount - $deletedCount;
-
-        $message = "Deleted {$deletedCount} slot(s)";
-        if ($skippedCount > 0) {
-            $message .= " ({$skippedCount} skipped - had bookings or wrong depot)";
-        }
-
-        return back()->with('success', $message);
     }
 
     /**
