@@ -5,7 +5,7 @@ echo "===== KTL Booking System - Quick Update ====="
 echo ""
 
 # Configuration
-PROJECT_DIR="/mnt/user/appdata/ktl-booking-system"
+PROJECT_DIR="/mnt/user/appdata/ktl-booking"
 GIT_BRANCH="main"
 APP_CONTAINER="ktl-booking-app"
 
