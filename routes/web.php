@@ -362,9 +362,11 @@ Route::middleware('auth')->group(function () {
         // Tipping location management
         Route::patch('/tipping-locations/{tippingLocation}/toggle-active', [\App\Http\Controllers\Admin\TippingLocationController::class, 'toggleActive'])->name('tipping-locations.toggle-active');
         
-            // Tipping bay management  
+            // Tipping bay management
             Route::post('/tipping-bays/{tippingBay}/mark-available', [\App\Http\Controllers\Admin\TippingBayController::class, 'markAvailable'])->name('tipping-bays.mark-available');
-            
+            Route::post('/tipping-bays/{tippingBay}/update-schedules', [\App\Http\Controllers\Admin\TippingBayController::class, 'updateSchedules'])->name('tipping-bays.update-schedules');
+            Route::post('/tipping-bays/{tippingBay}/set-all-247', [\App\Http\Controllers\Admin\TippingBayController::class, 'setAll247'])->name('tipping-bays.set-all-247');
+
             // Customer behavior analysis routes
             Route::prefix('customer-behavior')->name('customer-behavior.')->group(function () {
                 Route::get('/', [\App\Http\Controllers\Admin\CustomerBehaviorController::class, 'index'])->name('index');

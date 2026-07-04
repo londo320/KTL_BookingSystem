@@ -323,7 +323,104 @@
                 </div>
             </form>
         </div>
+
+        {{-- Per-Day Schedule Section --}}
+        <div class="bg-white rounded-lg shadow overflow-hidden mt-6">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800">⏰ Per-Day Operating Hours</h3>
+                    <p class="text-sm text-gray-600 mt-1">Set different operating hours for each day of the week</p>
+                </div>
+                <form method="POST" action="{{ route('app.tipping-bays.set-all-247', $tippingBay) }}" class="inline">
+                    @csrf
+                    <button type="submit" class="px-4 py-2 bg-green-500 text-white text-sm rounded hover:bg-green-600">
+                        Set All to 24/7
+                    </button>
+                </form>
+            </div>
+
+            <form method="POST" action="{{ route('app.tipping-bays.update-schedules', $tippingBay) }}" class="p-6">
+                @csrf
+                <div class="space-y-4">
+                    @php
+                        $dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                    @endphp
+
+                    @foreach($schedules as $dayIndex => $schedule)
+                        <div class="border border-gray-200 rounded-lg p-4 {{ $schedule->is_closed ? 'bg-gray-50' : '' }}">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                                <div class="font-medium text-gray-700">
+                                    📅 {{ $dayNames[$dayIndex] }}
+                                </div>
+
+                                <div class="flex items-center">
+                                    <input type="checkbox"
+                                           name="schedules[{{ $dayIndex }}][is_closed]"
+                                           id="closed_{{ $dayIndex }}"
+                                           value="1"
+                                           {{ $schedule->is_closed ? 'checked' : '' }}
+                                           class="mr-2 rounded"
+                                           onchange="toggleDayInputs({{ $dayIndex }})">
+                                    <label for="closed_{{ $dayIndex }}" class="text-sm text-gray-700">Closed</label>
+                                    <input type="hidden" name="schedules[{{ $dayIndex }}][day_of_week]" value="{{ $dayIndex }}">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs text-gray-600 mb-1">Start Time</label>
+                                    <input type="time"
+                                           name="schedules[{{ $dayIndex }}][operational_start]"
+                                           id="start_{{ $dayIndex }}"
+                                           value="{{ $schedule->operational_start ?? '' }}"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                           {{ $schedule->is_closed ? 'disabled' : '' }}>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs text-gray-600 mb-1">End Time</label>
+                                    <input type="time"
+                                           name="schedules[{{ $dayIndex }}][operational_end]"
+                                           id="end_{{ $dayIndex }}"
+                                           value="{{ $schedule->operational_end ?? '' }}"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                           {{ $schedule->is_closed ? 'disabled' : '' }}>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <p class="text-sm text-gray-600 mb-4">
+                        ℹ️ <strong>Note:</strong> Slots will only be generated during these operational hours.
+                        Leave times empty for 24-hour operation on that day.
+                    </p>
+                    <button type="submit"
+                            class="w-full px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600">
+                        💾 Save Schedule
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
+    <script>
+        function toggleDayInputs(dayIndex) {
+            const isClosedCheckbox = document.getElementById('closed_' + dayIndex);
+            const startInput = document.getElementById('start_' + dayIndex);
+            const endInput = document.getElementById('end_' + dayIndex);
+
+            if (isClosedCheckbox.checked) {
+                startInput.disabled = true;
+                endInput.disabled = true;
+                startInput.value = '';
+                endInput.value = '';
+                isClosedCheckbox.closest('.border').classList.add('bg-gray-50');
+            } else {
+                startInput.disabled = false;
+                endInput.disabled = false;
+                isClosedCheckbox.closest('.border').classList.remove('bg-gray-50');
+            }
+        }
+    </script>
     <script>
         // Sync color picker with hex input
         document.getElementById('text_color').addEventListener('input', function() {

@@ -169,10 +169,22 @@ class TippingBayController extends Controller
         // Get all active customers for bay assignment
         $customers = \App\Models\Customer::active()->orderBy('name')->get();
 
-        // Load existing customer assignments
-        $tippingBay->load('customerAssignments.customer');
+        // Load existing customer assignments and schedules
+        $tippingBay->load('customerAssignments.customer', 'schedules');
 
-        return view('admin.tipping-bays.edit', compact('tippingBay', 'depots', 'equipmentTypes', 'customers'));
+        // Prepare schedule data for all 7 days
+        $schedules = [];
+        for ($day = 0; $day <= 6; $day++) {
+            $existing = $tippingBay->schedules->firstWhere('day_of_week', $day);
+            $schedules[$day] = $existing ?? new \App\Models\BaySchedule([
+                'day_of_week' => $day,
+                'is_closed' => false,
+                'operational_start' => null,
+                'operational_end' => null,
+            ]);
+        }
+
+        return view('admin.tipping-bays.edit', compact('tippingBay', 'depots', 'equipmentTypes', 'customers', 'schedules'));
     }
 
     public function update(Request $request, TippingBay $tippingBay)
@@ -280,6 +292,75 @@ class TippingBayController extends Controller
         $tippingBay->markAvailable();
 
         return back()->with('success', 'Bay marked as available.');
+    }
+
+    /**
+     * Update or create per-day schedules for a bay
+     */
+    public function updateSchedules(Request $request, TippingBay $tippingBay)
+    {
+        $allowedDepotIds = $this->getAllowedDepotIds();
+
+        // Check depot access
+        if (! in_array($tippingBay->depot_id, $allowedDepotIds)) {
+            abort(403, 'You do not have access to this depot.');
+        }
+
+        $validated = $request->validate([
+            'schedules' => 'required|array|size:7', // Must have all 7 days
+            'schedules.*.day_of_week' => 'required|integer|min:0|max:6',
+            'schedules.*.is_closed' => 'nullable|boolean',
+            'schedules.*.operational_start' => 'nullable|date_format:H:i',
+            'schedules.*.operational_end' => 'nullable|date_format:H:i|after:schedules.*.operational_start',
+        ]);
+
+        foreach ($validated['schedules'] as $scheduleData) {
+            $isClosed = isset($scheduleData['is_closed']) && $scheduleData['is_closed'];
+
+            \App\Models\BaySchedule::updateOrCreate(
+                [
+                    'tipping_bay_id' => $tippingBay->id,
+                    'day_of_week' => $scheduleData['day_of_week'],
+                ],
+                [
+                    'is_closed' => $isClosed,
+                    'operational_start' => $isClosed ? null : ($scheduleData['operational_start'] ?? null),
+                    'operational_end' => $isClosed ? null : ($scheduleData['operational_end'] ?? null),
+                ]
+            );
+        }
+
+        return back()->with('success', 'Bay schedule updated successfully. Slots will be generated based on these hours.');
+    }
+
+    /**
+     * Set all days to 24/7 operation
+     */
+    public function setAll247(TippingBay $tippingBay)
+    {
+        $allowedDepotIds = $this->getAllowedDepotIds();
+
+        // Check depot access
+        if (! in_array($tippingBay->depot_id, $allowedDepotIds)) {
+            abort(403, 'You do not have access to this depot.');
+        }
+
+        // Create or update schedules for all 7 days
+        for ($day = 0; $day <= 6; $day++) {
+            \App\Models\BaySchedule::updateOrCreate(
+                [
+                    'tipping_bay_id' => $tippingBay->id,
+                    'day_of_week' => $day,
+                ],
+                [
+                    'is_closed' => false,
+                    'operational_start' => '00:00',
+                    'operational_end' => '23:00',
+                ]
+            );
+        }
+
+        return back()->with('success', 'Bay set to 24/7 operation for all days.');
     }
 
     private function getAllowedDepots()
