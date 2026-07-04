@@ -326,8 +326,9 @@ class TippingBayController extends Controller
                        in_array($scheduleData['is_closed'], ['1', 'on', true, 1], true);
 
             // Normalize time values - treat empty strings as null
-            $startTime = !empty($scheduleData['operational_start']) ? trim($scheduleData['operational_start']) : null;
-            $endTime = !empty($scheduleData['operational_end']) ? trim($scheduleData['operational_end']) : null;
+            // HTML time input sends H:i:s (06:00:00), we need to strip seconds
+            $startTime = !empty($scheduleData['operational_start']) ? substr(trim($scheduleData['operational_start']), 0, 5) : null;
+            $endTime = !empty($scheduleData['operational_end']) ? substr(trim($scheduleData['operational_end']), 0, 5) : null;
 
             // Only validate times if:
             // 1. Day is NOT closed
@@ -336,11 +337,11 @@ class TippingBayController extends Controller
                 $rules = [];
 
                 if ($startTime) {
-                    $rules["schedules.{$index}.operational_start"] = 'date_format:H:i';
+                    $rules["schedules.{$index}.operational_start"] = 'date_format:H:i:s';
                 }
 
                 if ($endTime) {
-                    $rules["schedules.{$index}.operational_end"] = 'date_format:H:i';
+                    $rules["schedules.{$index}.operational_end"] = 'date_format:H:i:s';
                 }
 
                 if (!empty($rules)) {
@@ -348,7 +349,7 @@ class TippingBayController extends Controller
                 }
             }
 
-            // Save the schedule
+            // Save the schedule (times are already trimmed to H:i format)
             \App\Models\BaySchedule::updateOrCreate(
                 [
                     'tipping_bay_id' => $tippingBay->id,
