@@ -334,25 +334,23 @@ class TippingBayController extends Controller
 
             // Only validate times if day is NOT closed and times are provided
             if (!$isClosed && (!empty($rawStartTime) || !empty($rawEndTime))) {
-                $rules = [];
-
-                // HTML time inputs send H:i format (HH:MM) without step attribute
-                if (!empty($rawStartTime)) {
-                    $rules["schedules.{$index}.operational_start"] = 'date_format:H:i';
+                // Validate time format - accept both H:i and H:i:s (browsers are inconsistent)
+                if (!empty($rawStartTime) && !preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $rawStartTime)) {
+                    return back()->withErrors([
+                        "schedules.{$index}.operational_start" => "Invalid time format for {$dayNames[$dayOfWeek]}"
+                    ])->withInput();
                 }
 
-                if (!empty($rawEndTime)) {
-                    $rules["schedules.{$index}.operational_end"] = 'date_format:H:i';
-                }
-
-                if (!empty($rules)) {
-                    $request->validate($rules);
+                if (!empty($rawEndTime) && !preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $rawEndTime)) {
+                    return back()->withErrors([
+                        "schedules.{$index}.operational_end" => "Invalid time format for {$dayNames[$dayOfWeek]}"
+                    ])->withInput();
                 }
             }
 
-            // Normalize time format (trim and ensure H:i format)
-            $startTime = !empty($rawStartTime) ? trim($rawStartTime) : null;
-            $endTime = !empty($rawEndTime) ? trim($rawEndTime) : null;
+            // Normalize time format - strip seconds if present (06:00:00 -> 06:00)
+            $startTime = !empty($rawStartTime) ? substr(trim($rawStartTime), 0, 5) : null;
+            $endTime = !empty($rawEndTime) ? substr(trim($rawEndTime), 0, 5) : null;
 
             // Save the schedule
             \App\Models\BaySchedule::updateOrCreate(
