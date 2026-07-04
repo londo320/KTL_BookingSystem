@@ -69,6 +69,23 @@ class TippingBay extends Model
             ->withTimestamps();
     }
 
+    /**
+     * Get the per-day schedules for this bay
+     */
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(BaySchedule::class, 'tipping_bay_id')
+            ->orderBy('day_of_week');
+    }
+
+    /**
+     * Get schedule for a specific day (0=Sunday, 6=Saturday)
+     */
+    public function getScheduleForDay(int $dayOfWeek): ?BaySchedule
+    {
+        return $this->schedules()->where('day_of_week', $dayOfWeek)->first();
+    }
+
     public function currentBooking()
     {
         // Check for regular bookings first
