@@ -60,10 +60,6 @@ class SchedulerController extends Controller
         $command = $request->input('command');
 
         try {
-            // Check daemon status before running command
-            $pidFile = storage_path('scheduler.pid');
-            $daemonPidBefore = File::exists($pidFile) ? trim(File::get($pidFile)) : 'none';
-
             // Extract command name and parameters from full command string
             $parsed = $this->extractCommandAndParams($command);
 
@@ -81,23 +77,6 @@ class SchedulerController extends Controller
             $output = trim($outputBuffer->fetch());
             $duration = round((microtime(true) - $startTime) * 1000, 2);
 
-            // Check daemon status after running command
-            $daemonPidAfter = File::exists($pidFile) ? trim(File::get($pidFile)) : 'none';
-
-            // In Docker/production, trust the daemon status if we can't check processes
-            $daemonStatus = $this->getSchedulerDaemonStatus();
-            $isDockerSeparateContainer = ($daemonStatus['deployment_type'] ?? 'local') === 'docker';
-
-            if ($isDockerSeparateContainer) {
-                // Separate Docker container - trust daemon status (can't check processes across containers)
-                $stillRunning = $daemonStatus['running'];
-                $processDebug = "Environment: Separate Docker container\nDaemon check: Trusting daemon status (container isolation)\n";
-            } else {
-                // Local or same container - do detailed process check
-                $stillRunning = $daemonPidAfter !== 'none' && $this->isProcessRunning($daemonPidAfter);
-                $processDebug = $this->getProcessDebugInfo($daemonPidAfter);
-            }
-
             // Check for command-specific log files if there's no direct output
             $logHint = '';
             if (empty($output)) {
@@ -114,17 +93,48 @@ class SchedulerController extends Controller
                 }
             }
 
-            $debugInfo = "\n\n" .
-                "═══════════════════════════════════════\n" .
-                "Debug Info:\n" .
-                "Command: {$parsed['command']}\n" .
-                "Parameters: " . json_encode($parsed['params']) . "\n" .
-                "Duration: {$duration}ms\n" .
-                "Daemon PID before: {$daemonPidBefore}\n" .
-                "Daemon PID after: {$daemonPidAfter}\n" .
-                "Daemon still running: " . ($stillRunning ? 'YES ✅' : 'NO ❌') . "\n" .
-                $processDebug .
-                "═══════════════════════════════════════";
+            // Check deployment type to show appropriate debug info
+            $daemonStatus = $this->getSchedulerDaemonStatus();
+            $deploymentType = $daemonStatus['deployment_type'] ?? 'local';
+
+            if ($deploymentType === 'cron') {
+                // Cron mode - simpler debug info
+                $debugInfo = "\n\n" .
+                    "═══════════════════════════════════════\n" .
+                    "Debug Info:\n" .
+                    "Command: {$parsed['command']}\n" .
+                    "Parameters: " . json_encode($parsed['params']) . "\n" .
+                    "Duration: {$duration}ms\n" .
+                    "Scheduler: Cron-based (runs every minute)\n" .
+                    "═══════════════════════════════════════";
+            } else {
+                // Daemon mode - include daemon status checks
+                $pidFile = storage_path('scheduler.pid');
+                $daemonPidBefore = File::exists($pidFile) ? trim(File::get($pidFile)) : 'none';
+                $daemonPidAfter = File::exists($pidFile) ? trim(File::get($pidFile)) : 'none';
+
+                $isDockerSeparateContainer = $deploymentType === 'docker';
+
+                if ($isDockerSeparateContainer) {
+                    $stillRunning = $daemonStatus['running'];
+                    $processDebug = "Environment: Separate Docker container\nDaemon check: Trusting daemon status (container isolation)\n";
+                } else {
+                    $stillRunning = $daemonPidAfter !== 'none' && $this->isProcessRunning($daemonPidAfter);
+                    $processDebug = $this->getProcessDebugInfo($daemonPidAfter);
+                }
+
+                $debugInfo = "\n\n" .
+                    "═══════════════════════════════════════\n" .
+                    "Debug Info:\n" .
+                    "Command: {$parsed['command']}\n" .
+                    "Parameters: " . json_encode($parsed['params']) . "\n" .
+                    "Duration: {$duration}ms\n" .
+                    "Daemon PID before: {$daemonPidBefore}\n" .
+                    "Daemon PID after: {$daemonPidAfter}\n" .
+                    "Daemon still running: " . ($stillRunning ? 'YES ✅' : 'NO ❌') . "\n" .
+                    $processDebug .
+                    "═══════════════════════════════════════";
+            }
 
             return back()->with('success', "Command executed successfully!\n\nOutput:\n" . ($output ?: '(command completed silently)') . $logHint . $debugInfo);
         } catch (\Exception $e) {
