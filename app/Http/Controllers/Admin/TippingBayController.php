@@ -306,16 +306,27 @@ class TippingBayController extends Controller
             abort(403, 'You do not have access to this depot.');
         }
 
-        $validated = $request->validate([
+        // Basic validation first
+        $request->validate([
             'schedules' => 'required|array|size:7', // Must have all 7 days
             'schedules.*.day_of_week' => 'required|integer|min:0|max:6',
             'schedules.*.is_closed' => 'nullable|boolean',
-            'schedules.*.operational_start' => 'nullable|date_format:H:i',
-            'schedules.*.operational_end' => 'nullable|date_format:H:i|after:schedules.*.operational_start',
         ]);
 
-        foreach ($validated['schedules'] as $scheduleData) {
+        // Validate each schedule with conditional rules
+        foreach ($request->schedules as $index => $scheduleData) {
             $isClosed = isset($scheduleData['is_closed']) && $scheduleData['is_closed'];
+
+            // Only validate times if day is NOT closed
+            if (!$isClosed) {
+                $request->validate([
+                    "schedules.{$index}.operational_start" => 'required|date_format:H:i',
+                    "schedules.{$index}.operational_end" => 'required|date_format:H:i|after:schedules.'.$index.'.operational_start',
+                ], [
+                    "schedules.{$index}.operational_start.required" => 'Start time is required when day is open.',
+                    "schedules.{$index}.operational_end.required" => 'End time is required when day is open.',
+                ]);
+            }
 
             \App\Models\BaySchedule::updateOrCreate(
                 [
