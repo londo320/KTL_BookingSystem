@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\DeleteEmptySlotsJob;
 use App\Models\BookingType;
 use App\Models\Depot;
 use App\Models\Slot;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class SlotController extends Controller
 {
@@ -205,41 +207,53 @@ class SlotController extends Controller
      */
     public function bulkDeleteByDate(Request $request)
     {
-        $request->validate([
-            'date' => 'required|date',
-        ]);
+        try {
+            $request->validate([
+                'date' => 'required|date',
+            ]);
 
-        $user = auth()->user();
-        $defaultDepotId = $user->depot_id;
+            $user = auth()->user();
+            $defaultDepotId = $user->depot_id;
 
-        if (!$defaultDepotId) {
-            return back()->with('error', 'No default depot assigned.');
-        }
+            if (!$defaultDepotId) {
+                return back()->with('error', 'No default depot assigned.');
+            }
 
-        // Count how many slots will be deleted
-        $count = Slot::where('depot_id', $defaultDepotId)
-            ->whereDate('start_at', $request->date)
-            ->whereDoesntHave('occupyingBookings')
-            ->count();
-
-        if ($count === 0) {
-            return back()->with('info', "No empty slots found on " . $request->date);
-        }
-
-        // For small numbers, delete immediately
-        if ($count <= 50) {
-            $deletedCount = Slot::where('depot_id', $defaultDepotId)
+            // Count how many slots will be deleted
+            $count = Slot::where('depot_id', $defaultDepotId)
                 ->whereDate('start_at', $request->date)
                 ->whereDoesntHave('occupyingBookings')
-                ->delete();
+                ->count();
 
-            return back()->with('success', "Deleted {$deletedCount} empty slot(s) on " . $request->date);
+            if ($count === 0) {
+                return back()->with('info', "No empty slots found on " . $request->date);
+            }
+
+            // For small numbers, delete immediately
+            if ($count <= 50) {
+                $deletedCount = Slot::where('depot_id', $defaultDepotId)
+                    ->whereDate('start_at', $request->date)
+                    ->whereDoesntHave('occupyingBookings')
+                    ->delete();
+
+                return back()->with('success', "Deleted {$deletedCount} empty slot(s) on " . $request->date);
+            }
+
+            // For large numbers, use background job to avoid timeout
+            DeleteEmptySlotsJob::dispatch($defaultDepotId, $request->date);
+
+            Log::info("Queued deletion of {$count} empty slots for depot {$defaultDepotId} on {$request->date}");
+
+            return back()->with('success', "Deletion of {$count} empty slots has been queued. This will complete in the background. Check the logs for progress.");
+        } catch (\Exception $e) {
+            Log::error("Error during bulk delete by date: " . $e->getMessage(), [
+                'exception' => $e,
+                'depot_id' => $defaultDepotId ?? null,
+                'date' => $request->date ?? null,
+            ]);
+
+            return back()->with('error', 'Error deleting slots: ' . $e->getMessage());
         }
-
-        // For large numbers, use background job to avoid timeout
-        \App\Jobs\DeleteEmptySlotsJob::dispatch($defaultDepotId, $request->date);
-
-        return back()->with('success', "Deletion of {$count} empty slots has been queued. This will complete in the background. Check the logs for progress.");
     }
 
     /**
