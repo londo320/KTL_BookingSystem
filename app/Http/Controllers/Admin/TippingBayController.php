@@ -314,22 +314,37 @@ class TippingBayController extends Controller
 
         // Process each day
         foreach ($request->schedules as $index => $scheduleData) {
+            // Debug logging
+            \Log::info("Schedule data for index {$index}", [
+                'data' => $scheduleData,
+                'is_closed_raw' => $scheduleData['is_closed'] ?? 'NOT SET',
+            ]);
+
             // Check if this day is marked as closed
-            // Checkbox sends "1" or "on" when checked, nothing when unchecked
-            $isClosed = !empty($scheduleData['is_closed']);
+            // Checkbox can send: "1", "on", true, or be absent entirely
+            $isClosed = isset($scheduleData['is_closed']) &&
+                       in_array($scheduleData['is_closed'], ['1', 'on', true, 1], true);
 
-            // Only validate times if day is open
-            if (!$isClosed) {
-                // Check if times are provided and not empty
-                $hasStartTime = !empty($scheduleData['operational_start']);
-                $hasEndTime = !empty($scheduleData['operational_end']);
+            // Normalize time values - treat empty strings as null
+            $startTime = !empty($scheduleData['operational_start']) ? trim($scheduleData['operational_start']) : null;
+            $endTime = !empty($scheduleData['operational_end']) ? trim($scheduleData['operational_end']) : null;
 
-                // Only validate format if times are provided
-                if ($hasStartTime || $hasEndTime) {
-                    $request->validate([
-                        "schedules.{$index}.operational_start" => $hasStartTime ? 'date_format:H:i' : '',
-                        "schedules.{$index}.operational_end" => $hasEndTime ? 'date_format:H:i' : '',
-                    ]);
+            // Only validate times if:
+            // 1. Day is NOT closed
+            // 2. At least one time field has a value
+            if (!$isClosed && ($startTime || $endTime)) {
+                $rules = [];
+
+                if ($startTime) {
+                    $rules["schedules.{$index}.operational_start"] = 'date_format:H:i';
+                }
+
+                if ($endTime) {
+                    $rules["schedules.{$index}.operational_end"] = 'date_format:H:i';
+                }
+
+                if (!empty($rules)) {
+                    $request->validate($rules);
                 }
             }
 
@@ -341,8 +356,8 @@ class TippingBayController extends Controller
                 ],
                 [
                     'is_closed' => $isClosed,
-                    'operational_start' => ($isClosed || empty($scheduleData['operational_start'])) ? null : $scheduleData['operational_start'],
-                    'operational_end' => ($isClosed || empty($scheduleData['operational_end'])) ? null : $scheduleData['operational_end'],
+                    'operational_start' => $isClosed ? null : $startTime,
+                    'operational_end' => $isClosed ? null : $endTime,
                 ]
             );
         }
