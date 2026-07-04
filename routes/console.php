@@ -44,7 +44,7 @@ Schedule::command('bookings:cleanup-incomplete', ['--minutes' => 30])
     ->description('Delete bookings older than 30 minutes without PO details');
 
 // Process queued jobs (for background tasks like bulk slot deletion)
-Schedule::command('queue:work', ['--stop-when-empty' => true, '--max-time' => 50])
+Schedule::command('queue:work --stop-when-empty --max-time=50')
     ->everyMinute()
     ->withoutOverlapping()
     ->timezone('Europe/London')
