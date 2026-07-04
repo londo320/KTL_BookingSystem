@@ -20,6 +20,9 @@ class GenerateBaySpecificSlots extends Command
         $today = Carbon::today();
         $slotsCreated = 0;
 
+        $this->info("🚪 Generating bay-specific slots for next {$daysToGenerate} days...");
+        $this->newLine();
+
         $depots = Depot::all();
 
         foreach ($depots as $depot) {
@@ -28,17 +31,34 @@ class GenerateBaySpecificSlots extends Command
                 ->get();
 
             if ($bays->isEmpty()) {
+                $this->warn("Depot {$depot->name}: No active bays found");
                 continue;
             }
 
-            foreach ($bays as $bay) {
-                if (!$bay->operational_start || !$bay->operational_end) {
-                    continue;
-                }
+            $this->line("📍 Depot: {$depot->name} ({$bays->count()} active bays)");
 
-                $operationalStart = Carbon::parse($bay->operational_start);
-                $operationalEnd = Carbon::parse($bay->operational_end);
-                $operationalDays = $bay->operational_days ?? [1, 2, 3, 4, 5];
+            foreach ($bays as $bay) {
+                // Handle 24/7 operation (NULL times) - default to 00:00-23:00
+                $operationalStart = $bay->operational_start
+                    ? Carbon::parse($bay->operational_start)
+                    : Carbon::parse('00:00');
+
+                $operationalEnd = $bay->operational_end
+                    ? Carbon::parse($bay->operational_end)
+                    : Carbon::parse('23:00');
+
+                // Handle operational days
+                // - NULL or empty = all days (24/7)
+                // - Array with values = specific days only
+                $operationalDays = $bay->operational_days;
+
+                if (is_null($operationalDays) || (is_array($operationalDays) && empty($operationalDays))) {
+                    // 24/7 or no days set = all days (0=Sunday through 6=Saturday)
+                    $operationalDays = [0, 1, 2, 3, 4, 5, 6];
+                    $this->line("  Bay {$bay->name}: 24/7 operation (all days)");
+                } else {
+                    $this->line("  Bay {$bay->name}: Operating on specific days: " . implode(', ', $operationalDays));
+                }
 
                 for ($dayOffset = 0; $dayOffset < $daysToGenerate; $dayOffset++) {
                     $targetDate = $today->copy()->addDays($dayOffset);
@@ -79,8 +99,14 @@ class GenerateBaySpecificSlots extends Command
             }
         }
 
+        $this->newLine();
         if ($slotsCreated > 0) {
-            $this->info("Created {$slotsCreated} new slots for next {$daysToGenerate} days");
+            $this->info("✅ Created {$slotsCreated} new slots for next {$daysToGenerate} days");
+        } else {
+            $this->warn("⚠️  No new slots were created. Possible reasons:");
+            $this->line("   • Slots already exist for these dates");
+            $this->line("   • No active bays configured");
+            $this->line("   • Bay operational hours/days not set");
         }
 
         return 0;
