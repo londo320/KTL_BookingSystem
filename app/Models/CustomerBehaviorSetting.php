@@ -98,7 +98,7 @@ class CustomerBehaviorSetting extends Model
                 'type' => 'integer',
                 'default' => 3,
                 'min' => 0,
-                'max' => 10,
+                'max' => 999,
             ],
             'max_last_minute_rebooks_30days' => [
                 'label' => 'Max Last-Minute Rebooks (30 days)',
@@ -106,7 +106,7 @@ class CustomerBehaviorSetting extends Model
                 'type' => 'integer',
                 'default' => 5,
                 'min' => 0,
-                'max' => 50,
+                'max' => 999,
             ],
             'max_total_rebooks_30days' => [
                 'label' => 'Max Total Rebooks (30 days)',
@@ -114,7 +114,7 @@ class CustomerBehaviorSetting extends Model
                 'type' => 'integer',
                 'default' => 10,
                 'min' => 0,
-                'max' => 100,
+                'max' => 999,
             ],
             'max_cancellations_30days' => [
                 'label' => 'Max Cancellations (30 days)',
@@ -122,7 +122,7 @@ class CustomerBehaviorSetting extends Model
                 'type' => 'integer',
                 'default' => 15,
                 'min' => 0,
-                'max' => 100,
+                'max' => 999,
             ],
             'minimum_hours_notice' => [
                 'label' => 'Minimum Hours Notice',
@@ -130,7 +130,7 @@ class CustomerBehaviorSetting extends Model
                 'type' => 'integer',
                 'default' => 24,
                 'min' => 1,
-                'max' => 168,
+                'max' => 720,
             ],
             'allow_weekend_bookings' => [
                 'label' => 'Allow Weekend Bookings',
