@@ -314,33 +314,25 @@ class TippingBayController extends Controller
 
         // Process each day
         foreach ($request->schedules as $index => $scheduleData) {
-            // Debug logging
-            \Log::info("Schedule data for index {$index}", [
-                'data' => $scheduleData,
-                'is_closed_raw' => $scheduleData['is_closed'] ?? 'NOT SET',
-            ]);
-
             // Check if this day is marked as closed
             // Checkbox can send: "1", "on", true, or be absent entirely
             $isClosed = isset($scheduleData['is_closed']) &&
                        in_array($scheduleData['is_closed'], ['1', 'on', true, 1], true);
 
-            // Normalize time values - treat empty strings as null
-            // HTML time input sends H:i:s (06:00:00), we need to strip seconds
-            $startTime = !empty($scheduleData['operational_start']) ? substr(trim($scheduleData['operational_start']), 0, 5) : null;
-            $endTime = !empty($scheduleData['operational_end']) ? substr(trim($scheduleData['operational_end']), 0, 5) : null;
+            // Get raw time values for validation
+            $rawStartTime = $scheduleData['operational_start'] ?? null;
+            $rawEndTime = $scheduleData['operational_end'] ?? null;
 
-            // Only validate times if:
-            // 1. Day is NOT closed
-            // 2. At least one time field has a value
-            if (!$isClosed && ($startTime || $endTime)) {
+            // Only validate times if day is NOT closed and times are provided
+            if (!$isClosed && (!empty($rawStartTime) || !empty($rawEndTime))) {
                 $rules = [];
 
-                if ($startTime) {
+                // Validate whatever format the time input sends (accepts both H:i and H:i:s)
+                if (!empty($rawStartTime)) {
                     $rules["schedules.{$index}.operational_start"] = 'date_format:H:i:s';
                 }
 
-                if ($endTime) {
+                if (!empty($rawEndTime)) {
                     $rules["schedules.{$index}.operational_end"] = 'date_format:H:i:s';
                 }
 
@@ -349,7 +341,11 @@ class TippingBayController extends Controller
                 }
             }
 
-            // Save the schedule (times are already trimmed to H:i format)
+            // NOW strip seconds for saving (HTML sends H:i:s, we want H:i in DB)
+            $startTime = !empty($rawStartTime) ? substr(trim($rawStartTime), 0, 5) : null;
+            $endTime = !empty($rawEndTime) ? substr(trim($rawEndTime), 0, 5) : null;
+
+            // Save the schedule
             \App\Models\BaySchedule::updateOrCreate(
                 [
                     'tipping_bay_id' => $tippingBay->id,
