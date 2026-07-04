@@ -42,3 +42,11 @@ Schedule::command('bookings:cleanup-incomplete', ['--minutes' => 30])
     ->timezone('Europe/London')
     ->appendOutputTo(storage_path('logs/booking_cleanup.log'))
     ->description('Delete bookings older than 30 minutes without PO details');
+
+// Process queued jobs (for background tasks like bulk slot deletion)
+Schedule::command('queue:work', ['--stop-when-empty' => true, '--max-time' => 50])
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->timezone('Europe/London')
+    ->appendOutputTo(storage_path('logs/queue_worker.log'))
+    ->description('Process queued background jobs');

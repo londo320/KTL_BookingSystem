@@ -216,13 +216,30 @@ class SlotController extends Controller
             return back()->with('error', 'No default depot assigned.');
         }
 
-        // Find all slots on this date at the default depot that have no bookings
-        $deletedCount = Slot::where('depot_id', $defaultDepotId)
+        // Count how many slots will be deleted
+        $count = Slot::where('depot_id', $defaultDepotId)
             ->whereDate('start_at', $request->date)
             ->whereDoesntHave('occupyingBookings')
-            ->delete();
+            ->count();
 
-        return back()->with('success', "Deleted {$deletedCount} empty slot(s) on " . $request->date);
+        if ($count === 0) {
+            return back()->with('info', "No empty slots found on " . $request->date);
+        }
+
+        // For small numbers, delete immediately
+        if ($count <= 50) {
+            $deletedCount = Slot::where('depot_id', $defaultDepotId)
+                ->whereDate('start_at', $request->date)
+                ->whereDoesntHave('occupyingBookings')
+                ->delete();
+
+            return back()->with('success', "Deleted {$deletedCount} empty slot(s) on " . $request->date);
+        }
+
+        // For large numbers, use background job to avoid timeout
+        \App\Jobs\DeleteEmptySlotsJob::dispatch($defaultDepotId, $request->date);
+
+        return back()->with('success', "Deletion of {$count} empty slots has been queued. This will complete in the background. Check the logs for progress.");
     }
 
     /**
