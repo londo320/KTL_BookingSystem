@@ -327,13 +327,13 @@ class TippingBayController extends Controller
             if (!$isClosed && (!empty($rawStartTime) || !empty($rawEndTime))) {
                 $rules = [];
 
-                // Validate whatever format the time input sends (accepts both H:i and H:i:s)
+                // HTML time inputs send H:i format (HH:MM) without step attribute
                 if (!empty($rawStartTime)) {
-                    $rules["schedules.{$index}.operational_start"] = 'date_format:H:i:s';
+                    $rules["schedules.{$index}.operational_start"] = 'date_format:H:i';
                 }
 
                 if (!empty($rawEndTime)) {
-                    $rules["schedules.{$index}.operational_end"] = 'date_format:H:i:s';
+                    $rules["schedules.{$index}.operational_end"] = 'date_format:H:i';
                 }
 
                 if (!empty($rules)) {
@@ -341,9 +341,9 @@ class TippingBayController extends Controller
                 }
             }
 
-            // NOW strip seconds for saving (HTML sends H:i:s, we want H:i in DB)
-            $startTime = !empty($rawStartTime) ? substr(trim($rawStartTime), 0, 5) : null;
-            $endTime = !empty($rawEndTime) ? substr(trim($rawEndTime), 0, 5) : null;
+            // Normalize time format (trim and ensure H:i format)
+            $startTime = !empty($rawStartTime) ? trim($rawStartTime) : null;
+            $endTime = !empty($rawEndTime) ? trim($rawEndTime) : null;
 
             // Save the schedule
             \App\Models\BaySchedule::updateOrCreate(
