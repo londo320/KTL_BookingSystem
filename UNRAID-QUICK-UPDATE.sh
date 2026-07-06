@@ -36,6 +36,12 @@ docker exec "$APP_CONTAINER" php artisan migrate --force
 echo "✅ Migrations complete"
 echo ""
 
+# Ensure storage symlink exists
+echo "🔗 Ensuring storage symlink..."
+docker exec "$APP_CONTAINER" php artisan storage:link
+echo "✅ Storage linked"
+echo ""
+
 # Clear caches
 echo "🧹 Clearing caches..."
 docker exec "$APP_CONTAINER" php artisan cache:clear
