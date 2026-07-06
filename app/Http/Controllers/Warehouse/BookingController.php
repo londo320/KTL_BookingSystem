@@ -3019,6 +3019,9 @@ class BookingController extends Controller
         $callback = function () use ($bookings) {
             $file = fopen('php://output', 'w');
 
+            // Add UTF-8 BOM for proper Excel encoding
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
             // CSV Headers with emojis
             fputcsv($file, [
                 '🆔 Booking ID', '📋 Reference', '🏢 Depot', '👤 Customer', '📦 Booking Type',
@@ -3155,6 +3158,9 @@ class BookingController extends Controller
 
         $callback = function () use ($summaryByDepotCustomer, $bookings) {
             $file = fopen('php://output', 'w');
+
+            // Add UTF-8 BOM for proper Excel encoding
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
             // Enhanced Summary Report Header with emojis
             fputcsv($file, ['📊 COMPREHENSIVE BOOKING REPORT']);
