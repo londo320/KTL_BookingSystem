@@ -292,12 +292,6 @@
             csrfToken.name = '_token';
             csrfToken.value = '{{ csrf_token() }}';
             form.appendChild(csrfToken);
-            // Add method override for DELETE
-            const methodField = document.createElement('input');
-            methodField.type = 'hidden';
-            methodField.name = '_method';
-            methodField.value = 'DELETE';
-            form.appendChild(methodField);
             // Add filename
             const filenameField = document.createElement('input');
             filenameField.type = 'hidden';
