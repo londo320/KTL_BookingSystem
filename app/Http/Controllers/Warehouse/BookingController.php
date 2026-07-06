@@ -3133,7 +3133,7 @@ class BookingController extends Controller
     }
 
     /**
-     * Export bookings summary as Excel (using CSV format for simplicity)
+     * Export bookings summary as Excel (XLSX format with PhpSpreadsheet)
      */
     public function exportExcel(Request $request)
     {
@@ -3141,7 +3141,7 @@ class BookingController extends Controller
         if (!auth()->user()->hasRole('admin') && !auth()->user()->hasFunction('bookings.export.excel')) {
             abort(403, 'You do not have permission to export bookings to Excel.');
         }
-        
+
         $this->ensureDepotAccess();
         $allowedDepotIds = $this->getAllowedDepotIds();
 
@@ -3149,195 +3149,235 @@ class BookingController extends Controller
         $bookings = $query->with(['poNumbers.lines.expectedPalletType', 'poNumbers.lines.actualPalletType'])->get();
         $summaryByDepotCustomer = $this->buildSummaryData($bookings);
 
-        $filename = '📊-bookings-detailed-'.Carbon::now()->format('Y-m-d-H-i').'.csv';
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
 
+        // Hide gridlines
+        $sheet->setShowGridlines(false);
+
+        $row = 1;
+
+        // Header section
+        $sheet->setCellValue('A'.$row, '📊 COMPREHENSIVE BOOKING REPORT');
+        $sheet->getStyle('A'.$row)->getFont()->setBold(true)->setSize(16);
+        $row++;
+
+        $sheet->setCellValue('A'.$row, '🕐 Generated: '.Carbon::now()->format('Y-m-d H:i:s'));
+        $row++;
+
+        $sheet->setCellValue('A'.$row, '📦 Total Bookings: '.$bookings->count());
+        $row += 2; // Empty row
+
+        // Detailed Booking List Header
+        $sheet->setCellValue('A'.$row, '📋 DETAILED BOOKING LIST');
+        $sheet->getStyle('A'.$row)->getFont()->setBold(true)->setSize(14);
+        $row++;
+
+        // Column headers
         $headers = [
-            'Content-Type' => 'application/vnd.ms-excel',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            '🆔 ID', '📋 Reference', '🏢 Depot', '👤 Customer', '📦 Type',
+            '📅 Start Time', '📅 End Time', '🚛 Tipping Status', '📍 Status',
+            '📝 PO Numbers Summary', '📊 PO Details',
+            '🔢 Total Expected Units', '🔢 Total Actual Units', '📊 Unit Variance',
+            '📦 Total Expected Pallets', '📦 Total Actual Pallets', '📊 Pallet Variance',
+            '⚠️ Has Variance', '📝 Notes',
         ];
 
-        $callback = function () use ($summaryByDepotCustomer, $bookings) {
-            $file = fopen('php://output', 'w');
+        $col = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue($col.$row, $header);
+            $sheet->getStyle($col.$row)->getFont()->setBold(true);
+            $col++;
+        }
+        $row++;
 
-            // Add UTF-8 BOM for proper Excel encoding
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-
-            // Enhanced Summary Report Header with emojis
-            fputcsv($file, ['📊 COMPREHENSIVE BOOKING REPORT']);
-            fputcsv($file, ['🕐 Generated: '.Carbon::now()->format('Y-m-d H:i:s')]);
-            fputcsv($file, ['📦 Total Bookings: '.$bookings->count()]);
-            fputcsv($file, []); // Empty row
-
-            // Detailed Booking List
-            fputcsv($file, ['📋 DETAILED BOOKING LIST']);
-            fputcsv($file, [
-                '🆔 ID', '📋 Reference', '🏢 Depot', '👤 Customer', '📦 Type',
-                '📅 Start Time', '📅 End Time', '🚛 Tipping Status', '📍 Status',
-                '📝 PO Numbers Summary', '📊 PO Details',
-                '🔢 Total Expected Units', '🔢 Total Actual Units', '📊 Unit Variance',
-                '📦 Total Expected Pallets', '📦 Total Actual Pallets', '📊 Pallet Variance',
-                '⚠️ Has Variance', '📝 Notes',
-            ]);
-
-            foreach ($bookings as $booking) {
-                // Status determination
-                $status = '⏳ Scheduled';
-                if ($booking->cancelled_at) {
-                    $status = '❌ Cancelled';
-                } elseif ($booking->arrived_at) {
-                    if ($booking->departed_at) {
-                        $status = '✅ Completed';
-                    } else {
-                        $status = '🏢 On-site';
-                    }
-                }
-
-                // Tipping status with emoji
-                $tippingStatus = $booking->getCurrentMovementStatus();
-                $tippingStatusWithEmoji = match ($tippingStatus) {
-                    'scheduled' => '⏳ Scheduled',
-                    'en_route' => '🚛 En Route',
-                    'arrived' => '📍 Arrived',
-                    'in_parking' => '⏸️ Waiting',
-                    'in_parking' => '📍 Trailer Dropped',
-                    'at_bay' => '🚛 At Bay',
-                    'unloading' => '⚡ Unloading',
-                    'empty' => '✅ Empty',
-                    'loading' => '⚡ Loading',
-                    'loaded' => '📦 Loaded',
-                    'ready_to_depart' => '🚀 Ready',
-                    'departed' => '🏁 Departed',
-                    'trailer_collected' => '🔄 Collected',
-                    default => '❓ Unknown'
-                };
-
-                // Collect PO information
-                $poSummary = '';
-                $poDetails = '';
-                $totalExpectedUnits = 0;
-                $totalActualUnits = 0;
-                $totalExpectedPallets = 0;
-                $totalActualPallets = 0;
-                $hasVariance = false;
-
-                if ($booking->poNumbers && $booking->poNumbers->count() > 0) {
-                    $poSummaryList = [];
-                    $poDetailsList = [];
-
-                    foreach ($booking->poNumbers as $po) {
-                        $poSummaryList[] = $po->po_number." ({$po->lines->count()} lines)";
-
-                        // Detailed PO breakdown
-                        $poDetail = $po->po_number.': ';
-                        $lineDetails = [];
-                        foreach ($po->lines as $line) {
-                            $lineDetail = "Line {$line->line_number}: {$line->expected_cases} → {$line->actual_cases} units";
-                            if ($line->expected_pallets > 0 || $line->actual_pallets > 0) {
-                                $lineDetail .= ", {$line->expected_pallets} → {$line->actual_pallets} pallets";
-                            }
-                            if ($line->hasVariance()) {
-                                $lineDetail .= ' ⚠️';
-                                $hasVariance = true;
-                            }
-                            $lineDetails[] = $lineDetail;
-                        }
-                        $poDetail .= implode(' | ', $lineDetails);
-                        $poDetailsList[] = $poDetail;
-
-                        $totalExpectedUnits += $po->total_expected_units;
-                        $totalActualUnits += $po->total_actual_units;
-                        $totalExpectedPallets += $po->total_expected_pallets;
-                        $totalActualPallets += $po->total_actual_pallets;
-                    }
-
-                    $poSummary = implode('; ', $poSummaryList);
-                    $poDetails = implode(' || ', $poDetailsList);
+        // Data rows
+        foreach ($bookings as $booking) {
+            // Status determination
+            $status = '⏳ Scheduled';
+            if ($booking->cancelled_at) {
+                $status = '❌ Cancelled';
+            } elseif ($booking->arrived_at) {
+                if ($booking->departed_at) {
+                    $status = '✅ Completed';
                 } else {
-                    $poSummary = '❌ No PO Numbers';
-                    $poDetails = 'No PO details available';
+                    $status = '🏢 On-site';
                 }
-
-                // Calculate variances
-                $unitVariance = $totalActualUnits - $totalExpectedUnits;
-                $palletVariance = $totalActualPallets - $totalExpectedPallets;
-
-                fputcsv($file, [
-                    $booking->id,
-                    $booking->booking_reference ?? 'N/A',
-                    $booking->slot->depot->name,
-                    $booking->customer ? $booking->customer->name : '❌ No Customer',
-                    $booking->bookingType->name ?? 'N/A',
-                    $booking->slot->start_at->format('Y-m-d H:i'),
-                    $booking->slot->end_at->format('Y-m-d H:i'),
-                    $tippingStatusWithEmoji,
-                    $status,
-                    $poSummary,
-                    $poDetails,
-                    $totalExpectedUnits,
-                    $totalActualUnits,
-                    $unitVariance != 0 ? ($unitVariance > 0 ? '+' : '').$unitVariance : '✅ 0',
-                    $totalExpectedPallets,
-                    $totalActualPallets,
-                    $palletVariance != 0 ? ($palletVariance > 0 ? '+' : '').$palletVariance : '✅ 0',
-                    $hasVariance ? '⚠️ Yes' : '✅ No',
-                    $booking->notes ?: 'No notes',
-                ]);
             }
 
-            fputcsv($file, []); // Empty row
-            fputcsv($file, ['📊 SUMMARY BY DEPOT & CUSTOMER']);
+            // Tipping status with emoji
+            $tippingStatus = $booking->getCurrentMovementStatus();
+            $tippingStatusWithEmoji = match ($tippingStatus) {
+                'scheduled' => '⏳ Scheduled',
+                'en_route' => '🚛 En Route',
+                'arrived' => '📍 Arrived',
+                'in_parking' => '⏸️ Waiting',
+                'at_bay' => '🚛 At Bay',
+                'unloading' => '⚡ Unloading',
+                'empty' => '✅ Empty',
+                'loading' => '⚡ Loading',
+                'loaded' => '📦 Loaded',
+                'ready_to_depart' => '🚀 Ready',
+                'departed' => '🏁 Departed',
+                'trailer_collected' => '🔄 Collected',
+                default => '❓ Unknown'
+            };
 
-            // Summary by depot and customer with emojis
-            fputcsv($file, [
-                '🏢 Depot', '👤 Customer', '✅ Arrived', '⏰ Late', '📋 Outstanding',
-                '🔢 Expected Cases', '🔢 Actual Cases', '📊 Case Variance',
-                '📦 Expected Pallets', '📦 Actual Pallets', '📊 Pallet Variance',
-            ]);
+            // Collect PO information
+            $poSummary = '';
+            $poDetails = '';
+            $totalExpectedUnits = 0;
+            $totalActualUnits = 0;
+            $totalExpectedPallets = 0;
+            $totalActualPallets = 0;
+            $hasVariance = false;
 
-            foreach ($summaryByDepotCustomer as $depotName => $customers) {
-                foreach ($customers as $customerName => $data) {
-                    if ($customerName === '_totals') {
-                        continue;
+            if ($booking->poNumbers && $booking->poNumbers->count() > 0) {
+                $poSummaryList = [];
+                $poDetailsList = [];
+
+                foreach ($booking->poNumbers as $po) {
+                    $poSummaryList[] = $po->po_number." ({$po->lines->count()} lines)";
+
+                    // Detailed PO breakdown
+                    $poDetail = $po->po_number.': ';
+                    $lineDetails = [];
+                    foreach ($po->lines as $line) {
+                        $lineDetail = "Line {$line->line_number}: {$line->expected_cases} → {$line->actual_cases} units";
+                        if ($line->expected_pallets > 0 || $line->actual_pallets > 0) {
+                            $lineDetail .= ", {$line->expected_pallets} → {$line->actual_pallets} pallets";
+                        }
+                        if ($line->hasVariance()) {
+                            $lineDetail .= ' ⚠️';
+                            $hasVariance = true;
+                        }
+                        $lineDetails[] = $lineDetail;
                     }
+                    $poDetail .= implode(' | ', $lineDetails);
+                    $poDetailsList[] = $poDetail;
 
-                    fputcsv($file, [
-                        $depotName,
-                        $customerName,
-                        $data['arrived'],
-                        $data['late'],
-                        $data['outstanding'],
-                        $data['expected_cases'],
-                        $data['actual_cases'],
-                        $data['case_variance'] != 0 ? ($data['case_variance'] > 0 ? '+' : '').$data['case_variance'] : '✅ 0',
-                        $data['expected_pallets'],
-                        $data['actual_pallets'],
-                        $data['pallet_variance'] != 0 ? ($data['pallet_variance'] > 0 ? '+' : '').$data['pallet_variance'] : '✅ 0',
-                    ]);
+                    $totalExpectedUnits += $po->total_expected_units;
+                    $totalActualUnits += $po->total_actual_units;
+                    $totalExpectedPallets += $po->total_expected_pallets;
+                    $totalActualPallets += $po->total_actual_pallets;
                 }
 
-                // Add totals row with emoji
-                if (isset($customers['_totals'])) {
-                    $totals = $customers['_totals'];
-                    fputcsv($file, [
-                        '📊 '.$depotName.' TOTALS',
-                        '',
-                        $totals['arrived'],
-                        $totals['late'],
-                        $totals['outstanding'],
-                        $totals['expected_cases'],
-                        $totals['actual_cases'],
-                        $totals['case_variance'] != 0 ? ($totals['case_variance'] > 0 ? '+' : '').$totals['case_variance'] : '✅ 0',
-                        $totals['expected_pallets'],
-                        $totals['actual_pallets'],
-                        $totals['pallet_variance'] != 0 ? ($totals['pallet_variance'] > 0 ? '+' : '').$totals['pallet_variance'] : '✅ 0',
-                    ]);
-                }
+                $poSummary = implode('; ', $poSummaryList);
+                $poDetails = implode(' || ', $poDetailsList);
+            } else {
+                $poSummary = '❌ No PO Numbers';
+                $poDetails = 'No PO details available';
             }
 
-            fclose($file);
-        };
+            // Calculate variances
+            $unitVariance = $totalActualUnits - $totalExpectedUnits;
+            $palletVariance = $totalActualPallets - $totalExpectedPallets;
 
-        return response()->stream($callback, 200, $headers);
+            $sheet->fromArray([
+                $booking->id,
+                $booking->booking_reference ?? 'N/A',
+                $booking->slot->depot->name,
+                $booking->customer ? $booking->customer->name : '❌ No Customer',
+                $booking->bookingType->name ?? 'N/A',
+                $booking->slot->start_at->format('Y-m-d H:i'),
+                $booking->slot->end_at->format('Y-m-d H:i'),
+                $tippingStatusWithEmoji,
+                $status,
+                $poSummary,
+                $poDetails,
+                $totalExpectedUnits,
+                $totalActualUnits,
+                $unitVariance != 0 ? ($unitVariance > 0 ? '+' : '').$unitVariance : '✅ 0',
+                $totalExpectedPallets,
+                $totalActualPallets,
+                $palletVariance != 0 ? ($palletVariance > 0 ? '+' : '').$palletVariance : '✅ 0',
+                $hasVariance ? '⚠️ Yes' : '✅ No',
+                $booking->notes ?: 'No notes',
+            ], null, 'A'.$row);
+            $row++;
+        }
+
+        $row++; // Empty row
+
+        // Summary section
+        $sheet->setCellValue('A'.$row, '📊 SUMMARY BY DEPOT & CUSTOMER');
+        $sheet->getStyle('A'.$row)->getFont()->setBold(true)->setSize(14);
+        $row++;
+
+        // Summary headers
+        $summaryHeaders = [
+            '🏢 Depot', '👤 Customer', '✅ Arrived', '⏰ Late', '📋 Outstanding',
+            '🔢 Expected Cases', '🔢 Actual Cases', '📊 Case Variance',
+            '📦 Expected Pallets', '📦 Actual Pallets', '📊 Pallet Variance',
+        ];
+
+        $col = 'A';
+        foreach ($summaryHeaders as $header) {
+            $sheet->setCellValue($col.$row, $header);
+            $sheet->getStyle($col.$row)->getFont()->setBold(true);
+            $col++;
+        }
+        $row++;
+
+        // Summary data
+        foreach ($summaryByDepotCustomer as $depotName => $customers) {
+            foreach ($customers as $customerName => $data) {
+                if ($customerName === '_totals') {
+                    continue;
+                }
+
+                $sheet->fromArray([
+                    $depotName,
+                    $customerName,
+                    $data['arrived'],
+                    $data['late'],
+                    $data['outstanding'],
+                    $data['expected_cases'],
+                    $data['actual_cases'],
+                    $data['case_variance'] != 0 ? ($data['case_variance'] > 0 ? '+' : '').$data['case_variance'] : '✅ 0',
+                    $data['expected_pallets'],
+                    $data['actual_pallets'],
+                    $data['pallet_variance'] != 0 ? ($data['pallet_variance'] > 0 ? '+' : '').$data['pallet_variance'] : '✅ 0',
+                ], null, 'A'.$row);
+                $row++;
+            }
+
+            // Add totals row
+            if (isset($customers['_totals'])) {
+                $totals = $customers['_totals'];
+                $sheet->fromArray([
+                    '📊 '.$depotName.' TOTALS',
+                    '',
+                    $totals['arrived'],
+                    $totals['late'],
+                    $totals['outstanding'],
+                    $totals['expected_cases'],
+                    $totals['actual_cases'],
+                    $totals['case_variance'] != 0 ? ($totals['case_variance'] > 0 ? '+' : '').$totals['case_variance'] : '✅ 0',
+                    $totals['expected_pallets'],
+                    $totals['actual_pallets'],
+                    $totals['pallet_variance'] != 0 ? ($totals['pallet_variance'] > 0 ? '+' : '').$totals['pallet_variance'] : '✅ 0',
+                ], null, 'A'.$row);
+                $sheet->getStyle('A'.$row)->getFont()->setBold(true);
+                $row++;
+            }
+        }
+
+        // Auto-size all columns
+        foreach (range('A', $sheet->getHighestColumn()) as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Generate filename and download
+        $filename = 'bookings-detailed-'.Carbon::now()->format('Y-m-d-H-i').'.xlsx';
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+        return response()->streamDownload(function() use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 
     /**

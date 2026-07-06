@@ -12,6 +12,7 @@
         "laravel/pail": "*",
         "laravel/tinker": "^2.10.1",
         "mpdf/mpdf": "^8.2",
+        "phpoffice/phpspreadsheet": "^2.0",
         "spatie/laravel-permission": "^6.20"
     },
     "require-dev": {
