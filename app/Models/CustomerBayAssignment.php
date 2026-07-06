@@ -65,7 +65,21 @@ class CustomerBayAssignment extends Model
 
         // Apply customer restrictions if they exist
         if ($allowedBayIds !== null) {
+            // Customer has specific bay assignments - only show those bays
             $query->whereIn('id', $allowedBayIds);
+        } else {
+            // Customer has NO bay assignments - show all bays EXCEPT those restricted to other customers
+            $restrictedBayIds = static::where('is_active', true)
+                ->whereHas('tippingBay', function ($q) use ($depotId) {
+                    $q->where('depot_id', $depotId);
+                })
+                ->pluck('tipping_bay_id')
+                ->unique()
+                ->toArray();
+
+            if (!empty($restrictedBayIds)) {
+                $query->whereNotIn('id', $restrictedBayIds);
+            }
         }
 
         $bays = $query->get();
