@@ -915,17 +915,20 @@ class BookingController extends Controller
         $this->ensureDepotAccess();
         $allowedDepotIds = $this->getAllowedDepotIds();
 
+        // Handle both regular bookings (with slots) and bookings without slots
+        $depotId = $booking->slot?->depot_id ?? $booking->depot_id;
+
         // Check if user has access to this booking's depot
-        if (! in_array($booking->slot->depot_id, $allowedDepotIds)) {
+        if ($depotId && !in_array($depotId, $allowedDepotIds)) {
             abort(403, 'You do not have access to this booking.');
         }
 
         // Get available locations and bays for trailer movement
-        $availableLocations = TippingLocation::forDepot($booking->slot->depot_id)
+        $availableLocations = TippingLocation::forDepot($depotId)
             ->available()
             ->get();
-            
-        $availableBays = TippingBay::forDepot($booking->slot->depot_id)
+
+        $availableBays = TippingBay::forDepot($depotId)
             ->available()
             ->get();
             
