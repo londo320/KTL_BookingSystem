@@ -143,8 +143,21 @@ class SlotBookingService
         // Ensure depot_id is set from the slot
         $bookingData['depot_id'] = $primarySlot->depot_id;
 
+        // Debug logging
+        \Log::info('SlotBookingService::createBooking - About to create booking', [
+            'depot_id' => $bookingData['depot_id'],
+            'slot_id' => $primarySlot->id,
+            'booking_data_keys' => array_keys($bookingData),
+            'has_depot_id' => isset($bookingData['depot_id'])
+        ]);
+
         // Create the booking
         $booking = Booking::create($bookingData);
+
+        \Log::info('SlotBookingService::createBooking - Booking created', [
+            'booking_id' => $booking->id,
+            'booking_depot_id' => $booking->depot_id
+        ]);
 
         // Occupy all required slots
         foreach ($availability['slots'] as $index => $slot) {
