@@ -37,24 +37,27 @@ class TippingWorkflowController extends Controller
             'poNumbers.lines.actualPallets.palletType',
         ]);
 
+        // Handle both regular bookings (with slots) and factory bookings (without slots)
+        $depotId = $booking->slot?->depot_id ?? $booking->depot_id;
+
         // Get available locations and bays for this depot
-        $availableLocations = TippingLocation::forDepot($booking->slot->depot_id)
+        $availableLocations = TippingLocation::forDepot($depotId)
             ->available()
             ->get();
 
         // Get parking areas for empty trailers
-        $parkingAreas = TippingLocation::forDepot($booking->slot->depot_id)
+        $parkingAreas = TippingLocation::forDepot($depotId)
             ->parking()
             ->available()
             ->get();
 
-        $availableBays = TippingBay::forDepot($booking->slot->depot_id)
+        $availableBays = TippingBay::forDepot($depotId)
             ->available()
             ->get();
 
         // Get tipping operators (depot staff)
-        $operators = User::whereHas('depots', function ($query) use ($booking) {
-            $query->where('depots.id', $booking->slot->depot_id);
+        $operators = User::whereHas('depots', function ($query) use ($depotId) {
+            $query->where('depots.id', $depotId);
         })->get();
 
         $workflowEnabled = Setting::isTippingWorkflowEnabled();
