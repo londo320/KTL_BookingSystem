@@ -50,9 +50,9 @@
                         <div class="relative bg-gray-100 rounded-lg border-2 border-gray-300 overflow-hidden" style="min-height: 700px;" id="map-container">
                             <!-- Depot Map Image -->
                             <div class="absolute inset-0 flex items-center justify-center p-4">
-                                @if($depot->map_file && file_exists(public_path('images/depot-maps/' . $depot->map_file)))
+                                @if($depot->map_file && file_exists(storage_path('app/public/depot-maps/' . $depot->map_file)))
                                     <div class="relative max-w-full max-h-full" id="map-image-container">
-                                        <img src="{{ asset('images/depot-maps/' . $depot->map_file) }}" 
+                                        <img src="{{ asset('storage/depot-maps/' . $depot->map_file) }}"
                                              alt="{{ $depot->name }} Layout" 
                                              class="max-w-full max-h-full object-contain rounded-lg"
                                              id="depot-map-image"
