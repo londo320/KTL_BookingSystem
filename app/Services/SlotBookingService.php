@@ -140,6 +140,9 @@ class SlotBookingService
             }
         }
 
+        // Ensure depot_id is set from the slot
+        $bookingData['depot_id'] = $primarySlot->depot_id;
+
         // Create the booking
         $booking = Booking::create($bookingData);
 
