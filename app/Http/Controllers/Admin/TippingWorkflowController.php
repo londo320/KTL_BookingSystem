@@ -689,7 +689,10 @@ class TippingWorkflowController extends Controller
         }
 
         // Check if user can access this booking's depot
-        if (! in_array($booking->slot->depot_id, $this->getAllowedDepotIds())) {
+        // Handle both regular bookings (with slots) and factory bookings (without slots)
+        $depotId = $booking->slot?->depot_id ?? $booking->depot_id;
+
+        if ($depotId && !in_array($depotId, $this->getAllowedDepotIds())) {
             abort(403, 'You do not have access to this depot.');
         }
     }
