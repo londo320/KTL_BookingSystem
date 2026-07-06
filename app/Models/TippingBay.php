@@ -91,20 +91,20 @@ class TippingBay extends Model
         // Check for regular bookings first
         $regularBooking = Booking::whereHas('movements', function ($query) {
                 $query->where('tipping_bay_id', $this->id)
-                      ->whereIn('current_status', ['at_bay', 'unloading', 'empty', 'in_location']);
+                      ->whereIn('current_status', ['at_bay', 'unloading', 'empty']);
             })
             ->whereNull('departed_at')
             ->latest()
             ->first();
-            
+
         if ($regularBooking) {
             return $regularBooking;
         }
-        
+
         // Check for factory bookings
         $factoryBooking = \App\Models\FactoryBooking::whereHas('movements', function ($query) {
                 $query->where('tipping_bay_id', $this->id)
-                      ->whereIn('current_status', ['at_bay', 'unloading', 'empty', 'in_location']);
+                      ->whereIn('current_status', ['at_bay', 'unloading', 'empty']);
             })
             ->whereNull('departed_at')
             ->latest()

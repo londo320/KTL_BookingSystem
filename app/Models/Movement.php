@@ -234,7 +234,7 @@ class Movement extends Model
             case 'unloading':
                 $statusStartTime = $this->unloading_started_at;
                 break;
-            case 'in_location':
+            case 'in_waiting':
                 $statusStartTime = $this->moved_to_location_at;
                 break;
             case 'trailer_dropped':

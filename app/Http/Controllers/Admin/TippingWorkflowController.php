@@ -104,7 +104,7 @@ class TippingWorkflowController extends Controller
             $movement = $booking->getOrCreateMovement();
             $movement->update([
                 'tipping_location_id' => $location->id,
-                'current_status' => 'in_location', // Changed from 'trailer_dropped' to indicate still attached
+                'current_status' => 'in_waiting', // Moved to location, waiting for next action
                 'moved_to_location_at' => now(),
                 'operation_notes' => $request->notes ? ($movement->operation_notes ? $movement->operation_notes."\n".$request->notes : $request->notes) : $movement->operation_notes,
             ]);
@@ -310,11 +310,11 @@ class TippingWorkflowController extends Controller
 
         // Determine if this is an empty trailer movement (after tipping completion)
         $isEmptyMovement = $movement->unloading_completed_at && in_array($movement->current_status, ['empty', 'at_bay']);
-        
+
         $movement->update([
             'tipping_location_id' => $location->id,
             'tipping_bay_id' => null, // Clear bay when moving to location
-            'current_status' => 'in_location',
+            'current_status' => 'in_waiting', // Moved to location, waiting for next action
             'moved_to_location_at' => now(),
             'operation_notes' => $request->notes ? ($movement->operation_notes ? $movement->operation_notes."\n".$request->notes : $request->notes) : $movement->operation_notes,
         ]);
@@ -639,7 +639,7 @@ class TippingWorkflowController extends Controller
             // Combine regular bookings and factory bookings stats
             $combinedStats = [
                 'not_started' => ($bookingsByStatus['scheduled'] ?? 0) + ($factoryBookingsByStatus['arrived'] ?? 0),
-                'in_location' => ($bookingsByStatus['in_location'] ?? 0),
+                'in_location' => ($bookingsByStatus['in_waiting'] ?? 0),
                 'trailer_dropped' => ($bookingsByStatus['trailer_dropped'] ?? 0),
                 'moved_to_bay' => ($bookingsByStatus['at_bay'] ?? 0),
                 'tipping_in_progress' => ($bookingsByStatus['unloading'] ?? 0) + ($factoryBookingsByStatus['unloading'] ?? 0),
@@ -747,13 +747,13 @@ class TippingWorkflowController extends Controller
         $movement->update([
             'tipping_location_id' => $location->id,
             'tipping_bay_id' => null,
-            'current_status' => 'in_location',
+            'current_status' => 'in_waiting', // Moved to location, waiting for next action
             'moved_to_location_at' => now(),
             'operation_notes' => $request->notes ? ($movement->operation_notes ? $movement->operation_notes."\n".$request->notes : $request->notes) : $movement->operation_notes,
         ]);
-        
+
         $location->markOccupied($booking);
-        
+
         return back()->with('success', 'Trailer moved to location: ' . $location->name);
     }
 

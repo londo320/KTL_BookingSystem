@@ -44,7 +44,7 @@ class PrioritySettingsController extends Controller
         $activeBookings = Booking::with(['customer', 'slot.depot', 'movements'])
             ->whereHas('slot', fn($q) => $q->whereIn('depot_id', $depotIds))
             ->whereHas('movements', function($q) {
-                $q->whereIn('current_status', ['arrived', 'in_waiting', 'in_location', 'trailer_dropped'])
+                $q->whereIn('current_status', ['arrived', 'in_waiting', 'trailer_dropped'])
                   ->whereNull('actual_departure')
                   ->whereNull('collection_unit_departed_at');
             })

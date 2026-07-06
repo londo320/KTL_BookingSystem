@@ -2036,15 +2036,15 @@ class BookingController extends Controller
                             ->whereHas('factoryBooking', fn($q) => $q->whereIn('depot_id', $depotIds));
                     });
             })
-            ->whereIn('current_status', ['arrived', 'in_parking', 'in_location', 'back_to_parking', 'at_bay', 'unloading', 'empty', 'awaiting_collection', 'trailer_dropped'])
+            ->whereIn('current_status', ['arrived', 'in_parking', 'in_waiting', 'back_to_parking', 'at_bay', 'unloading', 'empty', 'awaiting_collection', 'trailer_dropped'])
             ->orderBy('actual_arrival', 'asc') // Oldest first
             ->get();
 
         // Enhanced grouping by status
-        $waitingToTip = $movementsOnSite->whereIn('current_status', ['in_parking', 'arrived', 'in_location', 'back_to_parking', 'trailer_dropped']); // Need to start tipping
+        $waitingToTip = $movementsOnSite->whereIn('current_status', ['in_parking', 'arrived', 'in_waiting', 'back_to_parking', 'trailer_dropped']); // Need to start tipping
         $currentlyTipping = $movementsOnSite->whereIn('current_status', ['at_bay', 'unloading']); // Actively being tipped
         $emptyTrailers = $movementsOnSite->whereIn('current_status', ['empty', 'awaiting_collection']); // Tipped and ready for collection
-        $generalWaiting = $movementsOnSite->whereIn('current_status', ['in_parking', 'in_location', 'back_to_parking']); // In waiting areas
+        $generalWaiting = $movementsOnSite->whereIn('current_status', ['in_parking', 'in_waiting', 'back_to_parking']); // In waiting areas
         
         // Calculate time on site for all trailers
         $trailersWithTime = $movementsOnSite->map(function ($movement) {
