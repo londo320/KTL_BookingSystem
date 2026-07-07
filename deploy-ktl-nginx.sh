@@ -161,9 +161,6 @@ docker exec "$APP_CONTAINER" rm composer-setup.php
 echo "🔧 Clearing Laravel bootstrap cache FIRST (critical for deployment)..."
 docker exec -w /var/www/html "$APP_CONTAINER" rm -rf storage/framework/views storage/framework/cache bootstrap/cache || true
 
-echo "🚀 Installing Laravel dependencies..."
-docker exec -w /var/www/html "$APP_CONTAINER" composer install --no-interaction --no-dev --no-scripts 2>&1 || echo "Composer completed with warnings"
-
 echo "🔧 Applying Laravel permission fixes..."
 docker exec -w /var/www/html "$APP_CONTAINER" mkdir -p \
     storage/framework/views \
@@ -176,8 +173,11 @@ docker exec -w /var/www/html "$APP_CONTAINER" mkdir -p \
 docker exec -w /var/www/html "$APP_CONTAINER" chmod -R 777 storage bootstrap/cache
 docker exec -w /var/www/html "$APP_CONTAINER" chown -R www-data:www-data storage bootstrap/cache public
 
-echo "🚀 Setting up Laravel..."
+echo "🔑 Generating APP_KEY before composer install..."
 docker exec -w /var/www/html "$APP_CONTAINER" php artisan key:generate --force
+
+echo "🚀 Installing Laravel dependencies..."
+docker exec -w /var/www/html "$APP_CONTAINER" composer install --no-interaction --no-dev --optimize-autoloader 2>&1 || echo "Composer completed with warnings"
 
 # Force clear cache configuration files purely from local storage to keep bootstrap completely clean
 docker exec -w /var/www/html "$APP_CONTAINER" php artisan config:clear || true
@@ -343,7 +343,6 @@ fi
 echo ""
 echo "🔧 Final verification and fixes..."
 
-docker exec "$APP_CONTAINER" php artisan key:generate --force --ansi 2>/dev/null || echo "APP_KEY already set"
 docker exec "$APP_CONTAINER" chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
 docker exec "$APP_CONTAINER" chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
 docker exec "$APP_CONTAINER" php artisan storage:link 2>/dev/null || echo "Storage link already exists"
