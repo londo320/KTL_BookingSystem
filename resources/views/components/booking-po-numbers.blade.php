@@ -122,6 +122,11 @@
                                            :value="lineIndex + 1">
 
                                     @if($hide_actuals)
+                                        <!-- Hidden inputs to preserve actual values even when hidden from view -->
+                                        <input type="hidden" :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_pallets]`" :value="line.actual_pallets || ''">
+                                        <input type="hidden" :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_cases]`" :value="line.actual_cases || ''">
+                                        <input type="hidden" :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_pallet_type_id]`" :value="line.actual_pallet_type_id || ''">
+
                                         <!-- Single Line Layout: Line# | SKU | Description | Pallets | Cases | Type | Remove -->
                                         <div class="flex gap-1.5 items-end">
                                             <!-- Line Number -->
