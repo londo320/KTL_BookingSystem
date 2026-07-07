@@ -282,13 +282,10 @@
                                             </div>
                                         </div>
 
-                                        <!-- Hidden inputs to ensure values are submitted even when disabled -->
+                                        <!-- Hidden inputs to ensure expected values are submitted when disabled -->
                                         <input type="hidden" :name="`po_numbers[${poIndex}][lines][${lineIndex}][expected_pallets]`" :value="line.expected_pallets || ''">
                                         <input type="hidden" :name="`po_numbers[${poIndex}][lines][${lineIndex}][expected_cases]`" :value="line.expected_cases || ''">
                                         <input type="hidden" :name="`po_numbers[${poIndex}][lines][${lineIndex}][expected_pallet_type_id]`" :value="line.expected_pallet_type_id || ''">
-                                        <input type="hidden" :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_pallets]`" :value="line.actual_pallets || ''">
-                                        <input type="hidden" :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_cases]`" :value="line.actual_cases || ''">
-                                        <input type="hidden" :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_pallet_type_id]`" :value="line.actual_pallet_type_id || ''">
 
                                         <div class="grid grid-cols-2 gap-4">
                                             <!-- Expected Quantities -->
@@ -339,6 +336,7 @@
                                                     <div>
                                                         <label class="block text-xs text-gray-500">Pallets</label>
                                                         <input type="number" x-model="line.actual_pallets"
+                                                               :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_pallets]`"
                                                                @input="calculateActualCases(poIndex, lineIndex)"
                                                                @change="triggerSummaryUpdate()"
                                                                :disabled="{{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')"
@@ -348,6 +346,7 @@
                                                     <div>
                                                         <label class="block text-xs text-gray-500">Units</label>
                                                         <input type="number" x-model="line.actual_cases"
+                                                               :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_cases]`"
                                                                @change="triggerSummaryUpdate()"
                                                                :disabled="{{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')"
                                                                :class="({{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')) ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'"
@@ -356,6 +355,7 @@
                                                     <div>
                                                         <label class="block text-xs text-gray-500">Type</label>
                                                         <select x-model="line.actual_pallet_type_id"
+                                                                :name="`po_numbers[${poIndex}][lines][${lineIndex}][actual_pallet_type_id]`"
                                                                 @change="triggerSummaryUpdate()"
                                                                 :disabled="({{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')) {{ $readonly ? '|| true' : '' }}"
                                                                 :class="({{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')) ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'">
