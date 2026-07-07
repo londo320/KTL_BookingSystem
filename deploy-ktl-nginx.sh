@@ -87,13 +87,18 @@ if [ -f ".env.example" ]; then
     sed -i 's/^APP_DEBUG=.*/APP_DEBUG=false/' .env
     sed -i 's|^APP_URL=.*|APP_URL=https://bookingsuat.fury.me.uk|' .env
 
+    # Generate APP_KEY manually before Laravel needs to bootstrap
+    echo "🔑 Generating APP_KEY..."
+    APP_KEY="base64:$(openssl rand -base64 32)"
+    sed -i "s|^APP_KEY=.*|APP_KEY=$APP_KEY|" .env
+
     # Add scheduler settings on new lines at the end
     echo "" >> .env
     echo "# Docker Scheduler Configuration" >> .env
     echo "SCHEDULER_MODE=docker" >> .env
     echo "SCHEDULER_CONTAINER_NAME=$SCHEDULER_CONTAINER" >> .env
 
-    echo "✅ Environment configured with external MariaDB credentials"
+    echo "✅ Environment configured with external MariaDB credentials and APP_KEY"
 else
     echo "❌ .env.example not found"
     send_notification "Deployment Failed" ".env.example not found"
@@ -173,10 +178,7 @@ docker exec -w /var/www/html "$APP_CONTAINER" mkdir -p \
 docker exec -w /var/www/html "$APP_CONTAINER" chmod -R 777 storage bootstrap/cache
 docker exec -w /var/www/html "$APP_CONTAINER" chown -R www-data:www-data storage bootstrap/cache public
 
-echo "🔑 Generating APP_KEY before composer install..."
-docker exec -w /var/www/html "$APP_CONTAINER" php artisan key:generate --force
-
-echo "🚀 Installing Laravel dependencies..."
+echo "🚀 Installing Laravel dependencies (APP_KEY already set in .env)..."
 docker exec -w /var/www/html "$APP_CONTAINER" composer install --no-interaction --no-dev --optimize-autoloader 2>&1 || echo "Composer completed with warnings"
 
 # Force clear cache configuration files purely from local storage to keep bootstrap completely clean
