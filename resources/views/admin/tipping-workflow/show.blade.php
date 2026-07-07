@@ -256,6 +256,8 @@
                             $stages = [
                                 'scheduled' => ['label' => '⏳ Not Started', 'icon' => 'text-gray-400'],
                                 'in_parking' => ['label' => '🚛 Unit & Trailer in Parking', 'icon' => 'text-blue-500'],
+                                'in_waiting' => ['label' => '📍 In Tipping Location', 'icon' => 'text-cyan-500'],
+                                'at_bay' => ['label' => '⚡ Tipping (Auto-started)', 'icon' => 'text-orange-500'],
                                 'unloading' => ['label' => '⚡ Tipping (Auto-started)', 'icon' => 'text-orange-500'],
                                 'empty' => ['label' => '✅ Tipped - Ready for Collection', 'icon' => 'text-green-500'],
                                 'back_to_parking' => ['label' => '📍 In Parking Area', 'icon' => 'text-purple-500'],
@@ -373,7 +375,7 @@
                     @endif
                     {{-- Move Between Locations Action --}}
                     @php
-                        $canMoveToLocation = in_array($currentStatus, ['in_parking']);
+                        $canMoveToLocation = in_array($currentStatus, ['in_parking', 'in_waiting']);
                     @endphp
                     @if($canMoveToLocation)
                         <div class="p-4 border border-cyan-200 rounded-lg bg-cyan-50">
@@ -411,8 +413,8 @@
                     {{-- Move to Bay Action --}}
                     @php
                         $tippingAlreadyCompleted = $movement && $movement->unloading_completed_at;
-                        // Show "Move to Bay" action for trailers in parking that haven't completed tipping
-                        $canMoveToBay = in_array($currentStatus, ['in_parking']) && !$tippingAlreadyCompleted;
+                        // Show "Move to Bay" action for trailers in parking/waiting that haven't completed tipping
+                        $canMoveToBay = in_array($currentStatus, ['in_parking', 'in_waiting']) && !$tippingAlreadyCompleted;
                     @endphp
                     @if($canMoveToBay)
                         <div class="p-4 border border-yellow-200 rounded-lg bg-yellow-50">

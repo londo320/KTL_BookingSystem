@@ -300,12 +300,17 @@ class TippingWorkflowController extends Controller
         }
 
         $movement = $booking->getOrCreateMovement();
-        
+
+        // Check if already at this location
+        if ($movement->tippingLocation && $movement->tippingLocation->id == $location->id) {
+            return back()->withErrors(['tipping_location_id' => 'Trailer is already at ' . $location->name . '. Please select a different location.']);
+        }
+
         // Free up current location if any
         if ($movement->tippingLocation && $movement->tippingLocation->id != $location->id) {
             $movement->tippingLocation->markAvailable();
         }
-        
+
         // Free up current bay if moving out of bay
         if ($movement->tippingBay) {
             $movement->tippingBay->markAvailable($booking);
