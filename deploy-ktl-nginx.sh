@@ -184,8 +184,11 @@ docker exec -w /var/www/html "$APP_CONTAINER" chmod -R 777 storage bootstrap/cac
 docker exec -w /var/www/html "$APP_CONTAINER" chown -R www-data:www-data storage bootstrap/cache public
 
 echo "🚀 Installing Laravel dependencies (APP_KEY already set in .env)..."
-docker exec -w /var/www/html "$APP_CONTAINER" composer install --no-interaction --no-dev --optimize-autoloader 2>&1 || echo "Composer completed with warnings"
-
+if ! docker exec -w /var/www/html "$APP_CONTAINER" composer install --no-interaction --no-dev --optimize-autoloader; then
+    echo "❌ Composer install failed"
+    send_notification "Deployment Failed" "Composer install failed - see script log"
+    exit 1
+fi
 # Force clear cache configuration files purely from local storage to keep bootstrap completely clean
 docker exec -w /var/www/html "$APP_CONTAINER" php artisan config:clear || true
 docker exec -w /var/www/html "$APP_CONTAINER" php artisan route:clear || true
