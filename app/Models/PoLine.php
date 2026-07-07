@@ -67,7 +67,9 @@ class PoLine extends Model
     
     public function getTotalActualPalletsAttribute(): int
     {
-        return $this->actualPallets->sum('quantity');
+        return $this->actualPallets->count() > 0
+            ? $this->actualPallets->sum('quantity')
+            : (int) $this->actual_pallets;
     }
     
     public function getActualPalletTypesBreakdownAttribute(): array
