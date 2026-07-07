@@ -147,5 +147,5 @@ return [
     |
     */
 
-    'providers' => [],
+    'providers' => null,
     ];
