@@ -46,6 +46,20 @@ docker exec "$APP_CONTAINER" pkill -USR2 php-fpm || docker restart "$APP_CONTAIN
 echo "✅ PHP-FPM restarted"
 echo ""
 
+echo "⏰ Ensuring scheduler cron is running..."
+if docker exec "$APP_CONTAINER" service cron status 2>/dev/null | grep -q "running"; then
+    echo "✅ Cron already running"
+else
+    echo "⚠️  Cron not running, starting it..."
+    docker exec "$APP_CONTAINER" service cron start 2>/dev/null || docker exec "$APP_CONTAINER" service cron restart 2>/dev/null || true
+    if docker exec "$APP_CONTAINER" service cron status 2>/dev/null | grep -q "running"; then
+        echo "✅ Cron started"
+    else
+        echo "❌ Failed to start cron - run manually: docker exec $APP_CONTAINER service cron start"
+    fi
+fi
+echo ""
+
 echo "📋 Current version:"
 docker exec "$APP_CONTAINER" git log -1 --oneline
 echo ""

@@ -84,6 +84,23 @@ sleep 2
 echo "✅ PHP restarted"
 echo ""
 
+# Ensure scheduler cron is running (quick updates don't recreate the container,
+# so cron can be left stopped from a previous restart/crash and this script
+# would otherwise never notice)
+echo "⏰ Ensuring scheduler cron is running..."
+if docker exec "$APP_CONTAINER" service cron status 2>/dev/null | grep -q "running"; then
+    echo "✅ Cron already running"
+else
+    echo "⚠️  Cron not running, starting it..."
+    docker exec "$APP_CONTAINER" service cron start 2>/dev/null || docker exec "$APP_CONTAINER" service cron restart 2>/dev/null
+    if docker exec "$APP_CONTAINER" service cron status 2>/dev/null | grep -q "running"; then
+        echo "✅ Cron started"
+    else
+        echo "❌ Failed to start cron - run manually: docker exec $APP_CONTAINER service cron start"
+    fi
+fi
+echo ""
+
 # Show current version
 echo "📋 Current version:"
 cd "$PROJECT_DIR"
