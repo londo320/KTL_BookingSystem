@@ -90,7 +90,12 @@ if [ -f ".env.example" ]; then
     # Generate APP_KEY manually before Laravel needs to bootstrap
     echo "🔑 Generating APP_KEY..."
     APP_KEY="base64:$(openssl rand -base64 32)"
-    sed -i "s|^APP_KEY=.*|APP_KEY=$APP_KEY|" .env
+    # Check if APP_KEY line exists, if so replace it, if not add it
+    if grep -q "^APP_KEY=" .env; then
+        sed -i "s|^APP_KEY=.*|APP_KEY=$APP_KEY|" .env
+    else
+        echo "APP_KEY=$APP_KEY" >> .env
+    fi
 
     # Add scheduler settings on new lines at the end
     echo "" >> .env
