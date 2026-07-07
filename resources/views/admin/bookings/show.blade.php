@@ -1449,10 +1449,68 @@
         </div>
         <div id="trailerSwapField" class="mb-4 hidden">
           <label class="block text-sm font-medium text-gray-700 mb-2">Collected Trailer Details</label>
-          <input type="text" name="collected_trailer_number" 
+          <input type="text" name="collected_trailer_number"
                  class="w-full px-3 py-2 border border-gray-300 rounded-md"
                  placeholder="Enter trailer/container number">
         </div>
+
+        {{-- Actual Pallet/Case Entry - Only show when tipping workflow is disabled --}}
+        @if($booking->poNumbers->count() > 0 && !$booking->tipping_status)
+        <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <h4 class="text-sm font-semibold text-yellow-900 mb-3">📦 Enter Actual Quantities *</h4>
+          <p class="text-xs text-yellow-700 mb-3">Enter the actual pallets and cases that were delivered/collected:</p>
+
+          @foreach($booking->poNumbers as $poIndex => $po)
+            <div class="mb-3 pb-3 @if(!$loop->last) border-b border-yellow-200 @endif">
+              <div class="text-xs font-medium text-gray-700 mb-2">PO: {{ $po->po_number }}</div>
+              @foreach($po->lines as $lineIndex => $line)
+                <div class="mb-2 p-2 bg-white rounded">
+                  <div class="text-xs text-gray-600 mb-1">
+                    Line {{ $line->line_number }}: {{ $line->sku ?? 'N/A' }} - {{ $line->description ?? 'N/A' }}
+                  </div>
+                  <div class="grid grid-cols-3 gap-2">
+                    <div>
+                      <label class="block text-xs text-gray-600">Actual Pallets *</label>
+                      <input type="number"
+                             name="po_numbers[{{ $poIndex }}][lines][{{ $lineIndex }}][actual_pallets]"
+                             value="{{ old('po_numbers.'.$poIndex.'.lines.'.$lineIndex.'.actual_pallets', $line->actual_pallets) }}"
+                             class="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                             min="0" required>
+                      <input type="hidden" name="po_numbers[{{ $poIndex }}][lines][{{ $lineIndex }}][line_id]" value="{{ $line->id }}">
+                    </div>
+                    <div>
+                      <label class="block text-xs text-gray-600">Actual Cases *</label>
+                      <input type="number"
+                             name="po_numbers[{{ $poIndex }}][lines][{{ $lineIndex }}][actual_cases]"
+                             value="{{ old('po_numbers.'.$poIndex.'.lines.'.$lineIndex.'.actual_cases', $line->actual_cases) }}"
+                             class="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                             min="0" required>
+                    </div>
+                    <div>
+                      <label class="block text-xs text-gray-600">Pallet Type</label>
+                      <select name="po_numbers[{{ $poIndex }}][lines][{{ $lineIndex }}][actual_pallet_type_id]"
+                              class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                        <option value="">-</option>
+                        @foreach(\App\Models\PalletType::active()->orderBy('name')->get() as $type)
+                          <option value="{{ $type->id }}" {{ $line->actual_pallet_type_id == $type->id ? 'selected' : '' }}>
+                            {{ $type->display_name }}
+                          </option>
+                        @endforeach
+                      </select>
+                    </div>
+                  </div>
+                  @if($line->expected_pallets || $line->expected_cases)
+                    <div class="text-xs text-gray-500 mt-1">
+                      Expected: {{ $line->expected_pallets ?? 0 }} pallets, {{ $line->expected_cases ?? 0 }} cases
+                    </div>
+                  @endif
+                </div>
+              @endforeach
+            </div>
+          @endforeach
+        </div>
+        @endif
+
         <div class="mb-4">
           <label class="block text-sm font-medium text-gray-700 mb-2">Departure Notes</label>
           <textarea name="departure_notes" rows="3"

@@ -1741,12 +1741,36 @@ class BookingController extends Controller
 
     public function markDeparted(Request $request, Booking $booking)
     {
+        // Check if tipping workflow is disabled (no tipping_status means workflow disabled)
+        $tippingWorkflowDisabled = !$booking->tipping_status;
+
         $validated = $request->validate([
             'departure_scenario' => 'required|in:completed_with_trailer,completed_dropped_trailer,trailer_swap,emergency_departure',
             'departure_notes' => 'nullable|string|max:1000',
             'dropped_trailer_location' => 'nullable|string|max:50',
             'collected_trailer_number' => 'nullable|string|max:100',
+            'po_numbers' => 'nullable|array',
+            'po_numbers.*.lines' => 'nullable|array',
+            'po_numbers.*.lines.*.line_id' => 'required|exists:po_lines,id',
+            'po_numbers.*.lines.*.actual_pallets' => 'required|integer|min:0',
+            'po_numbers.*.lines.*.actual_cases' => 'required|integer|min:0',
+            'po_numbers.*.lines.*.actual_pallet_type_id' => 'nullable|exists:pallet_types,id',
         ]);
+
+        // Update actual quantities for PO lines (only when tipping workflow is disabled)
+        if ($tippingWorkflowDisabled && !empty($validated['po_numbers'])) {
+            foreach ($validated['po_numbers'] as $poData) {
+                if (!empty($poData['lines'])) {
+                    foreach ($poData['lines'] as $lineData) {
+                        \App\Models\PoLine::where('id', $lineData['line_id'])->update([
+                            'actual_pallets' => $lineData['actual_pallets'],
+                            'actual_cases' => $lineData['actual_cases'],
+                            'actual_pallet_type_id' => $lineData['actual_pallet_type_id'] ?? null,
+                        ]);
+                    }
+                }
+            }
+        }
 
         // TIPPING WORKFLOW ENFORCEMENT
         // Check if tipping is required and has been completed
