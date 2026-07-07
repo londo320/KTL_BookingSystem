@@ -1131,7 +1131,7 @@ class BookingController extends Controller
                             $totalCases = 0;
                             $totalPallets = 0;
                             $firstPalletTypeId = null;
-                            
+
                             foreach ($lineData['pallet_entries'] as $entry) {
                                 $totalCases += intval($entry['cases'] ?? 0);
                                 $totalPallets += intval($entry['pallets'] ?? 0);
@@ -1139,18 +1139,23 @@ class BookingController extends Controller
                                     $firstPalletTypeId = $entry['type_id'];
                                 }
                             }
-                            
-                            // Set legacy fields for database compatibility
-                            $lineData['expected_cases'] = $totalCases;
-                            $lineData['expected_pallets'] = $totalPallets;
-                            if ($firstPalletTypeId) {
+
+                            // Set legacy fields for database compatibility (ONLY if not already set)
+                            if (!isset($lineData['expected_cases'])) {
+                                $lineData['expected_cases'] = $totalCases;
+                            }
+                            if (!isset($lineData['expected_pallets'])) {
+                                $lineData['expected_pallets'] = $totalPallets;
+                            }
+                            if ($firstPalletTypeId && !isset($lineData['expected_pallet_type_id'])) {
                                 $lineData['expected_pallet_type_id'] = $firstPalletTypeId;
                             }
-                            
+
                             // Remove pallet_entries as it's not a database field
                             unset($lineData['pallet_entries']);
                         }
-                        
+
+                        // Ensure actual_cases, actual_pallets, and actual_pallet_type_id are preserved
                         $po->lines()->create($lineData);
                     }
                 }
@@ -1420,7 +1425,7 @@ class BookingController extends Controller
                                 $totalCases = 0;
                                 $totalPallets = 0;
                                 $firstPalletTypeId = null;
-                                
+
                                 foreach ($lineData['pallet_entries'] as $entry) {
                                     $totalCases += intval($entry['cases'] ?? 0);
                                     $totalPallets += intval($entry['pallets'] ?? 0);
@@ -1428,18 +1433,23 @@ class BookingController extends Controller
                                         $firstPalletTypeId = $entry['type_id'];
                                     }
                                 }
-                                
-                                // Set legacy fields for database compatibility
-                                $lineData['expected_cases'] = $totalCases;
-                                $lineData['expected_pallets'] = $totalPallets;
-                                if ($firstPalletTypeId) {
+
+                                // Set legacy fields for database compatibility (ONLY if not already set)
+                                if (!isset($lineData['expected_cases'])) {
+                                    $lineData['expected_cases'] = $totalCases;
+                                }
+                                if (!isset($lineData['expected_pallets'])) {
+                                    $lineData['expected_pallets'] = $totalPallets;
+                                }
+                                if ($firstPalletTypeId && !isset($lineData['expected_pallet_type_id'])) {
                                     $lineData['expected_pallet_type_id'] = $firstPalletTypeId;
                                 }
-                                
+
                                 // Remove pallet_entries as it's not a database field
                                 unset($lineData['pallet_entries']);
                             }
-                            
+
+                            // Ensure actual_cases, actual_pallets, and actual_pallet_type_id are preserved
                             $po->lines()->create($lineData);
                         }
                     }
