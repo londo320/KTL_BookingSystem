@@ -168,8 +168,8 @@ docker exec "$APP_CONTAINER" curl -sS https://getcomposer.org/installer -o compo
 docker exec "$APP_CONTAINER" php composer-setup.php --install-dir=/usr/local/bin --filename=composer
 docker exec "$APP_CONTAINER" rm composer-setup.php
 
-echo "🔧 Clearing Laravel bootstrap cache FIRST (critical for deployment)..."
-docker exec -w /var/www/html "$APP_CONTAINER" rm -rf storage/framework/views storage/framework/cache bootstrap/cache || true
+echo "🔧 Clearing Laravel bootstrap cache and vendor directory FIRST (critical for deployment)..."
+docker exec -w /var/www/html "$APP_CONTAINER" rm -rf storage/framework/views storage/framework/cache bootstrap/cache vendor || true
 
 echo "🔧 Applying Laravel permission fixes..."
 docker exec -w /var/www/html "$APP_CONTAINER" mkdir -p \
