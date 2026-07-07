@@ -1406,7 +1406,6 @@
       <h3 class="text-lg font-semibold mb-4 text-purple-800">🏁 Record Departure</h3>
       <form id="departureForm" method="POST">
         @csrf
-        @method('PATCH')
         {{-- Show tipping type if available --}}
         @if($booking->tipping_type)
           <div class="mb-4 p-3 bg-blue-50 rounded-lg">
@@ -1658,7 +1657,7 @@
       } else if (window.location.pathname.includes('/admin/')) {
         routePrefix = '/admin';
       }
-      document.getElementById('departureForm').action = `${routePrefix}/bookings/${bookingId}/departure`;
+      document.getElementById('departureForm').action = `${routePrefix}/bookings/${bookingId}/departed`;
     }
     function closeDepartureModal() {
       document.getElementById('departureModal').classList.add('hidden');
