@@ -33,28 +33,32 @@ git reset --hard "origin/$GIT_BRANCH" 2>&1 || echo "⚠️  WARNING: git reset f
 echo "✅ Code updated"
 echo ""
 
-# Update dependencies (suppress package:discover errors)
-echo "📦 Updating dependencies..."
-docker exec "$APP_CONTAINER" composer install --no-interaction --optimize-autoload --no-scripts 2>&1 || echo "⚠️  Composer had warnings (continuing)"
-echo "  Running package discovery separately..."
-docker exec "$APP_CONTAINER" php artisan package:discover --ansi 2>&1 || echo "  ⚠️  Package discovery failed (non-critical)"
-docker exec "$APP_CONTAINER" composer dump-autoload --optimize 2>&1 || echo "  ⚠️  Autoload dump failed (non-critical)"
-echo "✅ Dependencies updated"
+# CRITICAL: Clear bootstrap cache first (fixes "Call to a member function make() on null")
+echo "🔧 Clearing Laravel bootstrap cache..."
+docker exec "$APP_CONTAINER" rm -rf /var/www/html/bootstrap/cache/*.php 2>/dev/null || true
+docker exec "$APP_CONTAINER" rm -rf /var/www/html/storage/framework/cache/* 2>/dev/null || true
+echo "✅ Bootstrap cache cleared"
 echo ""
 
-# Run migrations
-echo "🗄️  Running migrations..."
-docker exec "$APP_CONTAINER" php artisan migrate --force 2>&1 || echo "⚠️  Migrations failed or had no new migrations"
-echo "✅ Migrations complete"
+# Update dependencies
+echo "📦 Updating dependencies..."
+docker exec "$APP_CONTAINER" composer install --no-interaction --no-dev 2>&1 | grep -v "nothing to install" || true
+echo "✅ Dependencies updated"
 echo ""
 
 # Ensure storage symlink exists
 echo "🔗 Ensuring storage symlink..."
-docker exec "$APP_CONTAINER" php artisan storage:link 2>/dev/null || echo "  (symlink already exists)"
+docker exec "$APP_CONTAINER" php artisan storage:link 2>&1 | grep -v "symlink already exists" || echo "  (symlink ready)"
 echo ""
 
-# Clear caches (each with individual error handling)
-echo "🧹 Clearing caches..."
+# Run migrations
+echo "🗄️  Running migrations..."
+docker exec "$APP_CONTAINER" php artisan migrate --force 2>&1 | grep -v "Nothing to migrate" || echo "  (no new migrations)"
+echo "✅ Migrations complete"
+echo ""
+
+# Clear caches
+echo "🧹 Clearing all caches..."
 docker exec "$APP_CONTAINER" php artisan config:clear 2>&1 || echo "  ⚠️  config:clear failed"
 docker exec "$APP_CONTAINER" php artisan cache:clear 2>&1 || echo "  ⚠️  cache:clear failed"
 docker exec "$APP_CONTAINER" php artisan view:clear 2>&1 || echo "  ⚠️  view:clear failed"
@@ -62,24 +66,22 @@ docker exec "$APP_CONTAINER" php artisan route:clear 2>&1 || echo "  ⚠️  rou
 
 # Force delete compiled views
 echo "  Removing compiled views..."
-docker exec "$APP_CONTAINER" rm -rf /var/www/html/storage/framework/views/* 2>/dev/null || echo "  (no views to remove)"
-docker exec "$APP_CONTAINER" rm -rf /var/www/html/bootstrap/cache/*.php 2>/dev/null || echo "  (no cache to remove)"
+docker exec "$APP_CONTAINER" rm -rf /var/www/html/storage/framework/views/* 2>/dev/null || true
 echo "✅ Caches cleared"
 echo ""
 
 # Fix permissions (common issue)
 echo "🔒 Fixing permissions..."
-docker exec "$APP_CONTAINER" chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>&1 || echo "  ⚠️  chown failed"
-docker exec "$APP_CONTAINER" chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache 2>&1 || echo "  ⚠️  chmod failed"
+docker exec "$APP_CONTAINER" chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>&1 || true
+docker exec "$APP_CONTAINER" chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache 2>&1 || true
 echo "✅ Permissions fixed"
 echo ""
 
-# Restart web server (graceful)
-echo "🔄 Restarting web server..."
-docker exec "$APP_CONTAINER" service apache2 reload 2>&1 || \
-    docker exec "$APP_CONTAINER" service apache2 restart 2>&1 || \
-    echo "  ⚠️  Apache restart skipped"
-echo "✅ Web server restarted"
+# Restart PHP process (since Apache isn't available)
+echo "🔄 Restarting PHP..."
+docker exec "$APP_CONTAINER" pkill -9 php 2>/dev/null || true
+sleep 2
+echo "✅ PHP restarted"
 echo ""
 
 # Show current version
@@ -94,8 +96,7 @@ echo "============================================="
 echo ""
 echo "Script Finished: $(date)"
 echo ""
-echo "💡 Tips:"
-echo "   • If you see warnings above, they're usually non-critical"
-echo "   • Clear your browser cache if pages look broken"
+echo "💡 If Laravel errors persist:"
+echo "   • Restart the container: docker restart $APP_CONTAINER"
 echo "   • Check logs: docker logs $APP_CONTAINER"
 echo ""
