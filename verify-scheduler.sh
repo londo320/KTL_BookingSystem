@@ -21,7 +21,7 @@ if docker exec "$APP_CONTAINER" service cron status 2>/dev/null | grep -q "runni
     echo "   ✅ Cron service is running"
 else
     echo "   ❌ Cron service is not running"
-    echo "   Run: bash setup-scheduler-cron.sh"
+    echo "   Run: ./quick-deploy.sh   # self-heals the scheduler cron"
 fi
 
 echo ""
@@ -32,7 +32,7 @@ if docker exec "$APP_CONTAINER" test -f /etc/cron.d/laravel-scheduler; then
     docker exec "$APP_CONTAINER" cat /etc/cron.d/laravel-scheduler | sed 's/^/      /'
 else
     echo "   ❌ Cron job file not found"
-    echo "   Run: bash setup-scheduler-cron.sh"
+    echo "   Run: ./quick-deploy.sh   # self-heals the scheduler cron"
 fi
 
 echo ""
@@ -82,7 +82,7 @@ echo "✅ Verification Complete!"
 echo "============================================="
 echo ""
 echo "📝 Next steps:"
-echo "   • If cron is not running: bash setup-scheduler-cron.sh"
+echo "   • If cron is not running: ./quick-deploy.sh   # self-heals the scheduler cron"
 echo "   • To watch live logs: docker exec $APP_CONTAINER tail -f /var/www/html/storage/logs/scheduler-cron.log"
 echo "   • To restart cron: docker exec $APP_CONTAINER service cron restart"
 echo "============================================="

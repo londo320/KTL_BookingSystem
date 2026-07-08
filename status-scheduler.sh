@@ -41,5 +41,5 @@ if ps -p "$PID" > /dev/null 2>&1; then
 else
     echo -e "${RED}Status: NOT RUNNING${NC}"
     echo "PID file exists but process is not running (stale PID: $PID)"
-    echo "Run 'bash start-scheduler.sh' to start the scheduler"
+    echo "Run './quick-deploy.sh' to redeploy — it self-heals the scheduler cron"
 fi

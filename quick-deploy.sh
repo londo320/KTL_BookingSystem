@@ -2,6 +2,7 @@
 set -e
 
 echo "===== KTL Booking System - Quick Deploy ====="
+echo ""
 
 # Configuration
 PROJECT_DIR="/mnt/user/appdata/ktl-booking"
@@ -12,44 +13,104 @@ APP_CONTAINER="ktl-booking-app"
 # Check if container exists
 if ! docker ps -a --format '{{.Names}}' | grep -q "^${APP_CONTAINER}$"; then
     echo "❌ Container ${APP_CONTAINER} does not exist!"
-    echo "   Run the full install first: ./full-install.sh"
+    echo "   Run the full deploy first: ./deploy-ktl-nginx.sh"
     exit 1
 fi
 
+# Make sure it's actually running
+if ! docker ps --format '{{.Names}}' | grep -q "^${APP_CONTAINER}$"; then
+    echo "⚠️  Container ${APP_CONTAINER} is not running — starting it..."
+    docker start "$APP_CONTAINER"
+    sleep 5
+fi
+
 # Get latest code on HOST (outside container)
-if [ ! -d "$PROJECT_DIR" ]; then
+if [ ! -d "$PROJECT_DIR/.git" ]; then
     echo "📁 Cloning repository..."
     mkdir -p "$PROJECT_DIR"
     cd "$PROJECT_DIR"
     GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone "$GIT_REPO" .
     git checkout "$GIT_BRANCH"
 else
-    echo "📥 Updating repository..."
+    echo "📥 Pulling latest code from git..."
     cd "$PROJECT_DIR"
-    git fetch origin "$GIT_BRANCH" 2>&1 || echo "WARNING: git fetch failed"
-    git reset --hard "origin/$GIT_BRANCH" 2>&1 || echo "WARNING: git reset failed"
+    git fetch origin "$GIT_BRANCH"
+    git reset --hard "origin/$GIT_BRANCH"
 fi
+echo "✅ Code updated to latest version"
+echo ""
 
-# Remove schema file (prevents mysql CLI dependency)
+# Remove schema file (prevents mysql CLI dependency during composer/artisan calls)
 SCHEMA_FILE="$PROJECT_DIR/database/schema/mysql-schema.sql"
 if [ -f "$SCHEMA_FILE" ]; then
     rm -f "$SCHEMA_FILE"
 fi
 
-# Run quick update script
-QUICK_UPDATE_SCRIPT="$PROJECT_DIR/quick-update.sh"
+# CRITICAL: Clear bootstrap cache first (fixes "Call to a member function make() on null")
+echo "🔧 Clearing Laravel bootstrap cache..."
+docker exec "$APP_CONTAINER" rm -rf /var/www/html/bootstrap/cache/*.php 2>/dev/null || true
+docker exec "$APP_CONTAINER" rm -rf /var/www/html/storage/framework/cache/* 2>/dev/null || true
+echo "✅ Bootstrap cache cleared"
+echo ""
 
-if [ ! -f "$QUICK_UPDATE_SCRIPT" ]; then
-    echo "❌ ERROR: quick-update.sh not found at $QUICK_UPDATE_SCRIPT"
-    echo "   Pull the latest code or run full install: ./full-install.sh"
-    exit 1
+echo "📦 Checking for dependency changes..."
+docker exec "$APP_CONTAINER" composer install --no-interaction --optimize-autoloader --no-dev
+echo "✅ Dependencies up to date"
+echo ""
+
+echo "🔗 Ensuring storage symlink..."
+docker exec "$APP_CONTAINER" php artisan storage:link 2>&1 | grep -v "symlink already exists" || echo "  (symlink ready)"
+echo ""
+
+echo "🗄️  Running database migrations..."
+docker exec "$APP_CONTAINER" php artisan migrate --force
+echo "✅ Migrations complete"
+echo ""
+
+echo "🧹 Clearing all caches..."
+docker exec "$APP_CONTAINER" php artisan cache:clear
+docker exec "$APP_CONTAINER" php artisan view:clear
+docker exec "$APP_CONTAINER" php artisan config:clear
+docker exec "$APP_CONTAINER" php artisan route:clear
+docker exec "$APP_CONTAINER" rm -rf /var/www/html/storage/framework/views/*
+echo "✅ Caches cleared"
+echo ""
+
+echo "🔒 Fixing permissions..."
+docker exec "$APP_CONTAINER" chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>&1 || true
+docker exec "$APP_CONTAINER" chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache 2>&1 || true
+echo "✅ Permissions fixed"
+echo ""
+
+echo "🔄 Restarting PHP-FPM..."
+docker exec "$APP_CONTAINER" pkill -USR2 php-fpm 2>/dev/null || docker restart "$APP_CONTAINER"
+echo "✅ PHP-FPM restarted"
+echo ""
+
+# Ensure scheduler cron is running (quick deploys don't recreate the container,
+# so cron can be left stopped from a previous restart/crash and this script
+# would otherwise never notice)
+echo "⏰ Ensuring scheduler cron is running..."
+if docker exec "$APP_CONTAINER" service cron status 2>/dev/null | grep -q "running"; then
+    echo "✅ Cron already running"
+else
+    echo "⚠️  Cron not running, starting it..."
+    docker exec "$APP_CONTAINER" service cron start 2>/dev/null || docker exec "$APP_CONTAINER" service cron restart 2>/dev/null || true
+    if docker exec "$APP_CONTAINER" service cron status 2>/dev/null | grep -q "running"; then
+        echo "✅ Cron started"
+    else
+        echo "❌ Failed to start cron - run manually: docker exec $APP_CONTAINER service cron start"
+    fi
 fi
+echo ""
 
-chmod +x "$QUICK_UPDATE_SCRIPT"
+echo "📋 Current version:"
+git log -1 --oneline
 echo ""
-echo "🚀 Running quick update..."
-echo ""
-"$QUICK_UPDATE_SCRIPT"
 
+echo "============================================="
+echo "✅ Quick deploy complete!"
+echo "============================================="
 echo ""
-echo "✅ Quick deployment complete!"
+echo "💡 If you added new environment variables or made major changes,"
+echo "   run the full deploy script instead: ./deploy-ktl-nginx.sh"
