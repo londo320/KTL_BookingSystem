@@ -4398,14 +4398,31 @@ class BookingController extends Controller
         // Record arrival status using configurable arrival time rules
         \App\Models\BookingHistory::recordArrival($booking, $arrivalTime, 'Vehicle arrived on site');
 
+        // Handle direct assignment to bay if specified
+        if (!empty($validated['tipping_bay_id'])) {
+            $tippingBay = \App\Models\TippingBay::find($validated['tipping_bay_id']);
+
+            if ($tippingBay && $tippingBay->isAvailable() && $tippingBay->depot_id === $bookingDepotId) {
+                $booking->moveToBay($tippingBay, 'Vehicle arrived and directly assigned to bay');
+                return redirect()->route('app.bookings.index')->with('success', 'Vehicle arrived and moved directly to bay '.$tippingBay->name.'.');
+            }
+        }
+
         // Handle direct assignment to location or bay if specified
         if (!empty($validated['tipping_location_id'])) {
             $tippingLocation = \App\Models\TippingLocation::find($validated['tipping_location_id']);
-            
+
             if ($tippingLocation && $tippingLocation->isAvailable() && $tippingLocation->depot_id === $bookingDepotId) {
                 $booking->dropTrailer($tippingLocation, 'Vehicle arrived and directly assigned to drop location');
                 return redirect()->route('app.bookings.index')->with('success', 'Vehicle arrived and moved to drop location: '.$tippingLocation->name);
             }
+        }
+
+        // No bay/location was chosen on arrival — try to auto-assign a bay so
+        // staff skip the manual location/bay picker. Falls through to plain
+        // "arrived" if no bay is currently free.
+        if (\App\Models\Setting::isTippingWorkflowEnabled() && ($assignedBay = $booking->autoAssignBay())) {
+            return redirect()->route('app.bookings.index')->with('success', 'Vehicle arrived and auto-assigned to bay '.$assignedBay->name.'.');
         }
 
         return redirect()->route('app.bookings.index')->with('success', 'Vehicle arrived on site - marked as in progress.');
