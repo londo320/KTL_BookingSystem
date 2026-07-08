@@ -185,6 +185,70 @@
         </div>
       </div>
 
+      {{-- Account Type --}}
+      <div class="mb-4">
+        <label class="block mb-1 font-medium text-gray-700">
+          I am registering as a...
+        </label>
+        <div class="flex gap-4">
+          <label class="flex items-center gap-2 px-4 py-2.5 bg-white/30 rounded-lg cursor-pointer flex-1 justify-center @error('requested_account_type') border-2 border-red-500 @enderror">
+            <input type="radio" name="requested_account_type" value="knowles"
+                   @checked(old('requested_account_type') === 'knowles') required>
+            <span>Knowles Staff</span>
+          </label>
+          <label class="flex items-center gap-2 px-4 py-2.5 bg-white/30 rounded-lg cursor-pointer flex-1 justify-center @error('requested_account_type') border-2 border-red-500 @enderror">
+            <input type="radio" name="requested_account_type" value="customer"
+                   @checked(old('requested_account_type') === 'customer') required>
+            <span>Customer</span>
+          </label>
+        </div>
+        @error('requested_account_type')
+          <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+        @enderror
+      </div>
+
+      {{-- Requested Depots/Sites --}}
+      <div class="mb-4">
+        <label class="block mb-1 font-medium text-gray-700">
+          Which site(s) do you need access to?
+        </label>
+        <div class="bg-white/30 rounded-lg p-3 space-y-1 max-h-36 overflow-y-auto @error('requested_depot_ids') border-2 border-red-500 @enderror">
+          @forelse($depots as $depot)
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="requested_depot_ids[]" value="{{ $depot->id }}"
+                     @checked(collect(old('requested_depot_ids', []))->contains($depot->id))>
+              <span>{{ $depot->name }}</span>
+            </label>
+          @empty
+            <p class="text-sm text-gray-500">No sites configured.</p>
+          @endforelse
+        </div>
+        @error('requested_depot_ids')
+          <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+        @enderror
+      </div>
+
+      {{-- Requested Customers --}}
+      <div class="mb-6">
+        <label class="block mb-1 font-medium text-gray-700">
+          Which customer(s) do you need access to? <span class="text-gray-400 font-normal">(if applicable)</span>
+        </label>
+        <div class="bg-white/30 rounded-lg p-3 space-y-1 max-h-36 overflow-y-auto @error('requested_customer_ids') border-2 border-red-500 @enderror">
+          @forelse($customers as $customer)
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="requested_customer_ids[]" value="{{ $customer->id }}"
+                     @checked(collect(old('requested_customer_ids', []))->contains($customer->id))>
+              <span>{{ $customer->name }}</span>
+            </label>
+          @empty
+            <p class="text-sm text-gray-500">No customers configured.</p>
+          @endforelse
+        </div>
+        @error('requested_customer_ids')
+          <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+        @enderror
+      </div>
+
       {{-- Already registered + Register button --}}
       <div class="flex items-center justify-between mb-2">
         <a href="{{ route('login') }}"

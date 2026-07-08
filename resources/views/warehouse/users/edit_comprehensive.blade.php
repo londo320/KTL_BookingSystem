@@ -14,6 +14,27 @@
     @endif
 
 
+    @if($user->requested_account_type)
+        <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h2 class="text-sm font-semibold text-blue-900 mb-2">📝 Access Requested at Registration</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                    <span class="text-blue-700 font-medium">Account Type:</span>
+                    <span class="text-blue-900">{{ $user->requested_account_type === 'customer' ? 'Customer' : 'Knowles Staff' }}</span>
+                </div>
+                <div>
+                    <span class="text-blue-700 font-medium">Requested Site(s):</span>
+                    <span class="text-blue-900">{{ $user->requestedDepots()->pluck('name')->join(', ') ?: 'None specified' }}</span>
+                </div>
+                <div>
+                    <span class="text-blue-700 font-medium">Requested Customer(s):</span>
+                    <span class="text-blue-900">{{ $user->requestedCustomers()->pluck('name')->join(', ') ?: 'None specified' }}</span>
+                </div>
+            </div>
+            <p class="text-xs text-blue-600 mt-2">This is what the user asked for when they registered — it hasn't been granted yet. Set their actual roles/sites/customers below.</p>
+        </div>
+    @endif
+
     <div class="bg-white rounded-lg shadow-sm border">
         <div class="px-6 py-4 border-b border-gray-200">
             <h1 class="text-2xl font-semibold text-gray-900">Edit User: {{ $user->name }}</h1>

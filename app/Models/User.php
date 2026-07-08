@@ -25,6 +25,9 @@ class User extends Authenticatable
         'depot_id',
         'is_active',
         'switch_user_enabled',
+        'requested_account_type',
+        'requested_depot_ids',
+        'requested_customer_ids',
     ];
 
     /**
@@ -35,7 +38,23 @@ class User extends Authenticatable
         'password' => 'hashed',
         'is_active' => 'boolean',
         'switch_user_enabled' => 'boolean',
+        'requested_depot_ids' => 'array',
+        'requested_customer_ids' => 'array',
     ];
+
+    /**
+     * Depots the user asked for at registration — informational only, not
+     * granted access. Admin still assigns real access via depots()/customers().
+     */
+    public function requestedDepots()
+    {
+        return Depot::whereIn('id', $this->requested_depot_ids ?? [])->get();
+    }
+
+    public function requestedCustomers()
+    {
+        return Customer::whereIn('id', $this->requested_customer_ids ?? [])->get();
+    }
 
     // Relationship with depots (many-to-many for access)
     public function depots()

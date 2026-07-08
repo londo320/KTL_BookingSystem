@@ -81,6 +81,30 @@
     </div>
 </div>
 
+<div class="user-details">
+    <h3 style="color: #374151; margin-top: 0;">Requested Access</h3>
+    <div class="detail-row">
+        <span class="detail-label">Account Type:</span>
+        <span class="detail-value">
+            {{ $newUser->requested_account_type === 'customer' ? 'Customer' : ($newUser->requested_account_type === 'knowles' ? 'Knowles Staff' : 'Not specified') }}
+        </span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Requested Site(s):</span>
+        <span class="detail-value">
+            @php $requestedDepots = $newUser->requestedDepots(); @endphp
+            {{ $requestedDepots->isNotEmpty() ? $requestedDepots->pluck('name')->join(', ') : 'None specified' }}
+        </span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Requested Customer(s):</span>
+        <span class="detail-value">
+            @php $requestedCustomers = $newUser->requestedCustomers(); @endphp
+            {{ $requestedCustomers->isNotEmpty() ? $requestedCustomers->pluck('name')->join(', ') : 'None specified' }}
+        </span>
+    </div>
+</div>
+
 <div style="text-align: center; margin: 30px 0;">
     <a href="{{ $adminUrl }}" class="action-button">
         👥 Manage User Access
