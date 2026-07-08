@@ -784,7 +784,7 @@ class CustomerBookingController extends Controller
             // Bay-based generation doesn't use slot release rules — that
             // mechanism only applies to template-based generation. Instead,
             // restrict by the customer's bay assignments, if any exist.
-            $allowedBayIds = \App\Models\CustomerBayAssignment::getAllowedBayIds($customerId, $depotId);
+            $allowedBayIds = $customerId ? \App\Models\CustomerBayAssignment::getAllowedBayIds($customerId, $depotId) : null;
             if ($allowedBayIds !== null) {
                 $query->whereIn('tipping_bay_id', $allowedBayIds);
             }
@@ -860,18 +860,6 @@ class CustomerBookingController extends Controller
             // Column doesn't exist yet, continue
         }
 
-        // Get available slots (simplified for now)
-        try {
-            $availableSlots = $this->getAvailableSlotsForRebooking($booking);
-        } catch (\Exception $e) {
-            // If there's an error getting slots, use a simple query
-            $availableSlots = Slot::where('start_at', '>', now())
-                ->with('depot')
-                ->orderBy('start_at')
-                ->take(10)
-                ->get();
-        }
-
         // Get customer behavior data (simplified for now)
         try {
             $customerBehaviorData = $this->getCustomerBehaviorData($booking->customer_id);
@@ -886,7 +874,6 @@ class CustomerBookingController extends Controller
 
         return view('customer.bookings.rebook', [
             'booking' => $booking,
-            'availableSlots' => $availableSlots,
             'customerBehaviorData' => $customerBehaviorData,
             'maxRebooksPerBooking' => $maxRebooksPerBooking,
         ]);
@@ -1265,42 +1252,6 @@ class CustomerBookingController extends Controller
     /**
      * Get available slots for rebooking
      */
-    private function getAvailableSlotsForRebooking(Booking $booking)
-    {
-        $user = auth()->user();
-        $customerId = $user->getCustomerId();
-        $accessibleDepotIds = $user->depots->pluck('id')->toArray();
-
-        return Slot::whereIn('depot_id', $accessibleDepotIds)
-            ->where('start_at', '>', now())
-            ->where('id', '!=', $booking->slot_id) // Exclude current slot
-            ->whereDoesntHave('bookings', function ($q) {
-                $q->whereNull('cancelled_at'); // Only exclude slots with active bookings
-            })
-            ->where(function ($query) use ($customerId) {
-                $query->where(function ($q) use ($customerId) {
-                    // Restricted slots (no released_at, but allowed_customers)
-                    $q->whereNull('released_at')
-                        ->whereHas('allowed_customers', fn ($q2) => $q2->where('customers.id', $customerId)
-                        );
-                })
-                    ->orWhere(function ($q) {
-                        // Public slots (released_at in the past)
-                        $q->whereNotNull('released_at')
-                            ->where('released_at', '<=', now());
-                    });
-            })
-            ->where(function ($q) {
-                // Not locked
-                $q->whereNull('locked_at')
-                    ->orWhere('locked_at', '>', now());
-            })
-            ->with(['depot', 'allowed_customers'])
-            ->orderBy('start_at')
-            ->take(50) // Limit for performance
-            ->get();
-    }
-
     /**
      * Get customer behavior data for warnings
      */

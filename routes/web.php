@@ -179,6 +179,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/bookings/{booking}/unbook', [BookingController::class, 'unbook'])->name('bookings.unbook');
         Route::get('/bookings/{booking}/rebook', [BookingRebookController::class, 'show'])->name('bookings.rebook.show');
         Route::post('/bookings/{booking}/rebook', [BookingRebookController::class, 'store'])->name('bookings.rebook.store');
+        Route::get('/bookings/{booking}/rebook/availability', [BookingRebookController::class, 'availability'])->name('bookings.rebook.availability');
+        Route::get('/bookings/{booking}/rebook/slots', [BookingRebookController::class, 'slots'])->name('bookings.rebook.slots');
         Route::get('/bookings/{booking}/history', [BookingRebookController::class, 'history'])->name('bookings.history');
         Route::get('bookings/fix-historical-departures', [BookingController::class, 'fixHistoricalDepartures'])->name('bookings.fix-historical-departures');
         Route::post('bookings/fix-historical-departures', [BookingController::class, 'fixHistoricalDepartures'])->name('bookings.fix-historical-departures.process');

@@ -213,6 +213,21 @@
     </div>
   </div>
 
+  {{-- Expected Arrival (only once the booking exists and hasn't arrived yet) --}}
+  @if($booking->exists && !$booking->arrived_at)
+    <div class="bg-blue-50 rounded-lg border border-blue-200 p-4">
+      <h3 class="text-sm font-semibold text-blue-900 mb-3">📞 Expected Arrival Time</h3>
+      <div>
+        <label class="block text-sm font-medium text-blue-800 mb-1">Expected Arrival Time (if different from slot)</label>
+        <input type="datetime-local" name="estimated_arrival"
+               value="{{ old('estimated_arrival', $booking->estimated_arrival ? $booking->estimated_arrival->format('Y-m-d\TH:i') : '') }}"
+               class="block w-full border-blue-300 rounded bg-white text-sm py-2">
+        <p class="text-xs text-blue-600 mt-1">💡 Update this if the customer's expected arrival time changes from the original slot time</p>
+        @error('estimated_arrival')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+      </div>
+    </div>
+  @endif
+
   {{-- ROW 4: Tipping Section --}}
   <div class="bg-purple-50 rounded-lg border border-purple-200 p-4">
     <h3 class="text-sm font-semibold text-purple-900 mb-3">📦 Tipping Details</h3>

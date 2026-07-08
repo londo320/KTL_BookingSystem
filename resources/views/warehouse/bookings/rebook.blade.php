@@ -75,49 +75,53 @@
           {{-- Rebook Form --}}
           <div class="bg-white p-6 rounded-lg shadow border">
             <h3 class="text-xl font-semibold mb-4 text-gray-800">🔄 Select New Slot</h3>
-            
-            <form action="{{ route('app.bookings.rebook.store', $booking) }}" method="POST">
-              @csrf
-              
-              <div class="mb-4">
-                <label for="new_slot_id" class="block text-sm font-medium text-gray-700 mb-2">
-                  New Slot <span class="text-red-500">*</span>
-                </label>
-                <select name="new_slot_id" id="new_slot_id" required 
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('new_slot_id') border-red-300 @enderror">
-                  <option value="">-- Choose a new slot --</option>
-                  @forelse($availableSlots as $slot)
-                    <option value="{{ $slot->id }}" {{ old('new_slot_id') == $slot->id ? 'selected' : '' }}>
-                      {{ $slot->start_at->format('D, d M Y - H:i') }} - {{ $slot->end_at->format('H:i') }}
-                      ({{ $slot->bookings->count() }}/{{ $slot->capacity }} booked)
-                    </option>
-                  @empty
-                    <option value="">No available slots found</option>
-                  @endforelse
-                </select>
-                @error('new_slot_id')
-                  <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                @enderror
-              </div>
+            <p class="text-xs text-gray-500 mb-4">Same depot & booking type as the original booking — pick any available date.</p>
 
-              <div class="mb-6">
-                <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">
-                  Reason for Rebooking <span class="text-red-500">*</span>
-                </label>
-                <textarea name="reason" id="reason" required rows="3" 
-                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('reason') border-red-300 @enderror"
-                          placeholder="Please provide a reason for rebooking...">{{ old('reason') }}</textarea>
-                @error('reason')
-                  <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                @enderror
+            <form action="{{ route('app.bookings.rebook.store', $booking) }}" method="POST" id="rebookForm">
+              @csrf
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                {{-- Date Sidebar --}}
+                <div class="md:col-span-1">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">📅 Available Dates</label>
+                  <div id="rebook-availability-preview" class="border border-gray-200 rounded-lg p-3 max-h-96 overflow-y-auto">
+                    <p class="text-gray-500 text-sm">🔄 Loading available dates...</p>
+                  </div>
+                </div>
+
+                {{-- Slot Select --}}
+                <div class="md:col-span-2">
+                  <label for="new_slot_id" class="block text-sm font-medium text-gray-700 mb-2">
+                    New Slot <span class="text-red-500">*</span>
+                  </label>
+                  <select name="new_slot_id" id="new_slot_id" required
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('new_slot_id') border-red-300 @enderror">
+                    <option value="">← Click a date first</option>
+                  </select>
+                  @error('new_slot_id')
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                  @enderror
+
+                  <div class="mt-4">
+                    <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">
+                      Reason for Rebooking <span class="text-red-500">*</span>
+                    </label>
+                    <textarea name="reason" id="reason" required rows="3"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('reason') border-red-300 @enderror"
+                              placeholder="Please provide a reason for rebooking...">{{ old('reason') }}</textarea>
+                    @error('reason')
+                      <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                  </div>
+                </div>
               </div>
 
               <div class="flex space-x-3">
-                <button type="submit" 
+                <button type="submit"
                         class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                   🔄 Rebook Booking
                 </button>
-                <a href="{{ route('app.bookings.show', $booking) }}" 
+                <a href="{{ route('app.bookings.show', $booking) }}"
                    class="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400">
                   Cancel
                 </a>
@@ -226,6 +230,94 @@
   </div>
 
   <script>
+    // Date-sidebar driven slot picker for rebooking (only present when
+    // rebooking isn't blocked by restrictions)
+    const rebookSlotSelect = document.getElementById('new_slot_id');
+    const rebookAvailabilityPreview = document.getElementById('rebook-availability-preview');
+
+    if (rebookSlotSelect && rebookAvailabilityPreview) {
+      let rebookSelectedDate = null;
+
+      const rebookClearSlots = (message) => {
+        rebookSlotSelect.innerHTML = `<option value="">${message || '– Choose your time slot –'}</option>`;
+      };
+
+      const rebookLoadAvailability = () => {
+        rebookAvailabilityPreview.innerHTML = '<p class="text-gray-500 text-sm">🔄 Loading...</p>';
+
+        fetch('{{ route("app.bookings.rebook.availability", $booking) }}')
+          .then(response => response.json())
+          .then(data => {
+            if (data.dates && data.dates.length > 0) {
+              let html = '<div class="space-y-2">';
+              data.dates.forEach(dateInfo => {
+                const date = new Date(dateInfo.date);
+                const isSelected = dateInfo.date === rebookSelectedDate;
+                const buttonClass = isSelected
+                  ? 'w-full text-left p-2 rounded bg-blue-100 border border-blue-300 text-blue-800 text-sm'
+                  : 'w-full text-left p-2 rounded bg-gray-50 hover:bg-gray-100 border text-sm transition-colors';
+
+                html += `
+                  <button type="button" onclick="rebookSelectDate('${dateInfo.date}')" class="${buttonClass}">
+                    <div class="font-medium">${date.toLocaleDateString('en-GB', { weekday: 'short', month: 'short', day: 'numeric' })}</div>
+                    <div class="text-xs text-gray-600">${dateInfo.available_slots} slot${dateInfo.available_slots !== 1 ? 's' : ''} available</div>
+                  </button>
+                `;
+              });
+              html += '</div>';
+              rebookAvailabilityPreview.innerHTML = html;
+            } else {
+              rebookAvailabilityPreview.innerHTML = '<p class="text-gray-500 text-sm">📭 No available slots found</p>';
+            }
+          })
+          .catch(error => {
+            console.error('Error loading availability:', error);
+            rebookAvailabilityPreview.innerHTML = '<p class="text-red-500 text-sm">❌ Error loading availability</p>';
+          });
+      };
+
+      const rebookLoadSlots = (date) => {
+        rebookSlotSelect.innerHTML = '<option value="">🔄 Loading slots...</option>';
+        rebookSlotSelect.disabled = true;
+
+        fetch(`{{ route('app.bookings.rebook.slots', $booking) }}?date=${date}`)
+          .then(response => response.json())
+          .then(data => {
+            rebookClearSlots();
+            rebookSlotSelect.disabled = false;
+
+            if (data.slots && data.slots.length > 0) {
+              data.slots.forEach(slot => {
+                const option = document.createElement('option');
+                option.value = slot.id;
+                option.textContent = `${slot.time_range} ${slot.is_restricted ? '🔒' : '🌐'} ${slot.customers_info}`;
+                rebookSlotSelect.appendChild(option);
+              });
+            } else {
+              const option = document.createElement('option');
+              option.value = '';
+              option.textContent = '📭 No other slots available for this date';
+              option.disabled = true;
+              rebookSlotSelect.appendChild(option);
+            }
+          })
+          .catch(error => {
+            console.error('Error loading slots:', error);
+            rebookClearSlots('❌ Error loading slots');
+            rebookSlotSelect.disabled = false;
+          });
+      };
+
+      window.rebookSelectDate = function(date) {
+        rebookSelectedDate = date;
+        rebookLoadAvailability();
+        rebookLoadSlots(date);
+      };
+
+      rebookClearSlots('← Click a date above');
+      rebookLoadAvailability();
+    }
+
     // Cancel modal functions
     function showCancelModal() {
       document.getElementById('cancelModal').classList.remove('hidden');

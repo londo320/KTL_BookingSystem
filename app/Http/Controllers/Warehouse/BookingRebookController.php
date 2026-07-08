@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Warehouse;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\BookingHistory;
+use App\Models\BookingType;
 use App\Models\Customer;
 use App\Models\Slot;
 use Illuminate\Http\Request;
@@ -19,18 +20,6 @@ class BookingRebookController extends Controller
     public function show(Booking $booking)
     {
         $booking->load(['slot', 'customer', 'history.originalSlot', 'history.newSlot']);
-
-        // Get available slots for rebooking (same depot, future dates)
-        $availableSlots = Slot::where('depot_id', $booking->slot->depot_id)
-            ->where('start_at', '>', now())
-            ->whereRaw('(
-                SELECT COUNT(*) FROM bookings 
-                WHERE bookings.slot_id = slots.id 
-                AND bookings.cancelled_at IS NULL
-            ) < slots.capacity')
-            ->orderBy('start_at')
-            ->take(20)
-            ->get();
 
         // Customer behavior analysis
         $customerStats = $this->getCustomerBehaviorStats($booking->customer_id);
@@ -47,11 +36,96 @@ class BookingRebookController extends Controller
 
         return view('warehouse.bookings.rebook', compact(
             'booking',
-            'availableSlots',
             'customerStats',
             'restrictions',
             'maxRebooksPerBooking'
         ));
+    }
+
+    /**
+     * API endpoint to get availability overview for the booking's depot, for
+     * any day (not just today) — respects the booking's type time-window.
+     */
+    public function availability(Request $request, Booking $booking)
+    {
+        $dates = [];
+        $startDate = now();
+        $endDate = now()->addDays(30);
+
+        for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
+            $dateString = $date->format('Y-m-d');
+            $availableSlots = $this->getRebookSlotsForDate($booking, $dateString)->count();
+
+            if ($availableSlots > 0) {
+                $dates[] = [
+                    'date' => $dateString,
+                    'available_slots' => $availableSlots,
+                    'day_name' => $date->format('l'),
+                ];
+            }
+        }
+
+        return response()->json(['dates' => $dates]);
+    }
+
+    /**
+     * API endpoint to get slots for a specific date, for this booking's depot.
+     */
+    public function slots(Request $request, Booking $booking)
+    {
+        $date = $request->input('date');
+        if (! $date) {
+            return response()->json(['slots' => []]);
+        }
+
+        $slots = $this->getRebookSlotsForDate($booking, $date);
+
+        $formattedSlots = $slots->map(function ($slot) {
+            $isRestricted = $slot->allowed_customers->count() > 0;
+
+            return [
+                'id' => $slot->id,
+                'time_range' => $slot->start_at->format('H:i').' - '.$slot->end_at->format('H:i'),
+                'is_restricted' => $isRestricted,
+                'customers_info' => $isRestricted ? $slot->allowed_customers->pluck('name')->join(', ') : 'Public',
+            ];
+        });
+
+        return response()->json(['slots' => $formattedSlots]);
+    }
+
+    /**
+     * Slots available for rebooking this booking onto a given date — same
+     * depot, capacity not full, excludes the current slot, and (if the
+     * booking has a type) respects that type's allowed time window. No
+     * release/cutoff gating — staff can rebook onto any otherwise-available
+     * slot regardless of customer-facing release rules.
+     */
+    private function getRebookSlotsForDate(Booking $booking, string $date)
+    {
+        $slots = Slot::where('depot_id', $booking->slot->depot_id)
+            ->whereDate('start_at', $date)
+            ->where('start_at', '>', now())
+            ->where('id', '!=', $booking->slot_id)
+            ->whereRaw('(
+                SELECT COUNT(*) FROM bookings
+                WHERE bookings.slot_id = slots.id
+                AND bookings.cancelled_at IS NULL
+            ) < slots.capacity')
+            ->with(['depot', 'allowed_customers'])
+            ->orderBy('start_at')
+            ->get();
+
+        if ($booking->booking_type_id) {
+            $bookingType = BookingType::find($booking->booking_type_id);
+            if ($bookingType) {
+                $slots = $slots->filter(
+                    fn ($slot) => $bookingType->isAvailableAtTime($slot->start_at, $booking->customer_id, $booking->slot->depot_id)
+                )->values();
+            }
+        }
+
+        return $slots;
     }
 
     public function store(Request $request, Booking $booking)

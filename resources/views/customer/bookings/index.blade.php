@@ -179,6 +179,10 @@
                   <div class="text-orange-600 text-xs font-semibold">
                     Original: {{ $slotStart->format('d-M H:i') }}
                   </div>
+                @elseif($booking->estimated_arrival)
+                  <div class="text-blue-600 text-xs font-semibold">
+                    💬 Updated ETA: {{ \Carbon\Carbon::parse($booking->estimated_arrival)->format('d-M H:i') }}
+                  </div>
                 @endif
                 
                 {{ \Carbon\Carbon::parse($booking->slot->start_at)->format('d-M H:i') }} →

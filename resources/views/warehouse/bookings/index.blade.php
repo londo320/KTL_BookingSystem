@@ -454,6 +454,10 @@
                 <div class="text-yellow-600 text-xs font-semibold">
                   Arrived Late by: {{ $d }}d {{ $h }}h {{ $m }}m
                 </div>
+              @elseif($booking->estimated_arrival)
+                <div class="text-blue-600 text-xs font-semibold">
+                  💬 Updated ETA: {{ \Carbon\Carbon::parse($booking->estimated_arrival)->format('d-M H:i') }}
+                </div>
               @endif
 
                 {{ $slotStart->format('d-M H:i') }} → {{ ($booking->getScheduledEndTime() ?? $booking->slot->end_at)->format('d-M H:i') }}
