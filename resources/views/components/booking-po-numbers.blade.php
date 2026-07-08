@@ -334,7 +334,8 @@
                                                 @endif
                                             </div>
 
-                                            <!-- Actual Quantities -->
+                                            <!-- Actual Quantities (staff-recorded ground truth — never gated on
+                                                 whether a SKU was captured, unlike the Expected fields above) -->
                                             <div>
                                                 <h6 class="text-xs font-medium text-gray-600 mb-2">Actual</h6>
                                                 <div class="grid grid-cols-3 gap-2">
@@ -343,24 +344,22 @@
                                                         <input type="number" x-model="line.actual_pallets"
                                                                @input="calculateActualCases(poIndex, lineIndex)"
                                                                @change="triggerSummaryUpdate()"
-                                                               :disabled="{{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')"
-                                                               :class="({{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')) ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'"
+                                                               class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
                                                                {{ $readonly ? 'readonly' : '' }}>
                                                     </div>
                                                     <div>
                                                         <label class="block text-xs text-gray-500">Units</label>
                                                         <input type="number" x-model="line.actual_cases"
                                                                @change="triggerSummaryUpdate()"
-                                                               :disabled="{{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')"
-                                                               :class="({{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')) ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'"
+                                                               class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}"
                                                                {{ $readonly ? 'readonly' : '' }}>
                                                     </div>
                                                     <div>
                                                         <label class="block text-xs text-gray-500">Type</label>
                                                         <select x-model="line.actual_pallet_type_id"
                                                                 @change="triggerSummaryUpdate()"
-                                                                :disabled="({{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')) {{ $readonly ? '|| true' : '' }}"
-                                                                :class="({{ $show_sku_fields ? 'true' : 'false' }} && (!line.sku || line.sku.trim() === '')) ? 'mt-1 block w-full border-gray-300 rounded text-xs bg-gray-100 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}'">
+                                                                {{ $readonly ? 'disabled' : '' }}
+                                                                class="mt-1 block w-full border-gray-300 rounded text-xs {{ $readonly ? 'bg-gray-100' : '' }}">
                                                             <option value="">Select</option>
                                                             @foreach($palletTypes as $type)
                                                                 <option value="{{ $type->id }}">{{ $type->display_name }}</option>
@@ -368,11 +367,6 @@
                                                         </select>
                                                     </div>
                                                 </div>
-                                                @if($show_sku_fields)
-                                                <div x-show="!line.sku || line.sku.trim() === ''" class="mt-2 text-xs text-amber-600 italic">
-                                                    ⚠️ Please select a SKU first to enter actual quantities
-                                                </div>
-                                                @endif
                                             </div>
                                         </div>
 

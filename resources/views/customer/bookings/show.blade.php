@@ -66,10 +66,17 @@
               🔄 {{ $hasArrived ? 'Rebook/Reject' : 'Rebook' }}
             </a>
             
-            <button onclick="showCancelModal()" 
-                    class="inline-flex items-center px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors">
-              ❌ {{ $hasArrived ? 'Cancel/Reject' : 'Cancel' }}
-            </button>
+            @unless($booking->departed_at)
+              <button onclick="showCancelModal()"
+                      class="inline-flex items-center px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors">
+                ❌ {{ $hasArrived ? 'Cancel/Reject' : 'Cancel' }}
+              </button>
+            @else
+              <span class="inline-flex items-center px-3 py-1.5 bg-gray-400 text-white text-sm font-medium rounded-md cursor-not-allowed"
+                    title="Booking has already departed">
+                🚛 Departed
+              </span>
+            @endunless
           @endif
         </div>
         

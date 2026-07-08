@@ -121,19 +121,28 @@
                  class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
                 🔄 {{ $hasArrived ? 'Rebook/Reject' : 'Rebook' }}
               </a>
-              <button onclick="showCancelModal()" 
-                      class="inline-flex items-center px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors">
-                ❌ {{ $hasArrived ? 'Cancel/Reject' : 'Cancel' }}
-              </button>
+              @unless($booking->departed_at)
+                <button onclick="showCancelModal()"
+                        class="inline-flex items-center px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors">
+                  ❌ {{ $hasArrived ? 'Cancel/Reject' : 'Cancel' }}
+                </button>
+              @else
+                <span class="inline-flex items-center px-3 py-1.5 bg-gray-400 text-white text-sm font-medium rounded-md cursor-not-allowed"
+                      title="Booking has already departed">
+                  🚛 Departed
+                </span>
+              @endunless
             @else
               <span class="inline-flex items-center px-3 py-1.5 bg-gray-300 text-gray-500 text-sm font-medium rounded-md cursor-not-allowed"
                     title="Actions only available for your default depot">
                 🔄 {{ $hasArrived ? 'Rebook/Reject' : 'Rebook' }}
               </span>
-              <span class="inline-flex items-center px-3 py-1.5 bg-gray-300 text-gray-500 text-sm font-medium rounded-md cursor-not-allowed"
-                    title="Actions only available for your default depot">
-                ❌ {{ $hasArrived ? 'Cancel/Reject' : 'Cancel' }}
-              </span>
+              @unless($booking->departed_at)
+                <span class="inline-flex items-center px-3 py-1.5 bg-gray-300 text-gray-500 text-sm font-medium rounded-md cursor-not-allowed"
+                      title="Actions only available for your default depot">
+                  ❌ {{ $hasArrived ? 'Cancel/Reject' : 'Cancel' }}
+                </span>
+              @endunless
             @endif
           @endif
         </div>

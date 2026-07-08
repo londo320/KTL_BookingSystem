@@ -413,6 +413,10 @@ class Booking extends Model
             return false; // Already cancelled
         }
 
+        if ($this->departed_at) {
+            throw new \Exception('Cannot cancel a booking that has already departed.');
+        }
+
         // Release occupied slots
         $this->occupiedSlots()->detach();
 

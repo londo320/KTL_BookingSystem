@@ -961,6 +961,10 @@ class CustomerBookingController extends Controller
             return response()->json(['success' => false, 'message' => 'Booking is already cancelled.'], 400);
         }
 
+        if ($booking->departed_at) {
+            return response()->json(['success' => false, 'message' => 'Cannot cancel a booking that has already departed.'], 400);
+        }
+
         $request->validate([
             'cancellation_reason' => 'required|string|max:255',
         ]);
