@@ -451,7 +451,7 @@ class CustomerBookingController extends Controller
 
         for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
             $dateString = $date->format('Y-m-d');
-            $availableSlots = $this->getVisibleSlots($depotId, $dateString, $bookingTypeId)->count();
+            $availableSlots = $this->groupSlotsByTime($this->getVisibleSlots($depotId, $dateString, $bookingTypeId))->count();
 
             if ($availableSlots > 0) {
                 $dates[] = [
@@ -487,35 +487,47 @@ class CustomerBookingController extends Controller
 
         $slots = $this->getVisibleSlots($depotId, $date, $bookingTypeId);
 
-        $formattedSlots = $slots->map(function ($slot) {
-            $startAt = Carbon::parse($slot->start_at);
-            $endAt = Carbon::parse($slot->end_at);
-
-            // Check if this is a restricted slot
-            $isRestricted = $slot->allowed_customers->count() > 0;
-
-            // Get customer info for display
-            $customersInfo = '';
-            if ($isRestricted) {
-                $customerNames = $slot->allowed_customers->pluck('name')->take(2);
-                $customersInfo = $customerNames->join(', ');
-                if ($slot->allowed_customers->count() > 2) {
-                    $customersInfo .= ' +'.($slot->allowed_customers->count() - 2).' more';
-                }
-            } else {
-                $customersInfo = 'Public';
-            }
-
-            return [
-                'id' => $slot->id,
-                'time_range' => $startAt->format('H:i').' - '.$endAt->format('H:i'),
-                'is_restricted' => $isRestricted,
-                'customers_info' => $customersInfo,
-                'depot_name' => $slot->depot->name,
-            ];
-        });
+        $formattedSlots = $this->groupSlotsByTime($slots)->values();
 
         return response()->json(['slots' => $formattedSlots]);
+    }
+
+    /**
+     * Bay-based generation creates one Slot row per bay per time window, so
+     * the same start/end time can appear many times (once per bay). Group
+     * them so the picker shows each time once, backed by one representative
+     * slot id (preferring a public one, since the customer doesn't choose
+     * the bay) plus how many bays are available at that time.
+     */
+    private function groupSlotsByTime($slots)
+    {
+        return $slots
+            ->groupBy(fn ($slot) => Carbon::parse($slot->start_at)->format('Y-m-d H:i:s').'|'.Carbon::parse($slot->end_at)->format('Y-m-d H:i:s'))
+            ->map(function ($group) {
+                $representative = $group->first(fn ($slot) => $slot->allowed_customers->count() === 0) ?? $group->first();
+
+                $startAt = Carbon::parse($representative->start_at);
+                $endAt = Carbon::parse($representative->end_at);
+                $isRestricted = $representative->allowed_customers->count() > 0;
+
+                $customersInfo = 'Public';
+                if ($isRestricted) {
+                    $customerNames = $representative->allowed_customers->pluck('name')->take(2);
+                    $customersInfo = $customerNames->join(', ');
+                    if ($representative->allowed_customers->count() > 2) {
+                        $customersInfo .= ' +'.($representative->allowed_customers->count() - 2).' more';
+                    }
+                }
+
+                return [
+                    'id' => $representative->id,
+                    'time_range' => $startAt->format('H:i').' - '.$endAt->format('H:i'),
+                    'is_restricted' => $isRestricted,
+                    'customers_info' => $customersInfo,
+                    'depot_name' => $representative->depot->name,
+                    'bays_available' => $group->count(),
+                ];
+            });
     }
 
     public function emailPDF(Request $request, Booking $booking)

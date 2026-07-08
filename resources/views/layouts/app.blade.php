@@ -16,7 +16,12 @@
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100 dark:bg-gray-100">
-            @include('layouts.dynamic-nav')
+            {{-- Customer portal pages render their own layouts.customer-nav; the
+                 staff dynamic-nav's Dashboard/logo links always point to
+                 app.dashboard, which isn't reachable/correct for customers. --}}
+            @unless(auth()->check() && auth()->user()->hasRole('customer'))
+                @include('layouts.dynamic-nav')
+            @endunless
 
             <!-- Page Heading -->
             @isset($header)

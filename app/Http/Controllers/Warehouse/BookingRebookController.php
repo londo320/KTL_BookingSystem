@@ -54,7 +54,7 @@ class BookingRebookController extends Controller
 
         for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
             $dateString = $date->format('Y-m-d');
-            $availableSlots = $this->getRebookSlotsForDate($booking, $dateString)->count();
+            $availableSlots = $this->groupSlotsByTime($this->getRebookSlotsForDate($booking, $dateString))->count();
 
             if ($availableSlots > 0) {
                 $dates[] = [
@@ -80,18 +80,33 @@ class BookingRebookController extends Controller
 
         $slots = $this->getRebookSlotsForDate($booking, $date);
 
-        $formattedSlots = $slots->map(function ($slot) {
-            $isRestricted = $slot->allowed_customers->count() > 0;
-
-            return [
-                'id' => $slot->id,
-                'time_range' => $slot->start_at->format('H:i').' - '.$slot->end_at->format('H:i'),
-                'is_restricted' => $isRestricted,
-                'customers_info' => $isRestricted ? $slot->allowed_customers->pluck('name')->join(', ') : 'Public',
-            ];
-        });
+        $formattedSlots = $this->groupSlotsByTime($slots)->values();
 
         return response()->json(['slots' => $formattedSlots]);
+    }
+
+    /**
+     * Bay-based generation creates one Slot row per bay per time window, so
+     * the same start/end time can appear many times (once per bay). Group
+     * them so the picker shows each time once, backed by one representative
+     * slot id, plus how many bays are available at that time.
+     */
+    private function groupSlotsByTime($slots)
+    {
+        return $slots
+            ->groupBy(fn ($slot) => $slot->start_at->format('Y-m-d H:i:s').'|'.$slot->end_at->format('Y-m-d H:i:s'))
+            ->map(function ($group) {
+                $representative = $group->first(fn ($slot) => $slot->allowed_customers->count() === 0) ?? $group->first();
+                $isRestricted = $representative->allowed_customers->count() > 0;
+
+                return [
+                    'id' => $representative->id,
+                    'time_range' => $representative->start_at->format('H:i').' - '.$representative->end_at->format('H:i'),
+                    'is_restricted' => $isRestricted,
+                    'customers_info' => $isRestricted ? $representative->allowed_customers->pluck('name')->join(', ') : 'Public',
+                    'bays_available' => $group->count(),
+                ];
+            });
     }
 
     /**
