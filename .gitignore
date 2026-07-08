@@ -6,4 +6,5 @@
 .phpunit.result.cache
 Homestead.yaml
 Homestead.json
+.DS_Store
 
