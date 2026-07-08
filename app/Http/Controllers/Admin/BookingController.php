@@ -1700,6 +1700,13 @@ class BookingController extends Controller
                 }
             }
 
+            // No bay/waiting area/location was chosen on arrival — try to
+            // auto-assign a bay so staff skip the manual location/bay picker.
+            // Falls through to plain "arrived" if no bay is currently free.
+            if (\App\Models\Setting::isTippingWorkflowEnabled() && ($assignedBay = $booking->autoAssignBay())) {
+                return $this->redirectWithFilters($request, 'Vehicle arrived and auto-assigned to bay '.$assignedBay->name.'.');
+            }
+
             return $this->redirectWithFilters($request, 'Vehicle arrived on site - marked as in progress.');
         }
 

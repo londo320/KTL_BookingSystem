@@ -548,6 +548,92 @@ class Booking extends Model
     }
 
     /**
+     * Auto-assign the best available bay for this booking on arrival, skipping
+     * the manual location/bay picker. Returns false (no-op) if no bay is
+     * currently free, leaving the booking at 'arrived' so the manual picker
+     * is used as a fallback.
+     */
+    public function autoAssignBay(): ?TippingBay
+    {
+        $movement = $this->getOrCreateMovement();
+
+        if ($movement->tipping_bay_id) {
+            return null;
+        }
+
+        $depotId = $this->slot?->depot_id ?? $this->depot_id;
+        if (! $depotId) {
+            return null;
+        }
+
+        $requiredEquipment = \App\Models\BookingTypeEquipmentRequirement::getRequiredEquipment($this->booking_type_id);
+        $availableBays = \App\Models\CustomerBayAssignment::getAvailableBaysForCustomer(
+            $this->customer_id,
+            $depotId,
+            $requiredEquipment
+        );
+
+        foreach ($availableBays as $bay) {
+            if ($bay->isAvailable() && $this->moveToBay($bay, 'Auto-assigned on arrival')) {
+                return $bay;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * After tipping completes, auto-move the now-empty unit to an available
+     * parking/dropzone location and free the bay it occupied. No-op if no
+     * dropzone is currently free, leaving the trailer at the bay for a
+     * manual move.
+     */
+    public function autoMoveToDropzone(): bool
+    {
+        $movement = $this->getOrCreateMovement();
+
+        if ($movement->current_status !== 'empty') {
+            return false;
+        }
+
+        $depotId = $this->slot?->depot_id ?? $this->depot_id;
+        if (! $depotId) {
+            return false;
+        }
+
+        $location = \App\Models\TippingLocation::forDepot($depotId)->parking()->available()->first();
+        if (! $location) {
+            return false;
+        }
+
+        \DB::transaction(function () use ($location, $movement) {
+            if ($this->tippingBay) {
+                $this->tippingBay->markAvailable($this);
+            }
+
+            $movement->update([
+                'tipping_location_id' => $location->id,
+                'tipping_bay_id' => null,
+                'current_status' => 'back_to_parking',
+                'moved_to_location_at' => now(),
+            ]);
+
+            $location->markOccupied($this);
+        });
+
+        BookingHistory::recordAction(
+            $this,
+            'modified',
+            "Empty unit auto-moved to dropzone: {$location->name}",
+            null,
+            null,
+            ['location_id' => $location->id, 'location_name' => $location->name, 'action_type' => 'auto_moved_to_dropzone']
+        );
+
+        return true;
+    }
+
+    /**
      * Move trailer directly to bay without drop location (skip in_parking stage)
      */
     public function moveDirectlyToBay(TippingBay $bay, ?string $notes = null): bool

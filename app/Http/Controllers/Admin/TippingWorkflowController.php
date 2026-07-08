@@ -270,6 +270,9 @@ class TippingWorkflowController extends Controller
                 if (! $booking->completeTipping($request->notes, $issues)) {
                     throw new \Exception('Cannot complete tipping at this stage.');
                 }
+                // Auto-move the now-empty unit to a dropzone and free the bay,
+                // instead of requiring a separate manual "move to location" step.
+                $booking->autoMoveToDropzone();
             } else {
                 // Manual mode - allow action without strict workflow enforcement
                 $movement = $booking->getOrCreateMovement();
