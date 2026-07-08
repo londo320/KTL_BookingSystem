@@ -72,6 +72,7 @@ class CustomerBookingController extends Controller
             'types' => BookingType::orderBy('name')->get(),
             'selectedDepotId' => $depotId,
             'selectedDate' => $date,
+            'showSkuFields' => \App\Models\CustomerBookingConfig::skuFieldsEnabled($user->getCustomerId(), $depotId),
         ]);
     }
 
@@ -155,6 +156,7 @@ class CustomerBookingController extends Controller
 
         $data['user_id'] = auth()->id();
         $data['customer_id'] = auth()->user()->getCustomerId();
+        $data['depot_id'] = $slot->depot_id;
 
         // Handle carrier creation/selection
         if (empty($data['carrier_id']) && !empty($data['carrier_name'])) {
@@ -384,6 +386,7 @@ class CustomerBookingController extends Controller
             // Only update slot if PO editing is allowed (before cutoff/arrival)
             if ($canEditPO && isset($data['slot_id'])) {
                 $basicFields['slot_id'] = $data['slot_id'];
+                $basicFields['depot_id'] = Slot::find($data['slot_id'])?->depot_id ?? $booking->depot_id;
             }
             
             // Debug: Log what will be updated
@@ -434,6 +437,7 @@ class CustomerBookingController extends Controller
 
         $user = auth()->user();
         $customerId = $user->getCustomerId();
+        $bookingTypeId = $request->input('booking_type_id');
 
         // Check if user has access to this depot
         if (! $user->depots->contains('id', $depotId)) {
@@ -447,7 +451,7 @@ class CustomerBookingController extends Controller
 
         for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
             $dateString = $date->format('Y-m-d');
-            $availableSlots = $this->getVisibleSlots($depotId, $dateString)->count();
+            $availableSlots = $this->getVisibleSlots($depotId, $dateString, $bookingTypeId)->count();
 
             if ($availableSlots > 0) {
                 $dates[] = [
@@ -468,6 +472,7 @@ class CustomerBookingController extends Controller
     {
         $depotId = $request->input('depot_id');
         $date = $request->input('date');
+        $bookingTypeId = $request->input('booking_type_id');
 
         if (! $depotId || ! $date) {
             return response()->json(['slots' => []]);
@@ -480,7 +485,7 @@ class CustomerBookingController extends Controller
             return response()->json(['error' => 'Access denied'], 403);
         }
 
-        $slots = $this->getVisibleSlots($depotId, $date);
+        $slots = $this->getVisibleSlots($depotId, $date, $bookingTypeId);
 
         $formattedSlots = $slots->map(function ($slot) {
             $startAt = Carbon::parse($slot->start_at);
@@ -754,21 +759,37 @@ class CustomerBookingController extends Controller
         return $query->orderByDesc('id');
     }
 
-    protected function getVisibleSlots($depotId, $date)
+    protected function getVisibleSlots($depotId, $date, $bookingTypeId = null)
     {
         $user = auth()->user();
         $customerId = $user->getCustomerId();
 
-        return Slot::where('depot_id', $depotId)
+        $query = Slot::where('depot_id', $depotId)
             ->whereDate('start_at', $date)
             ->where('start_at', '>', now())
+            ->where('is_blocked', false)
 
             // Only slots with no active (non-cancelled) bookings
             ->whereDoesntHave('bookings', function ($q) {
                 $q->whereNull('cancelled_at');
             })
 
-            ->where(function ($query) use ($customerId) {
+            ->where(function ($q) {
+                // Not locked (booking cut-off has not passed)
+                $q->whereNull('locked_at')
+                    ->orWhere('locked_at', '>', now());
+            });
+
+        if (\App\Models\Setting::isUsingBayBasedSlots()) {
+            // Bay-based generation doesn't use slot release rules — that
+            // mechanism only applies to template-based generation. Instead,
+            // restrict by the customer's bay assignments, if any exist.
+            $allowedBayIds = \App\Models\CustomerBayAssignment::getAllowedBayIds($customerId, $depotId);
+            if ($allowedBayIds !== null) {
+                $query->whereIn('tipping_bay_id', $allowedBayIds);
+            }
+        } else {
+            $query->where(function ($query) use ($customerId) {
                 $query->where(function ($q) use ($customerId) {
                     // Restricted slots (no released_at, but allowed_customers)
                     $q->whereNull('released_at')
@@ -780,15 +801,24 @@ class CustomerBookingController extends Controller
                         $q->whereNotNull('released_at')
                             ->where('released_at', '<=', now());
                     });
-            })
-            ->where(function ($q) {
-                // Not locked
-                $q->whereNull('locked_at')
-                    ->orWhere('locked_at', '>', now());
-            })
-            ->with('allowed_customers', 'depot')
+            });
+        }
+
+        $slots = $query->with('allowed_customers', 'depot')
             ->orderBy('start_at')
             ->get();
+
+        // Restrict to this booking type's allowed time window, if one is selected
+        if ($bookingTypeId) {
+            $bookingType = BookingType::find($bookingTypeId);
+            if ($bookingType) {
+                $slots = $slots->filter(
+                    fn ($slot) => $bookingType->isAvailableAtTime($slot->start_at, $customerId, $depotId)
+                )->values();
+            }
+        }
+
+        return $slots;
     }
 
     /**

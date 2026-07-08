@@ -13,10 +13,10 @@
         <form id="booking-form" action="{{ route('customer.bookings.store') }}" method="POST">
           @csrf
           
-          {{-- Depot and Date Selection --}}
+          {{-- Depot and Booking Type Selection --}}
           <div class="grid grid-cols-2 gap-4 mb-6 pb-4 border-b">
             <div>
-              <label class="block text-sm font-medium mb-2">Select Depot</label>
+              <label class="block text-sm font-medium mb-2">1. Select Depot</label>
               <select id="depot-select" name="depot_id" required class="w-full border-gray-300 rounded">
                 <option value="">– Choose depot –</option>
                 @foreach(auth()->user()->depots as $depot)
@@ -27,17 +27,25 @@
               </select>
               @error('depot_id')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
             </div>
-            
+
             <div>
-              <label class="block text-sm font-medium mb-2">Select Date</label>
-              <input type="date" id="date-select" name="date" 
-                     value="{{ $selectedDate }}" 
-                     min="{{ now()->format('Y-m-d') }}"
-                     max="{{ now()->addMonths(3)->format('Y-m-d') }}"
-                     class="w-full border-gray-300 rounded">
-              @error('date')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
+              <label class="block text-sm font-medium mb-2">2. Select Booking Type</label>
+              <select id="booking-type-select" name="booking_type_id" required class="w-full border-gray-300 rounded">
+                <option value="">– Choose booking type –</option>
+                @foreach($types as $type)
+                  <option value="{{ $type->id }}"
+                    @selected(old('booking_type_id', $booking->booking_type_id) == $type->id)
+                  >
+                    {{ $type->name }}
+                  </option>
+                @endforeach
+              </select>
+              @error('booking_type_id')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
             </div>
           </div>
+
+          {{-- Selected date is driven entirely by the availability sidebar (3.) --}}
+          <input type="hidden" id="date-select" name="date" value="{{ $selectedDate }}">
 
           @include('customer.bookings._form')
           
@@ -63,9 +71,9 @@
 
       {{-- Availability Preview Sidebar --}}
       <div class="bg-white p-6 rounded shadow">
-        <h3 class="text-lg font-semibold mb-4">📅 Available Slots</h3>
+        <h3 class="text-lg font-semibold mb-4">3. 📅 Available Dates</h3>
         <div id="availability-preview">
-          <p class="text-gray-500 text-sm">Select a depot to see available dates</p>
+          <p class="text-gray-500 text-sm">Select a depot & booking type to see available dates</p>
         </div>
       </div>
       
@@ -76,6 +84,7 @@
     document.addEventListener('DOMContentLoaded', function() {
       const depotSelect = document.getElementById('depot-select');
       const dateSelect = document.getElementById('date-select');
+      const bookingTypeSelect = document.getElementById('booking-type-select');
       const availabilityPreview = document.getElementById('availability-preview');
       const slotSelect = document.querySelector('select[name="slot_id"]');
       const bookingForm = document.getElementById('booking-form');
@@ -84,29 +93,90 @@
       const submitLoading = document.getElementById('submit-loading');
       const validationMessages = document.getElementById('validation-messages');
       const validationList = document.getElementById('validation-list');
+      const customerId = {{ auth()->user()->getCustomerId() ?? 'null' }};
 
-      // Load availability when depot changes
+      // Apply the server-computed SKU visibility immediately (no flash while
+      // the AJAX refresh below resolves), then keep it in sync as the depot
+      // selection changes.
+      applySkuVisibility(document.getElementById('po-section-container')?.dataset.showSku === 'true');
+
+      // Depot + Booking Type together drive the available dates (step 3),
+      // mirroring the staff booking form's customer + booking-type flow.
+      function refreshAvailability() {
+        const depotId = depotSelect.value;
+        const bookingTypeId = bookingTypeSelect.value;
+
+        dateSelect.value = '';
+        clearSlots('← Click a date above');
+
+        if (!depotId || !bookingTypeId) {
+          availabilityPreview.innerHTML = '<p class="text-gray-500 text-sm">Select a depot & booking type to see available dates</p>';
+          return;
+        }
+
+        loadAvailability(depotId);
+      }
+
       depotSelect.addEventListener('change', function() {
+        refreshAvailability();
         if (this.value) {
-          loadAvailability(this.value);
-          loadSlots(this.value, dateSelect.value);
-        } else {
-          availabilityPreview.innerHTML = '<p class="text-gray-500 text-sm">Select a depot to see available dates</p>';
-          clearSlots();
+          updateSkuFieldVisibility(this.value);
         }
       });
 
-      // Load slots when date changes
-      dateSelect.addEventListener('change', function() {
-        if (depotSelect.value && this.value) {
-          loadSlots(depotSelect.value, this.value);
-        }
-      });
+      bookingTypeSelect.addEventListener('change', refreshAvailability);
 
-      // Load availability for initially selected depot
+      // Re-run availability for an initially selected depot + booking type
+      // (e.g. returning to the form after a validation error)
       if (depotSelect.value) {
+        updateSkuFieldVisibility(depotSelect.value);
+      }
+      if (depotSelect.value && bookingTypeSelect.value) {
         loadAvailability(depotSelect.value);
-        loadSlots(depotSelect.value, dateSelect.value);
+      } else {
+        availabilityPreview.innerHTML = '<p class="text-gray-500 text-sm">Select a depot & booking type to see available dates</p>';
+      }
+
+      // Show/hide SKU + Description fields based on this customer's
+      // per-depot configuration (mirrors the staff booking form behaviour)
+      function applySkuVisibility(showSku) {
+        const poSectionContainer = document.getElementById('po-section-container');
+        if (!poSectionContainer) {
+          return;
+        }
+
+        const skuFieldContainers = poSectionContainer.querySelectorAll('[data-sku-field-container]');
+
+        if (showSku) {
+          skuFieldContainers.forEach(field => {
+            field.style.display = '';
+            const inputs = field.querySelectorAll('input[data-was-required], select[data-was-required]');
+            inputs.forEach(input => {
+              input.required = true;
+              input.removeAttribute('data-was-required');
+            });
+          });
+        } else {
+          skuFieldContainers.forEach(field => {
+            field.style.display = 'none';
+            const inputs = field.querySelectorAll('input[required], select[required]');
+            inputs.forEach(input => {
+              input.setAttribute('data-was-required', 'true');
+              input.required = false;
+            });
+          });
+        }
+      }
+
+      function updateSkuFieldVisibility(depotId) {
+        if (!customerId || !depotId) {
+          return;
+        }
+
+        fetch(`/api/customer-config?customer_id=${customerId}&depot_id=${depotId}`)
+          .then(response => response.json())
+          .then(data => applySkuVisibility(!!(data.config && data.config.sku_fields_enabled)))
+          .catch(error => console.error('Error fetching customer config:', error));
       }
 
       // Form validation and submission
@@ -247,8 +317,11 @@
 
       function loadAvailability(depotId) {
         availabilityPreview.innerHTML = '<p class="text-gray-500 text-sm">🔄 Loading...</p>';
-        
-        fetch(`/customer/availability?depot_id=${depotId}`)
+
+        const bookingTypeId = bookingTypeSelect?.value;
+        const bookingTypeParam = bookingTypeId ? `&booking_type_id=${bookingTypeId}` : '';
+
+        fetch(`/customer/availability?depot_id=${depotId}${bookingTypeParam}`)
           .then(response => response.json())
           .then(data => {
             let html = '';
@@ -277,7 +350,7 @@
               });
               html += '</div>';
             } else {
-              html = '<p class="text-gray-500 text-sm">📭 No available slots found for this depot</p>';
+              html = '<p class="text-gray-500 text-sm">📭 No available slots found for this depot & booking type</p>';
             }
             
             availabilityPreview.innerHTML = html;
@@ -298,7 +371,10 @@
         slotSelect.innerHTML = '<option value="">🔄 Loading slots...</option>';
         slotSelect.disabled = true;
 
-        fetch(`/customer/slots?depot_id=${depotId}&date=${date}`)
+        const bookingTypeId = bookingTypeSelect?.value;
+        const bookingTypeParam = bookingTypeId ? `&booking_type_id=${bookingTypeId}` : '';
+
+        fetch(`/customer/slots?depot_id=${depotId}&date=${date}${bookingTypeParam}`)
           .then(response => response.json())
           .then(data => {
             clearSlots();
@@ -331,15 +407,15 @@
           });
       }
 
-      function clearSlots() {
-        slotSelect.innerHTML = '<option value="">– Choose your time slot –</option>';
+      function clearSlots(message) {
+        slotSelect.innerHTML = `<option value="">${message || '– Choose your time slot –'}</option>`;
       }
 
-      // Global function for date selection buttons
+      // Global function for date selection buttons (4. pick a date, then a slot)
       window.selectDate = function(date) {
         dateSelect.value = date;
-        dateSelect.dispatchEvent(new Event('change'));
-        loadAvailability(depotSelect.value); // Refresh to update selected state
+        loadAvailability(depotSelect.value); // Refresh sidebar to highlight the selected date
+        loadSlots(depotSelect.value, date);
       };
     });
   </script>

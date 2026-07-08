@@ -147,6 +147,15 @@
                   $arrivedAt = $booking->arrived_at;
                   $isLateNotArrived = $now->greaterThan($slotStart) && !$arrivedAt;
                   $isLateArrived = $arrivedAt && $arrivedAt->greaterThan($slotStart);
+
+                  // Factory bookings are wrapped in a plain stdClass pseudo-slot
+                  // (see CustomerBookingController::combineAndSortBookings) which
+                  // has no getScheduledEndTime() method of its own — use the
+                  // real underlying model for factory bookings instead.
+                  $scheduledEndTime = $isFactory
+                      ? optional($booking->original_factory_booking)->getScheduledEndTime()
+                      : $booking->getScheduledEndTime();
+                  $displayEndTime = $scheduledEndTime ?? $booking->slot->end_at;
                 @endphp
                 
                 @if($isLateNotArrived)
@@ -173,7 +182,7 @@
                 @endif
                 
                 {{ \Carbon\Carbon::parse($booking->slot->start_at)->format('d-M H:i') }} →
-                {{ ($booking->getScheduledEndTime() ?? $booking->slot->end_at)->format('d-M H:i') }}
+                {{ $displayEndTime->format('d-M H:i') }}
               </td>
               <td class="px-4 py-2">{{ optional($booking->bookingType)->name ?? '-' }}</td>
               <td class="px-4 py-2">

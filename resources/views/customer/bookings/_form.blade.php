@@ -6,28 +6,10 @@
       <span class="text-xs text-gray-500 ml-2">🌐 = Public, 🔒 = Customer Restricted</span>
     </label>
     <select name="slot_id" required class="mt-1 block w-full border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-      <option value="">– Choose your time slot –</option>
+      <option value="">– Choose depot & booking type first –</option>
       {{-- Slots will be loaded dynamically via JavaScript --}}
     </select>
     @error('slot_id')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
-  </div>
-
-  {{-- Booking Type --}}
-  <div>
-    <label class="block text-sm font-medium text-gray-700 mb-2">
-      Booking Type <span class="text-red-500">*</span>
-    </label>
-    <select name="booking_type_id" required class="mt-1 block w-full border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-      <option value="">– Choose booking type –</option>
-      @foreach($types as $type)
-        <option value="{{ $type->id }}"
-          @selected(old('booking_type_id', $booking->booking_type_id) == $type->id)
-        >
-          {{ $type->name }}
-        </option>
-      @endforeach
-    </select>
-    @error('booking_type_id')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
   </div>
 
   {{-- Transportation Details Section --}}
@@ -106,10 +88,11 @@
   </div>
 
   {{-- PO Numbers Section --}}
-  <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+  <div id="po-section-container" data-show-sku="{{ $showSkuFields ? 'true' : 'false' }}"
+       class="bg-green-50 p-4 rounded-lg border border-green-200">
     <h3 class="text-lg font-medium text-green-900 mb-3">📦 Purchase Orders & Quantities</h3>
     <p class="text-sm text-green-700 mb-4">At least one PO with expected quantities is required</p>
-    <x-booking-po-numbers :booking="$booking" :customer_view="true" :hide_actuals="true" :customer_id="auth()->user()->getCustomerId()" />
+    <x-booking-po-numbers :booking="$booking" :customer_view="true" :hide_actuals="true" :customer_id="auth()->user()->getCustomerId()" :show_sku_fields="$showSkuFields" />
   </div>
 
   {{-- Notes Section --}}

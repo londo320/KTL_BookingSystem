@@ -16,10 +16,10 @@ class CustomerConfigController extends Controller
     {
         $customerId = $request->input('customer_id');
         $slotId = $request->input('slot_id');
+        $depotId = $request->input('depot_id');
 
-        // Get depot from slot if provided
-        $depotId = null;
-        if ($slotId) {
+        // Fall back to deriving depot from slot if depot_id wasn't given directly
+        if (! $depotId && $slotId) {
             $slot = Slot::find($slotId);
             $depotId = $slot?->depot_id;
         }
