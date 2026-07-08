@@ -1119,6 +1119,11 @@ Route::middleware('auth')->group(function () {
         // Booking management
         Route::resource('bookings', \App\Http\Controllers\Customer\CustomerBookingController::class)->except(['destroy']);
 
+        // Export routes
+        Route::get('/bookings-export/pdf', [\App\Http\Controllers\Customer\CustomerBookingController::class, 'exportPdf'])->name('bookings.export.pdf');
+        Route::get('/bookings-export/csv', [\App\Http\Controllers\Customer\CustomerBookingController::class, 'exportCsv'])->name('bookings.export.csv');
+        Route::get('/bookings-export/excel', [\App\Http\Controllers\Customer\CustomerBookingController::class, 'exportExcel'])->name('bookings.export.excel');
+
         // API endpoints for booking creation
         Route::get('/availability', [\App\Http\Controllers\Customer\CustomerBookingController::class, 'availability'])->name('availability');
         Route::get('/slots', [\App\Http\Controllers\Customer\CustomerBookingController::class, 'slots'])->name('slots');

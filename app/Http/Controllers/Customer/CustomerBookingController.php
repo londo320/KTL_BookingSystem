@@ -656,50 +656,145 @@ class CustomerBookingController extends Controller
             ->header('Content-Disposition', 'attachment; filename="'.$filename.'"');
     }
 
-    public function export(Request $request)
+    /**
+     * Full (non-paginated) combined bookings list for the current filters —
+     * shared by the CSV/Excel/PDF exports so they always match what the
+     * index page shows for the same query string.
+     */
+    private function exportableBookings(Request $request)
     {
-        $bookings = $this->filteredBookings($request)->get();
+        $regularBookings = $this->filteredBookings($request);
+        $factoryBookings = $this->filteredFactoryBookings($request);
 
-        $csvHeaders = [
-            'Depot',
-            'Start Time',
-            'End Time',
-            'Booking Type',
-            'Reference',
-            'Expected Cases',
-            'Expected Pallets',
-            'Arrival',
-            'Departure',
-            'Status',
+        return $this->combineAndSortBookings($regularBookings, $factoryBookings, $request);
+    }
+
+    private function exportRowFor($booking): array
+    {
+        $isFactory = isset($booking->type) && $booking->type === 'factory';
+
+        $expectedCases = 0;
+        $expectedPallets = 0;
+        $actualCases = 0;
+        $actualPallets = 0;
+        foreach ($booking->poNumbers as $po) {
+            foreach ($po->lines as $line) {
+                $expectedCases += $line->expected_cases ?? 0;
+                $expectedPallets += $line->expected_pallets ?? 0;
+                $actualCases += $line->actual_cases ?? 0;
+                $actualPallets += $line->actual_pallets ?? 0;
+            }
+        }
+
+        $status = 'Scheduled';
+        if ($booking->cancelled_at) {
+            $status = 'Cancelled';
+        } elseif ($booking->arrived_at) {
+            $status = $booking->departed_at ? 'Completed' : 'On-site';
+        }
+
+        return [
+            $booking->booking_reference ?? 'N/A',
+            optional($booking->customer)->name ?? '-',
+            $booking->slot->depot->name,
+            $booking->slot->start_at->format('Y-m-d H:i'),
+            $booking->slot->end_at->format('Y-m-d H:i'),
+            $isFactory ? 'Factory Delivery' : (optional($booking->bookingType)->name ?? 'N/A'),
+            $booking->vehicle_registration ?? '-',
+            $booking->container_number ?? '-',
+            $expectedCases,
+            $actualCases,
+            $expectedPallets,
+            $actualPallets,
+            $status,
+        ];
+    }
+
+    private function exportHeaders(): array
+    {
+        return [
+            'Booking Ref', 'Customer', 'Depot', 'Start', 'End', 'Type',
+            'Vehicle Registration', 'Container Number',
+            'Expected Cases', 'Actual Cases', 'Expected Pallets', 'Actual Pallets', 'Status',
+        ];
+    }
+
+    public function exportCsv(Request $request)
+    {
+        $bookings = $this->exportableBookings($request);
+        $headers = $this->exportHeaders();
+
+        $filename = 'my-bookings-'.now()->format('Y-m-d-H-i').'.csv';
+
+        return response()->stream(function () use ($bookings, $headers) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF)); // UTF-8 BOM for Excel
+            fputcsv($file, $headers);
+            foreach ($bookings as $booking) {
+                fputcsv($file, $this->exportRowFor($booking));
+            }
+            fclose($file);
+        }, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $bookings = $this->exportableBookings($request);
+        $headers = $this->exportHeaders();
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('My Bookings');
+
+        $sheet->fromArray($headers, null, 'A1');
+        $sheet->getStyle('A1:M1')->getFont()->setBold(true);
+
+        $row = 2;
+        foreach ($bookings as $booking) {
+            $sheet->fromArray($this->exportRowFor($booking), null, 'A'.$row);
+            $row++;
+        }
+
+        foreach (range('A', 'M') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
+        $filename = 'my-bookings-'.now()->format('Y-m-d-H-i').'.xlsx';
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $bookings = $this->exportableBookings($request);
+
+        $data = [
+            'bookings' => $bookings,
+            'customerName' => auth()->user()->name,
+            'generatedAt' => now(),
+            'totalBookings' => $bookings->count(),
         ];
 
-        $rows = $bookings->map(function ($b) {
-            return [
-                $b->slot->depot->name,
-                $b->slot->start_at,
-                $b->slot->end_at,
-                optional($b->bookingType)->name,
-                $b->reference,
-                $b->expected_cases,
-                $b->expected_pallets,
-                optional($b->arrived_at)?->format('Y-m-d H:i'),
-                optional($b->departed_at)?->format('Y-m-d H:i'),
-                $b->status,
-            ];
-        });
+        $pdfService = new PDFService;
+        $pdf = $pdfService->generateBookingPDF('customer.bookings.export-pdf', $data);
 
-        $filename = 'bookings_export_'.now()->format('Ymd_His').'.csv';
+        $filename = 'my-bookings-'.now()->format('Y-m-d-H-i').'.pdf';
 
-        return response()->streamDownload(function () use ($rows, $csvHeaders) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, $csvHeaders);
-            foreach ($rows as $row) {
-                fputcsv($handle, $row);
-            }
-            fclose($handle);
-        }, $filename, [
-            'Content-Type' => 'text/csv',
-        ]);
+        if ($pdf instanceof \Mpdf\Mpdf || $pdf instanceof \mPDF\mPDF) {
+            return response($pdf->Output('', 'S'))
+                ->header('Content-Type', 'application/pdf')
+                ->header('Content-Disposition', 'attachment; filename="'.$filename.'"');
+        }
+
+        return $pdf->download($filename);
     }
 
     private function filteredBookings(Request $request)

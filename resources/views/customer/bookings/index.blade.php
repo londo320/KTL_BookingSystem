@@ -5,10 +5,24 @@
   <x-slot name="header">
     <div class="flex items-center justify-between">
       <h2 class="font-semibold text-xl">My Bookings</h2>
-      <a href="{{ route('customer.bookings.create') }}"
-         class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
-        + New Booking
-      </a>
+      <div class="flex items-center gap-2">
+        <a href="{{ route('customer.bookings.export.pdf', request()->query()) }}"
+           class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs" target="_blank" title="Export PDF">
+          📄 PDF
+        </a>
+        <a href="{{ route('customer.bookings.export.excel', request()->query()) }}"
+           class="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs" title="Export Excel">
+          📊 Excel
+        </a>
+        <a href="{{ route('customer.bookings.export.csv', request()->query()) }}"
+           class="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs" title="Export CSV">
+          📝 CSV
+        </a>
+        <a href="{{ route('customer.bookings.create') }}"
+           class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+          + New Booking
+        </a>
+      </div>
     </div>
   </x-slot>
 
@@ -108,6 +122,7 @@
         <thead class="bg-gray-100">
           <tr>
             <th class="px-4 py-2 text-left">Booking Ref</th>
+            <th class="px-4 py-2 text-left">Customer</th>
             <th class="px-4 py-2 text-left">Depot</th>
             <th class="px-4 py-2 text-left">Start → End</th>
             <th class="px-4 py-2 text-left">Type</th>
@@ -139,6 +154,7 @@
                   <br><span class="text-xs text-gray-500">{{ $booking->reference }}</span>
                 @endif
               </td>
+              <td class="px-4 py-2">{{ optional($booking->customer)->name ?? '-' }}</td>
               <td class="px-4 py-2">{{ $booking->slot->depot->name }}</td>
               <td class="px-4 py-2">
                 @php
