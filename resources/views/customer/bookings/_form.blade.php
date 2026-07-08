@@ -92,7 +92,7 @@
        class="bg-green-50 p-4 rounded-lg border border-green-200">
     <h3 class="text-lg font-medium text-green-900 mb-3">📦 Purchase Orders & Quantities</h3>
     <p class="text-sm text-green-700 mb-4">At least one PO with expected quantities is required</p>
-    <x-booking-po-numbers :booking="$booking" :customer_view="true" :hide_actuals="true" :customer_id="auth()->user()->getCustomerId()" :show_sku_fields="$showSkuFields" />
+    <x-booking-po-numbers :booking="$booking" :customer_view="true" :hide_actuals="true" :customer_id="$selectedCustomerId ?? auth()->user()->getCustomerId()" :show_sku_fields="$showSkuFields" />
   </div>
 
   {{-- Notes Section --}}

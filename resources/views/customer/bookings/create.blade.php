@@ -12,11 +12,36 @@
       <div class="lg:col-span-2 bg-white p-6 rounded shadow">
         <form id="booking-form" action="{{ route('customer.bookings.store') }}" method="POST">
           @csrf
-          
+
+          @php
+            // Some users have access to more than one customer account (e.g.
+            // several sub-accounts under one parent company) — only ask them
+            // to pick which one when there's actually a choice to make.
+            $hasMultipleCustomers = $customers->count() > 1;
+            $stepOffset = $hasMultipleCustomers ? 1 : 0;
+          @endphp
+
+          @if($hasMultipleCustomers)
+            <div class="mb-6 pb-4 border-b">
+              <label class="block text-sm font-medium mb-2">1. Select Customer</label>
+              <select id="customer-select" name="customer_id" required class="w-full border-gray-300 rounded">
+                <option value="">– Choose customer –</option>
+                @foreach($customers as $customer)
+                  <option value="{{ $customer->id }}" @selected($selectedCustomerId == $customer->id)>
+                    {{ $customer->name }}
+                  </option>
+                @endforeach
+              </select>
+              @error('customer_id')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
+            </div>
+          @else
+            <input type="hidden" id="customer-select" name="customer_id" value="{{ $selectedCustomerId }}">
+          @endif
+
           {{-- Depot and Booking Type Selection --}}
           <div class="grid grid-cols-2 gap-4 mb-6 pb-4 border-b">
             <div>
-              <label class="block text-sm font-medium mb-2">1. Select Depot</label>
+              <label class="block text-sm font-medium mb-2">{{ $stepOffset + 1 }}. Select Depot</label>
               <select id="depot-select" name="depot_id" required class="w-full border-gray-300 rounded">
                 <option value="">– Choose depot –</option>
                 @foreach(auth()->user()->depots as $depot)
@@ -29,7 +54,7 @@
             </div>
 
             <div>
-              <label class="block text-sm font-medium mb-2">2. Select Booking Type</label>
+              <label class="block text-sm font-medium mb-2">{{ $stepOffset + 2 }}. Select Booking Type</label>
               <select id="booking-type-select" name="booking_type_id" required class="w-full border-gray-300 rounded">
                 <option value="">– Choose booking type –</option>
                 @foreach($types as $type)
@@ -71,7 +96,7 @@
 
       {{-- Availability Preview Sidebar --}}
       <div class="bg-white p-6 rounded shadow">
-        <h3 class="text-lg font-semibold mb-4">3. 📅 Available Dates</h3>
+        <h3 class="text-lg font-semibold mb-4">{{ $stepOffset + 3 }}. 📅 Available Dates</h3>
         <div id="availability-preview">
           <p class="text-gray-500 text-sm">Select a depot & booking type to see available dates</p>
         </div>
@@ -82,6 +107,7 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      const customerSelect = document.getElementById('customer-select');
       const depotSelect = document.getElementById('depot-select');
       const dateSelect = document.getElementById('date-select');
       const bookingTypeSelect = document.getElementById('booking-type-select');
@@ -93,15 +119,17 @@
       const submitLoading = document.getElementById('submit-loading');
       const validationMessages = document.getElementById('validation-messages');
       const validationList = document.getElementById('validation-list');
-      const customerId = {{ auth()->user()->getCustomerId() ?? 'null' }};
+      let customerId = customerSelect?.value || null;
 
       // Apply the server-computed SKU visibility immediately (no flash while
       // the AJAX refresh below resolves), then keep it in sync as the depot
       // selection changes.
       applySkuVisibility(document.getElementById('po-section-container')?.dataset.showSku === 'true');
 
-      // Depot + Booking Type together drive the available dates (step 3),
-      // mirroring the staff booking form's customer + booking-type flow.
+      // Customer (if there's a choice) + Depot + Booking Type together drive
+      // the available dates — bay assignments, restricted slots, and SKU
+      // config can all differ per customer, so nothing loads until all three
+      // are known.
       function refreshAvailability() {
         const depotId = depotSelect.value;
         const bookingTypeId = bookingTypeSelect.value;
@@ -109,12 +137,22 @@
         dateSelect.value = '';
         clearSlots('← Click a date above');
 
-        if (!depotId || !bookingTypeId) {
-          availabilityPreview.innerHTML = '<p class="text-gray-500 text-sm">Select a depot & booking type to see available dates</p>';
+        if (!customerId || !depotId || !bookingTypeId) {
+          availabilityPreview.innerHTML = '<p class="text-gray-500 text-sm">Select a customer, depot & booking type to see available dates</p>';
           return;
         }
 
         loadAvailability(depotId);
+      }
+
+      if (customerSelect && customerSelect.tagName === 'SELECT') {
+        customerSelect.addEventListener('change', function() {
+          customerId = this.value || null;
+          refreshAvailability();
+          if (depotSelect.value) {
+            updateSkuFieldVisibility(depotSelect.value);
+          }
+        });
       }
 
       depotSelect.addEventListener('change', function() {
@@ -126,15 +164,15 @@
 
       bookingTypeSelect.addEventListener('change', refreshAvailability);
 
-      // Re-run availability for an initially selected depot + booking type
-      // (e.g. returning to the form after a validation error)
+      // Re-run availability for an initially selected customer/depot/booking
+      // type (e.g. returning to the form after a validation error)
       if (depotSelect.value) {
         updateSkuFieldVisibility(depotSelect.value);
       }
-      if (depotSelect.value && bookingTypeSelect.value) {
+      if (customerId && depotSelect.value && bookingTypeSelect.value) {
         loadAvailability(depotSelect.value);
       } else {
-        availabilityPreview.innerHTML = '<p class="text-gray-500 text-sm">Select a depot & booking type to see available dates</p>';
+        availabilityPreview.innerHTML = '<p class="text-gray-500 text-sm">Select a customer, depot & booking type to see available dates</p>';
       }
 
       // Show/hide SKU + Description fields based on this customer's
@@ -218,6 +256,11 @@
         console.log('Booking Type:', document.querySelector('select[name="booking_type_id"]')?.value);
         console.log('PO Manager Instance:', !!window.poNumbersManagerInstance);
         
+        // Check customer selection (only relevant if the user has more than one)
+        if (customerSelect && !customerSelect.value) {
+          errors.push('Please select which customer this booking is for');
+        }
+
         // Check slot selection
         const slotId = slotSelect.value;
         if (!slotId) {
@@ -320,8 +363,9 @@
 
         const bookingTypeId = bookingTypeSelect?.value;
         const bookingTypeParam = bookingTypeId ? `&booking_type_id=${bookingTypeId}` : '';
+        const customerParam = customerId ? `&customer_id=${customerId}` : '';
 
-        fetch(`/customer/availability?depot_id=${depotId}${bookingTypeParam}`)
+        fetch(`/customer/availability?depot_id=${depotId}${bookingTypeParam}${customerParam}`)
           .then(response => response.json())
           .then(data => {
             let html = '';
@@ -373,8 +417,9 @@
 
         const bookingTypeId = bookingTypeSelect?.value;
         const bookingTypeParam = bookingTypeId ? `&booking_type_id=${bookingTypeId}` : '';
+        const customerParam = customerId ? `&customer_id=${customerId}` : '';
 
-        fetch(`/customer/slots?depot_id=${depotId}&date=${date}${bookingTypeParam}`)
+        fetch(`/customer/slots?depot_id=${depotId}&date=${date}${bookingTypeParam}${customerParam}`)
           .then(response => response.json())
           .then(data => {
             clearSlots();

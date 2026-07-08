@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 
 class CustomerBookingController extends Controller
 {
@@ -62,23 +63,47 @@ class CustomerBookingController extends Controller
     {
         $user = auth()->user();
         $userDepots = $user->depots;
+        $userCustomers = $user->customers;
 
         $date = $request->input('date') ?? now()->format('Y-m-d');
         $depotId = $request->input('depot_id') ?? $userDepots->first()?->id;
+        $customerId = $this->resolveSelectedCustomerId($request, $userCustomers);
 
         return view('customer.bookings.create', [
             'booking' => new Booking,
-            'slots' => $depotId ? $this->getVisibleSlots($depotId, $date) : collect(),
+            'slots' => $depotId ? $this->getVisibleSlots($depotId, $date, null, $customerId) : collect(),
             'types' => BookingType::orderBy('name')->get(),
+            'customers' => $userCustomers,
+            'selectedCustomerId' => $customerId,
             'selectedDepotId' => $depotId,
             'selectedDate' => $date,
-            'showSkuFields' => \App\Models\CustomerBookingConfig::skuFieldsEnabled($user->getCustomerId(), $depotId),
+            'showSkuFields' => \App\Models\CustomerBookingConfig::skuFieldsEnabled($customerId, $depotId),
         ]);
+    }
+
+    /**
+     * The booking-creation flow lets a user pick which of their accessible
+     * customers a booking is for (bay assignments, SKU config, and restricted
+     * slots can all differ per customer) — defaults to their only/first
+     * customer when they don't have more than one to choose from.
+     */
+    private function resolveSelectedCustomerId(Request $request, $userCustomers): ?int
+    {
+        $requested = $request->input('customer_id');
+        if ($requested && $userCustomers->contains('id', $requested)) {
+            return (int) $requested;
+        }
+
+        return $userCustomers->first()?->id;
     }
 
     public function store(Request $request)
     {
+        $user = auth()->user();
+        $accessibleCustomerIds = $user->customers->pluck('id');
+
         $data = $request->validate([
+            'customer_id' => ['required', 'integer', Rule::in($accessibleCustomerIds)],
             'slot_id' => 'required|exists:slots,id',
             'booking_type_id' => 'required|exists:booking_types,id',
             'carrier_id' => 'nullable|exists:carriers,id',
@@ -115,7 +140,6 @@ class CustomerBookingController extends Controller
         $slot = Slot::with('depot')->findOrFail($data['slot_id']);
 
         // Verify user has access to this depot
-        $user = auth()->user();
         if (! $user->depots->contains('id', $slot->depot_id)) {
             return back()->withErrors(['slot_id' => 'You do not have access to the depot for this slot.']);
         }
@@ -155,7 +179,6 @@ class CustomerBookingController extends Controller
         }
 
         $data['user_id'] = auth()->id();
-        $data['customer_id'] = auth()->user()->getCustomerId();
         $data['depot_id'] = $slot->depot_id;
 
         // Handle carrier creation/selection
@@ -487,7 +510,7 @@ class CustomerBookingController extends Controller
         }
 
         $user = auth()->user();
-        $customerId = $user->getCustomerId();
+        $customerId = $this->resolveSelectedCustomerId($request, $user->customers);
         $bookingTypeId = $request->input('booking_type_id');
 
         // Check if user has access to this depot
@@ -502,7 +525,7 @@ class CustomerBookingController extends Controller
 
         for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
             $dateString = $date->format('Y-m-d');
-            $availableSlots = $this->groupSlotsByTime($this->getVisibleSlots($depotId, $dateString, $bookingTypeId))->count();
+            $availableSlots = $this->groupSlotsByTime($this->getVisibleSlots($depotId, $dateString, $bookingTypeId, $customerId))->count();
 
             if ($availableSlots > 0) {
                 $dates[] = [
@@ -530,13 +553,14 @@ class CustomerBookingController extends Controller
         }
 
         $user = auth()->user();
+        $customerId = $this->resolveSelectedCustomerId($request, $user->customers);
 
         // Check if user has access to this depot
         if (! $user->depots->contains('id', $depotId)) {
             return response()->json(['error' => 'Access denied'], 403);
         }
 
-        $slots = $this->getVisibleSlots($depotId, $date, $bookingTypeId);
+        $slots = $this->getVisibleSlots($depotId, $date, $bookingTypeId, $customerId);
 
         $formattedSlots = $this->groupSlotsByTime($slots)->values();
 
@@ -917,10 +941,10 @@ class CustomerBookingController extends Controller
         return $query->orderByDesc('id');
     }
 
-    protected function getVisibleSlots($depotId, $date, $bookingTypeId = null)
+    protected function getVisibleSlots($depotId, $date, $bookingTypeId = null, $customerId = null)
     {
         $user = auth()->user();
-        $customerId = $user->getCustomerId();
+        $customerId = $customerId ?? $user->getCustomerId();
 
         $query = Slot::where('depot_id', $depotId)
             ->whereDate('start_at', $date)
