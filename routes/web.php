@@ -1128,6 +1128,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/rebook', [\App\Http\Controllers\Customer\CustomerBookingController::class, 'showRebook'])->name('bookings.rebook.show');
             Route::post('/rebook', [\App\Http\Controllers\Customer\CustomerBookingController::class, 'rebook'])->name('bookings.rebook.store');
             Route::post('/cancel', [\App\Http\Controllers\Customer\CustomerBookingController::class, 'cancel'])->name('bookings.cancel');
+            Route::post('/eta', [\App\Http\Controllers\Customer\CustomerBookingController::class, 'updateEta'])->name('bookings.eta.update');
             Route::get('/history', [\App\Http\Controllers\Customer\CustomerBookingController::class, 'history'])->name('bookings.history');
         });
 

@@ -354,15 +354,33 @@ class CustomerBookingController extends Controller
         DB::transaction(function () use ($booking, $data, $canEditPO) {
             // Always update basic booking fields that are always editable
             $basicFields = [
-                'vehicle_registration' => $data['vehicle_registration'] ?? $booking->vehicle_registration,
-                'container_number' => $data['container_number'] ?? $booking->container_number, 
                 'carrier_name' => $data['carrier_name'] ?? $booking->carrier_name,
                 'carrier_id' => $data['carrier_id'] ?? $booking->carrier_id,
             ];
-            
-            // Handle fields stored in vehicle_details JSON field
+
+            // vehicle_registration/container_number are shadowed by accessors
+            // (Booking::getVehicleRegistrationAttribute/getContainerNumberAttribute)
+            // that always read from vehicle_details, never the raw column — so
+            // they must be written there too, or the edit silently appears not
+            // to save even though the (unused) raw column did update.
             $vehicleDetails = $booking->vehicle_details ?? [];
-            
+
+            if (array_key_exists('vehicle_registration', $data)) {
+                if (!empty($data['vehicle_registration'])) {
+                    $vehicleDetails['vehicle_registration'] = $data['vehicle_registration'];
+                } else {
+                    unset($vehicleDetails['vehicle_registration']);
+                }
+            }
+
+            if (array_key_exists('container_number', $data)) {
+                if (!empty($data['container_number'])) {
+                    $vehicleDetails['container_number'] = $data['container_number'];
+                } else {
+                    unset($vehicleDetails['container_number']);
+                }
+            }
+
             // Update special instructions
             if (isset($data['special_instructions'])) {
                 if ($data['special_instructions']) {
@@ -371,7 +389,7 @@ class CustomerBookingController extends Controller
                     unset($vehicleDetails['special_instructions']);
                 }
             }
-            
+
             // Update estimated arrival (only if not already arrived)
             if (!$booking->arrived_at) {
                 if ($data['estimated_arrival'] ?? null) {
@@ -380,7 +398,7 @@ class CustomerBookingController extends Controller
                     unset($vehicleDetails['estimated_arrival']);
                 }
             }
-            
+
             $basicFields['vehicle_details'] = $vehicleDetails;
             
             // Only update slot if PO editing is allowed (before cutoff/arrival)
@@ -423,6 +441,39 @@ class CustomerBookingController extends Controller
         });
 
         return redirect()->route('customer.bookings.index')->with('success', 'Booking updated.');
+    }
+
+    /**
+     * Update just the ETA from the booking view page — available regardless
+     * of whether the booking is locked/past cutoff for PO/slot editing,
+     * since an updated arrival time doesn't touch any of that.
+     */
+    public function updateEta(Request $request, Booking $booking)
+    {
+        $this->authorize('update', $booking);
+
+        if ($booking->arrived_at) {
+            return back()->withErrors(['estimated_arrival' => 'Cannot update ETA once the vehicle has arrived.']);
+        }
+
+        if ($booking->isCancelled()) {
+            return back()->withErrors(['estimated_arrival' => 'Cannot update ETA on a cancelled booking.']);
+        }
+
+        $data = $request->validate([
+            'estimated_arrival' => 'nullable|date',
+        ]);
+
+        $vehicleDetails = $booking->vehicle_details ?? [];
+        if (!empty($data['estimated_arrival'])) {
+            $vehicleDetails['estimated_arrival'] = $data['estimated_arrival'];
+        } else {
+            unset($vehicleDetails['estimated_arrival']);
+        }
+
+        $booking->update(['vehicle_details' => $vehicleDetails]);
+
+        return back()->with('success', 'Expected arrival time updated.');
     }
 
     /**

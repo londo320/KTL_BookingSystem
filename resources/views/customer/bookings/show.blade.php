@@ -171,7 +171,8 @@
           <div>
             <h3 class="text-lg font-semibold text-orange-800">Booking Locked</h3>
             <p class="text-orange-700">
-              This booking is locked and cannot be edited. Cut-off time: {{ $booking->slot->locked_at->format('d M Y, H:i') }}
+              This booking's slot/PO details are locked and can no longer be edited. Cut-off time: {{ $booking->slot->locked_at->format('d M Y, H:i') }}
+              You can still update your expected arrival time below.
             </p>
           </div>
         </div>
@@ -188,8 +189,32 @@
       </div>
     @endif
 
+    {{-- Update ETA — always available (regardless of edit-lock status) until
+         the vehicle has arrived or the booking is cancelled --}}
+    @if(!$hasArrived && !$booking->isCancelled())
+      <div class="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+        <h3 class="text-lg font-semibold text-purple-900 mb-2">📞 Expected Arrival Time</h3>
+        @error('estimated_arrival')
+          <p class="text-red-600 text-sm mb-2">{{ $message }}</p>
+        @enderror
+        <form method="POST" action="{{ route('customer.bookings.eta.update', $booking) }}" class="flex flex-wrap items-end gap-3">
+          @csrf
+          <div>
+            <label class="block text-xs font-medium text-purple-800 mb-1">If different from the slot time</label>
+            <input type="datetime-local" name="estimated_arrival"
+                   value="{{ old('estimated_arrival', $booking->estimated_arrival ? $booking->estimated_arrival->format('Y-m-d\TH:i') : '') }}"
+                   class="border-purple-300 rounded-lg bg-white">
+          </div>
+          <button type="submit"
+                  class="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 transition-colors">
+            Update ETA
+          </button>
+        </form>
+      </div>
+    @endif
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      
+
       {{-- Slot & Location Details --}}
       <div class="bg-white p-6 rounded-lg shadow">
         <h3 class="text-xl font-semibold mb-4 text-gray-800">📍 Slot & Location</h3>
