@@ -321,8 +321,8 @@
                 </div>
                 {{-- Workflow Actions --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {{-- Move to Location Action --}}
-                    @if($workflowEnabled ? in_array($currentStatus, ['scheduled', 'arrived']) : true)
+                    {{-- Move to Location Action (manual mode skips straight to actuals entry below) --}}
+                    @if($workflowEnabled && in_array($currentStatus, ['scheduled', 'arrived']))
                         <div class="p-4 border border-blue-200 rounded-lg bg-blue-50">
                             <h4 class="font-medium text-blue-800 mb-3">🚛 Move to Location (Attached)</h4>
                             <p class="text-xs text-blue-700 mb-3">Vehicle with trailer attached moves to a location on-site</p>
@@ -351,7 +351,7 @@
                     @endif
                     {{-- Drop Trailer Detached Action --}}
                     @php
-                        $canDropTrailer = in_array($currentStatus, ['scheduled', 'arrived', 'in_parking']);
+                        $canDropTrailer = $workflowEnabled && in_array($currentStatus, ['scheduled', 'arrived', 'in_parking']);
                     @endphp
                     @if($canDropTrailer)
                         <div class="p-4 border border-red-200 rounded-lg bg-red-50">
@@ -382,7 +382,7 @@
                     @endif
                     {{-- Move Between Locations Action --}}
                     @php
-                        $canMoveToLocation = in_array($currentStatus, ['in_parking', 'in_waiting']);
+                        $canMoveToLocation = $workflowEnabled && in_array($currentStatus, ['in_parking', 'in_waiting']);
                     @endphp
                     @if($canMoveToLocation)
                         <div class="p-4 border border-cyan-200 rounded-lg bg-cyan-50">
@@ -421,7 +421,7 @@
                     @php
                         $tippingAlreadyCompleted = $movement && $movement->unloading_completed_at;
                         // Show "Move to Bay" action for trailers in parking/waiting that haven't completed tipping
-                        $canMoveToBay = in_array($currentStatus, ['in_parking', 'in_waiting']) && !$tippingAlreadyCompleted;
+                        $canMoveToBay = $workflowEnabled && in_array($currentStatus, ['in_parking', 'in_waiting']) && !$tippingAlreadyCompleted;
                     @endphp
                     @if($canMoveToBay)
                         <div class="p-4 border border-yellow-200 rounded-lg bg-yellow-50">
@@ -453,9 +453,14 @@
                         </div>
                     @endif
                     {{-- Tipping automatically starts when trailer is moved to bay --}}
-                    {{-- Complete Tipping Action --}}
+                    {{-- Complete Tipping Action. In manual mode (workflow disabled) this is
+                         available as soon as the unit has arrived — no need to walk through
+                         location/bay movement steps first; completeTipping() itself clears
+                         the bay and frees the location once actuals are recorded. --}}
                     @php
-                        $canCompleteTipping = in_array($currentStatus, ['at_bay', 'unloading']) && !$tippingAlreadyCompleted;
+                        $canCompleteTipping = $workflowEnabled
+                            ? (in_array($currentStatus, ['at_bay', 'unloading']) && !$tippingAlreadyCompleted)
+                            : (! in_array($currentStatus, ['scheduled', 'empty']) && !$tippingAlreadyCompleted);
                     @endphp
                     @if($canCompleteTipping)
                         <div class="col-span-2 p-4 border border-green-200 rounded-lg bg-green-50">

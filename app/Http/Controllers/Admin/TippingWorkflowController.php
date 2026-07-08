@@ -81,6 +81,10 @@ class TippingWorkflowController extends Controller
     {
         $this->authorizeBookingAccess($booking);
 
+        if (! Setting::isTippingWorkflowEnabled()) {
+            return back()->withErrors(['error' => 'Tipping workflow is disabled — use "Complete Tipping" to record actual quantities directly.']);
+        }
+
         $request->validate([
             'tipping_location_id' => 'required|exists:tipping_locations,id',
             'notes' => 'nullable|string|max:1000',
@@ -120,6 +124,10 @@ class TippingWorkflowController extends Controller
     public function moveToBay(Request $request, Booking $booking)
     {
         $this->authorizeBookingAccess($booking);
+
+        if (! Setting::isTippingWorkflowEnabled()) {
+            return back()->withErrors(['error' => 'Tipping workflow is disabled — use "Complete Tipping" to record actual quantities directly.']);
+        }
 
         $request->validate([
             'tipping_bay_id' => 'required|exists:tipping_bays,id',
@@ -169,12 +177,16 @@ class TippingWorkflowController extends Controller
     {
         $this->authorizeBookingAccess($booking);
 
+        if (! Setting::isTippingWorkflowEnabled()) {
+            return back()->withErrors(['error' => 'Tipping workflow is disabled — use "Complete Tipping" to record actual quantities directly.']);
+        }
+
         $request->validate([
             'notes' => 'nullable|string|max:1000',
         ]);
 
         $movement = $booking->getOrCreateMovement();
-        
+
         // Prevent multiple tipping sessions - check if tipping was already completed
         if ($movement->unloading_completed_at) {
             return back()->withErrors(['error' => 'Tipping has already been completed for this trailer. Cannot restart tipping process.']);
@@ -283,6 +295,10 @@ class TippingWorkflowController extends Controller
     {
         $this->authorizeBookingAccess($booking);
 
+        if (! Setting::isTippingWorkflowEnabled()) {
+            return back()->withErrors(['error' => 'Tipping workflow is disabled — use "Complete Tipping" to record actual quantities directly.']);
+        }
+
         $request->validate([
             'tipping_location_id' => 'required|exists:tipping_locations,id',
             'notes' => 'nullable|string|max:1000',
@@ -336,6 +352,10 @@ class TippingWorkflowController extends Controller
     public function dropTrailerDetached(Request $request, Booking $booking)
     {
         $this->authorizeBookingAccess($booking);
+
+        if (! Setting::isTippingWorkflowEnabled()) {
+            return back()->withErrors(['error' => 'Tipping workflow is disabled — use "Complete Tipping" to record actual quantities directly.']);
+        }
 
         $request->validate([
             'tipping_location_id' => 'required|exists:tipping_locations,id',
