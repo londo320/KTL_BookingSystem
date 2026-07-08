@@ -8,7 +8,7 @@ APP_CONTAINER="ktl-booking-app"
 PROJECT_DIR="/mnt/user/appdata/ktl-booking"
 MYSQL_DATABASE="ktl_booking"
 MYSQL_USER="ktl_user"
-MYSQL_PASSWORD="ktl_password"
+MYSQL_PASSWORD="${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in your environment before running this script}"
 
 cd "$PROJECT_DIR" || exit 1
 

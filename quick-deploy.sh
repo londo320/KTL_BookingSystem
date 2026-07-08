@@ -12,7 +12,7 @@ APP_CONTAINER="ktl-booking-app"
 # Check if container exists
 if ! docker ps -a --format '{{.Names}}' | grep -q "^${APP_CONTAINER}$"; then
     echo "❌ Container ${APP_CONTAINER} does not exist!"
-    echo "   Run the full deployment first: ./deploy-ktl.sh"
+    echo "   Run the full install first: ./full-install.sh"
     exit 1
 fi
 
@@ -41,7 +41,7 @@ QUICK_UPDATE_SCRIPT="$PROJECT_DIR/quick-update.sh"
 
 if [ ! -f "$QUICK_UPDATE_SCRIPT" ]; then
     echo "❌ ERROR: quick-update.sh not found at $QUICK_UPDATE_SCRIPT"
-    echo "   Pull the latest code or run full deployment: ./deploy-ktl.sh"
+    echo "   Pull the latest code or run full install: ./full-install.sh"
     exit 1
 fi
 

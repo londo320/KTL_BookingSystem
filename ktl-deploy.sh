@@ -8,7 +8,7 @@ PROJECT_DIR="/mnt/user/appdata/ktl-booking"
 GIT_REPO="git@github.com:londo320/KTL_BookingSystem.git"
 GIT_BRANCH="main"
 MYSQL_CONTAINER="ktl-booking-mysql"
-MYSQL_ROOT_PASSWORD="ktl123456"
+MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in your environment before running this script}"
 APP_CONTAINER="ktl-booking-app"
 MYSQL_PORT="3307"
 

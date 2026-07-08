@@ -15,7 +15,7 @@ DOCKER_NETWORK="furynet"
 MARIADB_HOST="mysql"       # Must match the exact name of your Unraid MariaDB container
 MARIADB_DATABASE="ktl_booking"
 MARIADB_USER="londo"
-MARIADB_PASSWORD="centuri1"
+MARIADB_PASSWORD="${MARIADB_PASSWORD:?Set MARIADB_PASSWORD in your environment before running this script, e.g. MARIADB_PASSWORD='...' ./deploy-ktl-nginx.sh}"
 
 APP_CONTAINER="ktl-booking-app"
 NGINX_CONTAINER="ktl-booking-nginx"
