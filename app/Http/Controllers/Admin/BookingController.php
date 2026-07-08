@@ -1074,6 +1074,11 @@ class BookingController extends Controller
 
     public function update(Request $request, Booking $booking)
     {
+        // Once a vehicle has arrived, its registration and trailer type must
+        // stay populated — an edit to unrelated fields should never be able
+        // to silently clear them.
+        $requiredIfArrived = $booking->arrived_at ? 'required' : 'nullable';
+
         $data = $request->validate([
             'slot_id' => 'nullable|exists:slots,id',
             'booking_type_id' => 'required|exists:booking_types,id',
@@ -1082,10 +1087,10 @@ class BookingController extends Controller
             'carrier_name' => 'required|string|max:100',
             'container_size' => 'nullable|integer|min:0',
             'notes' => 'nullable|string',
-            'vehicle_registration' => 'nullable|string|max:50',
+            'vehicle_registration' => $requiredIfArrived.'|string|max:50',
             'container_number' => 'nullable|string|max:50',
             'gate_number' => 'nullable|string|max:20',
-            'trailer_type_id' => 'nullable|exists:trailer_types,id',
+            'trailer_type_id' => $requiredIfArrived.'|exists:trailer_types,id',
             'estimated_arrival' => 'nullable|date',
             'tipping_location_id' => 'nullable|exists:tipping_locations,id',
             'tipping_bay_id' => 'nullable|exists:tipping_bays,id',
