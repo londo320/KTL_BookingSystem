@@ -337,28 +337,30 @@
                             👤 Edit Profile
                         </a>
 
-                        {{-- User Switching (Authorized Users Only) --}}
-                        @if(auth()->check() && ((!app()->isProduction()) || (auth()->user()->email === 'paul.carr@knowleslogistics.com')) && (auth()->user()->switch_user_enabled ?? false))
+                        {{-- User Switching --}}
+                        @if(session('original_admin_id'))
+                            {{-- Switch Back is available to whoever is currently impersonated,
+                                 regardless of their own role/permissions - the session flag
+                                 itself is proof an authorized admin started this switch. --}}
                             <div class="border-t border-gray-100"></div>
-                            @if(session('original_admin_id'))
-                                <form method="POST" action="{{ route('switch-back') }}">
-                                    @csrf
-                                    <button type="submit" class="w-full text-left px-4 py-2 text-sm text-orange-600 hover:bg-orange-50 font-semibold">
-                                        🔄 Switch Back to Admin
-                                    </button>
-                                </form>
-                            @else
-                                <div class="px-4 py-2">
-                                    <select onchange="switchUser(this.value)" class="w-full text-sm border border-gray-300 rounded px-2 py-1 bg-white">
-                                        <option value="">🔄 Switch User</option>
-                                        @foreach(\App\Models\User::with('roles')->get() as $user)
-                                            <option value="{{ $user->id }}">
-                                                {{ $user->name }} ({{ $user->roles->pluck('name')->join(', ') ?: 'No Role' }})
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            @endif
+                            <form method="POST" action="{{ route('switch-back') }}">
+                                @csrf
+                                <button type="submit" class="w-full text-left px-4 py-2 text-sm text-orange-600 hover:bg-orange-50 font-semibold">
+                                    🔄 Switch Back to Admin
+                                </button>
+                            </form>
+                        @elseif(auth()->check() && ((!app()->isProduction()) || (auth()->user()->email === 'paul.carr@knowleslogistics.com')) && (auth()->user()->switch_user_enabled ?? false))
+                            <div class="border-t border-gray-100"></div>
+                            <div class="px-4 py-2">
+                                <select onchange="switchUser(this.value)" class="w-full text-sm border border-gray-300 rounded px-2 py-1 bg-white">
+                                    <option value="">🔄 Switch User</option>
+                                    @foreach(\App\Models\User::with('roles')->get() as $user)
+                                        <option value="{{ $user->id }}">
+                                            {{ $user->name }} ({{ $user->roles->pluck('name')->join(', ') ?: 'No Role' }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         @endif
 
                         <div class="border-t border-gray-100">

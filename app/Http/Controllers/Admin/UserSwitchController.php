@@ -18,7 +18,13 @@ class UserSwitchController extends Controller
         // Apply admin role only to switchTo method
         $this->middleware('role:admin')->only('switchTo');
 
-        // Only allow in production for specific authorized email with preference enabled
+        // Only allow initiating a switch in production for the specific authorized email
+        // with preference enabled. switchBack is deliberately exempt: once a switch is
+        // active, Auth::user() is the impersonated target (not paul.carr), so this check
+        // would otherwise lock the admin out of their own return path in production.
+        // switchBack() is safe to leave open here because it only ever returns to the
+        // original_admin_id that a prior, already-authorized switchTo() call stored in
+        // session - it grants no new access on its own.
         $this->middleware(function ($request, $next) {
             if (app()->isProduction()) {
                 $user = Auth::user();
@@ -28,7 +34,7 @@ class UserSwitchController extends Controller
                 }
             }
             return $next($request);
-        });
+        })->except('switchBack');
     }
 
     /**

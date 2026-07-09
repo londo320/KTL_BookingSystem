@@ -235,7 +235,7 @@
     </ul>
 
     {{-- User Switching (Testing Only) --}}
-    @if(!app()->isProduction() && session('original_admin_id'))
+    @if(session('original_admin_id'))
       <div class="flex items-center space-x-3">
         <span class="text-sm text-orange-600 font-medium">🔄 Testing as: {{ auth()->user()->name }}</span>
         <form action="{{ route('switch-back') }}" method="POST" class="inline">

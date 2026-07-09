@@ -28,8 +28,8 @@
         </div>
 
         <div class="flex items-center space-x-4">
-            {{-- Switch Back Button (Testing Only) --}}
-            @if(!app()->isProduction() && session('original_admin_id'))
+            {{-- Switch Back Button (shown whenever an admin is impersonating this account) --}}
+            @if(session('original_admin_id'))
                 <form method="POST" action="{{ route('switch-back') }}">
                     @csrf
                     <button type="submit" class="bg-orange-600 hover:bg-orange-700 px-2 py-1 rounded text-xs font-semibold">
