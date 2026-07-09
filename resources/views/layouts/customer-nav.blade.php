@@ -17,7 +17,7 @@
             </a>
         </div>
 
-        <div class="flex space-x-2">
+        <div class="flex space-x-2 items-center">
             {{-- Switch Back Button (Testing Only) --}}
             @if(!app()->isProduction() && session('original_admin_id'))
                 <form method="POST" action="{{ route('switch-back') }}">
@@ -27,6 +27,11 @@
                     </button>
                 </form>
             @endif
+
+            <a href="{{ route('profile.edit') }}"
+               class="hover:bg-gray-700 px-3 py-2 rounded {{ request()->routeIs('profile.edit') ? 'bg-gray-700' : '' }}">
+                My Account
+            </a>
 
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
