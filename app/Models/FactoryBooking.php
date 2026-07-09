@@ -200,12 +200,13 @@ class FactoryBooking extends Model
         
         $statusConfig = [
             'arrived' => ['class' => 'bg-blue-100 text-blue-800', 'label' => '📋 Arrived'],
-            'in_waiting' => ['class' => 'bg-yellow-100 text-yellow-800', 'label' => '⏳ Waiting'],
-            'trailer_dropped' => ['class' => 'bg-orange-100 text-orange-800', 'label' => '📍 Trailer Dropped'],
+            'in_parking' => ['class' => 'bg-yellow-100 text-yellow-800', 'label' => '⏳ Waiting'],
             'at_bay' => ['class' => 'bg-purple-100 text-purple-800', 'label' => '🚛 At Bay'],
             'unloading' => ['class' => 'bg-red-100 text-red-800', 'label' => '⚡ Tipping'],
             'empty' => ['class' => 'bg-green-100 text-green-800', 'label' => '✅ Empty'],
+            'back_to_parking' => ['class' => 'bg-yellow-100 text-yellow-800', 'label' => '⏳ Empty - Waiting'],
             'departed' => ['class' => 'bg-gray-100 text-gray-800', 'label' => '🏁 Departed'],
+            'trailer_collected' => ['class' => 'bg-gray-100 text-gray-800', 'label' => '🔄 Collected'],
         ];
         
         $config = $statusConfig[$movementStatus] ?? $statusConfig['arrived'];

@@ -289,10 +289,11 @@
               <td class="px-4 py-2">
                 <div class="flex space-x-1">
                   @if($isFactory)
-                    {{-- Factory bookings have limited actions --}}
-                    <span class="px-2 py-1 bg-purple-400 text-white rounded text-xs">
-                      🏭 Factory Vehicle
-                    </span>
+                    {{-- Factory bookings are read-only for customers --}}
+                    <a href="{{ route('customer.factory-bookings.show', $booking->original_factory_booking) }}"
+                       class="px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 text-xs">
+                      View
+                    </a>
                   @else
                     {{-- Show History button FIRST if booking has been rebooked/has history --}}
                     @php

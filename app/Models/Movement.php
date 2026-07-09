@@ -149,7 +149,7 @@ class Movement extends Model
     public function scopeOnSite($query)
     {
         return $query->whereIn('current_status', [
-            'arrived', 'in_waiting', 'at_bay', 'unloading', 'loading', 'loaded', 'trailer_dropped',
+            'arrived', 'in_parking', 'at_bay', 'unloading', 'empty', 'back_to_parking',
         ]);
     }
 
@@ -162,7 +162,7 @@ class Movement extends Model
     public function isOnSite(): bool
     {
         return in_array($this->current_status, [
-            'arrived', 'in_waiting', 'at_bay', 'unloading', 'loading', 'loaded', 'trailer_dropped',
+            'arrived', 'in_parking', 'at_bay', 'unloading', 'empty', 'back_to_parking',
         ]);
     }
 
@@ -234,7 +234,8 @@ class Movement extends Model
             case 'unloading':
                 $statusStartTime = $this->unloading_started_at;
                 break;
-            case 'in_waiting':
+            case 'in_parking':
+            case 'back_to_parking':
                 $statusStartTime = $this->moved_to_location_at;
                 break;
             case 'trailer_dropped':

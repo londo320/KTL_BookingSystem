@@ -230,6 +230,26 @@ class CustomerBookingController extends Controller
         ]);
     }
 
+    public function showFactory(FactoryBooking $factoryBooking)
+    {
+        abort_unless(
+            $factoryBooking->customer_id && auth()->user()->canAccessCustomer($factoryBooking->customer_id),
+            403
+        );
+
+        return view('customer.factory-bookings.show', [
+            'factoryBooking' => $factoryBooking->load([
+                'depot',
+                'customer',
+                'carrier',
+                'movements.tippingLocation',
+                'movements.tippingBay',
+                'poNumbers.lines.expectedPalletType',
+                'poNumbers.lines.actualPalletType',
+            ]),
+        ]);
+    }
+
     public function edit(Request $request, Booking $booking)
     {
         $this->authorize('update', $booking);

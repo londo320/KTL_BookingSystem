@@ -1119,6 +1119,9 @@ Route::middleware('auth')->group(function () {
         // Booking management
         Route::resource('bookings', \App\Http\Controllers\Customer\CustomerBookingController::class)->except(['destroy']);
 
+        // Read-only view of factory delivery bookings (tipping status, actuals)
+        Route::get('/factory-bookings/{factoryBooking}', [\App\Http\Controllers\Customer\CustomerBookingController::class, 'showFactory'])->name('factory-bookings.show');
+
         // Export routes
         Route::get('/bookings-export/pdf', [\App\Http\Controllers\Customer\CustomerBookingController::class, 'exportPdf'])->name('bookings.export.pdf');
         Route::get('/bookings-export/csv', [\App\Http\Controllers\Customer\CustomerBookingController::class, 'exportCsv'])->name('bookings.export.csv');

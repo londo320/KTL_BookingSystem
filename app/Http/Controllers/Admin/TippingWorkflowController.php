@@ -111,7 +111,7 @@ class TippingWorkflowController extends Controller
             $movement = $booking->getOrCreateMovement();
             $movement->update([
                 'tipping_location_id' => $location->id,
-                'current_status' => 'in_waiting', // Moved to location, waiting for next action
+                'current_status' => 'in_parking', // Moved to location, waiting for next action
                 'moved_to_location_at' => now(),
                 'operation_notes' => $request->notes ? ($movement->operation_notes ? $movement->operation_notes."\n".$request->notes : $request->notes) : $movement->operation_notes,
             ]);
@@ -341,11 +341,11 @@ class TippingWorkflowController extends Controller
         $movement->update([
             'tipping_location_id' => $location->id,
             'tipping_bay_id' => null, // Clear bay when moving to location
-            'current_status' => 'in_waiting', // Moved to location, waiting for next action
+            'current_status' => $isEmptyMovement ? 'back_to_parking' : 'in_parking',
             'moved_to_location_at' => now(),
             'operation_notes' => $request->notes ? ($movement->operation_notes ? $movement->operation_notes."\n".$request->notes : $request->notes) : $movement->operation_notes,
         ]);
-        
+
         $location->markOccupied($booking);
 
         $statusMessage = $isEmptyMovement ? 'Empty unit moved to ' : 'Vehicle moved to ';
@@ -778,10 +778,12 @@ class TippingWorkflowController extends Controller
             $movement->tippingBay->markAvailable($booking);
         }
 
+        $isEmptyMovement = $movement->unloading_completed_at && in_array($movement->current_status, ['empty', 'at_bay']);
+
         $movement->update([
             'tipping_location_id' => $location->id,
             'tipping_bay_id' => null,
-            'current_status' => 'in_waiting', // Moved to location, waiting for next action
+            'current_status' => $isEmptyMovement ? 'back_to_parking' : 'in_parking',
             'moved_to_location_at' => now(),
             'operation_notes' => $request->notes ? ($movement->operation_notes ? $movement->operation_notes."\n".$request->notes : $request->notes) : $movement->operation_notes,
         ]);

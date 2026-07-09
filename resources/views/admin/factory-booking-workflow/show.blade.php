@@ -156,11 +156,29 @@
             </div>
         @endif
 
+        {{-- Workflow Status Notice --}}
+        @if(!$workflowEnabled)
+            <div class="mb-6 p-4 bg-yellow-100 border border-yellow-400 text-yellow-800 rounded-lg">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                    <div>
+                        <h4 class="font-medium">Manual Tipping Mode</h4>
+                        <p class="text-sm mt-1">Workflow enforcement is disabled. You can perform actions in any order without restrictions.</p>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         {{-- Progress Workflow --}}
         <div class="mb-6 bg-white rounded-lg shadow overflow-hidden">
             <div class="p-6 border-b border-gray-200">
                 <h3 class="text-xl font-semibold text-gray-800">🚛 Factory Tipping Progress</h3>
                 <p class="text-sm text-gray-600 mt-1">Track your factory delivery through the tipping process</p>
+                @if(!$workflowEnabled)
+                    <span class="inline-block mt-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Manual Mode</span>
+                @endif
             </div>
             <div class="p-6">
                 @php
@@ -264,8 +282,8 @@
 
                 {{-- Workflow Actions --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {{-- Move to Location Action --}}
-                    @if(in_array($currentStatus, ['arrived', 'in_parking']))
+                    {{-- Move to Location Action (manual mode skips straight to Complete Tipping below) --}}
+                    @if($workflowEnabled && in_array($currentStatus, ['arrived', 'in_parking']))
                         <div class="p-4 border border-blue-200 rounded-lg bg-blue-50">
                             <h4 class="font-medium text-blue-800 mb-3">🚛 Move to Location</h4>
                             <p class="text-xs text-blue-700 mb-3">Move factory vehicle to a parking location</p>
@@ -290,7 +308,7 @@
                     @endif
 
                     {{-- Move to Bay Action --}}
-                    @if(in_array($currentStatus, ['in_parking', 'back_to_parking']))
+                    @if($workflowEnabled && in_array($currentStatus, ['in_parking', 'back_to_parking']))
                         <div class="p-4 border border-orange-200 rounded-lg bg-orange-50">
                             <h4 class="font-medium text-orange-800 mb-3">⚡ Move to Tipping Bay</h4>
                             <p class="text-xs text-orange-700 mb-3">Move vehicle to an available tipping bay</p>
@@ -312,15 +330,88 @@
                         </div>
                     @endif
 
-                    {{-- Complete Tipping Action --}}
-                    @if(in_array($currentStatus, ['at_bay', 'unloading']))
-                        <div class="p-4 border border-green-200 rounded-lg bg-green-50">
+                    {{-- Complete Tipping Action. In manual mode (workflow disabled) this is
+                         available as soon as the unit has arrived — no need to walk through
+                         location/bay movement steps first. --}}
+                    @php
+                        $tippingAlreadyCompleted = $movement && $movement->unloading_completed_at;
+                        $canCompleteTipping = ! $tippingAlreadyCompleted && ($workflowEnabled
+                            ? in_array($currentStatus, ['at_bay', 'unloading'])
+                            : $currentStatus !== 'empty');
+                    @endphp
+                    @if($canCompleteTipping)
+                        <div class="col-span-2 p-4 border border-green-200 rounded-lg bg-green-50">
                             <h4 class="font-medium text-green-800 mb-3">✅ Complete Tipping</h4>
-                            <p class="text-xs text-green-700 mb-3">Mark tipping as complete and record actual quantities</p>
+                            <p class="text-sm text-green-700 mb-3">Complete this form only after tipping has finished to record the actual quantities received.</p>
                             <form action="{{ route('app.factory-booking-workflow.complete-tipping', $factoryBooking) }}" method="POST">
                                 @csrf
+                                @if($factoryBooking->poNumbers && $factoryBooking->poNumbers->count() > 0)
+                                    <div class="mb-6 bg-white p-4 rounded border">
+                                        <h5 class="font-medium text-gray-800 mb-4">📦 Record Actual Quantities Received <span class="text-red-500">*</span></h5>
+                                        @foreach($factoryBooking->poNumbers as $poNumber)
+                                            <div class="mb-4 border border-gray-300 rounded p-4">
+                                                <h6 class="font-medium text-gray-800 mb-3">PO: {{ $poNumber->po_number }}</h6>
+                                                @foreach($poNumber->lines as $line)
+                                                    <div class="mb-4 p-3 bg-gray-50 rounded border">
+                                                        <p class="text-sm text-gray-600 mb-2">
+                                                            Line {{ $line->line_number }} — Expected: {{ number_format($line->expected_cases) }} units,
+                                                            {{ number_format($line->expected_pallets) }} {{ $line->expectedPalletType?->name ?? 'pallets' }}
+                                                        </p>
+                                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                            <div>
+                                                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                                                    Actual Units/Cases <span class="text-red-500">*</span>
+                                                                </label>
+                                                                <input type="number"
+                                                                       name="po_lines[{{ $line->id }}][actual_cases]"
+                                                                       class="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                                                       min="0"
+                                                                       value="{{ $line->actual_cases ?? '' }}"
+                                                                       required>
+                                                            </div>
+                                                            <div>
+                                                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                                                    Actual Pallets <span class="text-red-500">*</span>
+                                                                </label>
+                                                                <input type="number"
+                                                                       name="po_lines[{{ $line->id }}][actual_pallets]"
+                                                                       class="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                                                       min="0"
+                                                                       value="{{ $line->actual_pallets ?? '' }}"
+                                                                       required>
+                                                            </div>
+                                                            <div>
+                                                                <label class="block text-sm font-medium text-gray-700 mb-1">Pallet Type</label>
+                                                                <select name="po_lines[{{ $line->id }}][actual_pallet_type_id]"
+                                                                        class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                                                                    <option value="">Select pallet type...</option>
+                                                                    @foreach($palletTypes as $palletType)
+                                                                        <option value="{{ $palletType->id }}"
+                                                                                {{ $line->actual_pallet_type_id == $palletType->id ? 'selected' : '' }}>
+                                                                            {{ $palletType->display_name }}
+                                                                        </option>
+                                                                    @endforeach
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+                                <div class="mb-3">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Issues (if any)</label>
+                                    <div id="issues-container">
+                                        <input type="text" name="issues[]" class="w-full px-3 py-2 border border-gray-300 rounded-md mb-2" placeholder="Describe any issues...">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                                    <textarea name="notes" class="w-full px-3 py-2 border border-gray-300 rounded-md" rows="2" placeholder="Completion notes..."></textarea>
+                                </div>
                                 <button type="submit" class="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
-                                    ✅ Mark as Tipped
+                                    ✅ Complete Tipping
                                 </button>
                             </form>
                         </div>
