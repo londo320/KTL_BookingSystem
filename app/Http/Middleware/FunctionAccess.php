@@ -81,6 +81,8 @@ class FunctionAccess
             'bookings.history' => ['bookings.history', 'bookings.view'],
             'bookings.rebook.show' => ['bookings.rebook', 'bookings.view'],
             'bookings.rebook.store' => ['bookings.rebook', 'bookings.edit'],
+            'bookings.bulk-upload' => 'bookings.create',
+            'bookings.bulk-upload.process' => 'bookings.create',
             
             // Customers
             'customers.index' => 'customers.view',

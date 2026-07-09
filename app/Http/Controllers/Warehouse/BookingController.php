@@ -29,7 +29,12 @@ class BookingController extends Controller
     
     public function __construct()
     {
-        $this->middleware(['auth', 'role:admin|depot-admin|site-admin|warehouse']);
+        // Includes the granular staff roles (warehouse-manager, warehouse-operative,
+        // forklift-driver, yard-controller, gate-security, viewer) alongside the
+        // coarse ones - this is the outer "are you staff at all" gate, matching
+        // hasWarehouseAccess(); the FunctionAccess middleware + nav already handle
+        // which specific actions each granular role can actually reach.
+        $this->middleware(['auth', 'role:admin|depot-admin|site-admin|warehouse|warehouse-manager|warehouse-operative|forklift-driver|yard-controller|gate-security|viewer']);
     }
 
     /**

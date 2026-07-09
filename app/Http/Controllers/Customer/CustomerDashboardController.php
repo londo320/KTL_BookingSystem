@@ -13,7 +13,7 @@ class CustomerDashboardController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth', 'role:customer']);
+        $this->middleware(['auth', 'role:customer|customer-admin']);
     }
 
     public function index(Request $request)

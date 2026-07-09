@@ -13,7 +13,9 @@ class OperationalQueueController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth', 'role:admin|depot-admin|site-admin|warehouse']);
+        // See Warehouse\BookingController for why the granular staff roles are
+        // included alongside the coarse ones here.
+        $this->middleware(['auth', 'role:admin|depot-admin|site-admin|warehouse|warehouse-manager|warehouse-operative|forklift-driver|yard-controller|gate-security|viewer']);
     }
 
     /**
