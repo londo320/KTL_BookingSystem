@@ -101,6 +101,8 @@ class UserSwitchController extends Controller
             return 'site.dashboard'; // Correct route name
         } elseif ($user->hasRole('depot-admin')) {
             return 'app.dashboard';
+        } elseif ($user->hasRole('gate-security')) {
+            return 'app.arrivals.index'; // Gate check-in list, not the general dashboard
         } elseif ($user->hasRole('warehouse')) {
             return 'app.dashboard';
         } elseif ($user->hasRole('customer')) {

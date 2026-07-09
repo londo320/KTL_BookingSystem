@@ -189,8 +189,12 @@ class AdminController extends Controller
                 $user->notify(new AccessGrantedNotification($roleNames, $depotNames));
             }
 
-            // Sync custom roles
+            // Sync custom roles, auto-attaching any CustomRole function bundle
+            // whose name matches a newly assigned Spatie role (e.g.
+            // gate-security -> the "Gate Security" bundle), so the role label
+            // always comes with working permissions rather than just a name.
             $customRoleIds = $validated['custom_role_ids'] ?? [];
+            $customRoleIds = array_unique(array_merge($customRoleIds, $this->matchingCustomRoleIds($roleIds)));
             $user->assignCustomRoles($customRoleIds);
         }
 
@@ -432,6 +436,15 @@ class AdminController extends Controller
         // Sync multiple roles via pivot
         $user->roles()->sync($validated['role_ids']);
 
+        // Auto-attach any CustomRole function bundle whose name matches an
+        // assigned Spatie role (e.g. gate-security -> the "Gate Security"
+        // bundle), so new users get working permissions immediately rather
+        // than just a role label.
+        $matchingCustomRoleIds = $this->matchingCustomRoleIds($validated['role_ids']);
+        if (! empty($matchingCustomRoleIds)) {
+            $user->assignCustomRoles($matchingCustomRoleIds);
+        }
+
         // Sync depots
         $user->depots()->sync($validated['depot_ids']);
 
@@ -448,6 +461,21 @@ class AdminController extends Controller
 
         return redirect()->route('app.users.index')
             ->with('success', 'User created successfully.');
+    }
+
+    /**
+     * Find CustomRole ids whose name matches one of the given Spatie role
+     * ids, converting hyphens to underscores (e.g. gate-security ->
+     * gate_security) since the two role systems use different naming
+     * conventions. Used so assigning a Spatie role that has a same-named
+     * CustomRole function bundle also grants those functions automatically.
+     */
+    private function matchingCustomRoleIds(array $roleIds): array
+    {
+        $roleNames = Role::whereIn('id', $roleIds)->pluck('name')->toArray();
+        $customRoleNames = array_map(fn ($name) => str_replace('-', '_', $name), $roleNames);
+
+        return \App\Models\CustomRole::whereIn('name', $customRoleNames)->pluck('id')->toArray();
     }
 
     public function create()
