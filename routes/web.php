@@ -509,6 +509,12 @@ Route::middleware('auth')->group(function () {
             Route::post('/{factoryBooking}/move-trailer', [\App\Http\Controllers\Admin\FactoryBookingWorkflowController::class, 'moveTrailer'])->name('move-trailer');
         });
 
+        // Must be registered before the custom-roles resource below - otherwise
+        // its show route (custom-roles/{custom_role}) is a wildcard that matches
+        // "create-predefined" first and shadows this route entirely (404s via
+        // failed route-model-binding instead of reaching the controller).
+        Route::get('custom-roles/create-predefined', [\App\Http\Controllers\Admin\CustomRoleController::class, 'createPredefined'])->name('custom-roles.create-predefined');
+
         Route::resources([
             'depots' => DepotController::class,
             'booking-types' => BookingTypeController::class,
@@ -530,7 +536,6 @@ Route::middleware('auth')->group(function () {
 
         // Custom role management actions
         Route::post('custom-roles/{customRole}/toggle', [\App\Http\Controllers\Admin\CustomRoleController::class, 'toggle'])->name('custom-roles.toggle');
-        Route::get('custom-roles/create-predefined', [\App\Http\Controllers\Admin\CustomRoleController::class, 'createPredefined'])->name('custom-roles.create-predefined');
 
         // Additional tipping location actions  
         Route::patch('tipping-locations/{tippingLocation}/toggle-active', [\App\Http\Controllers\Admin\TippingLocationController::class, 'toggleActive'])->name('tipping-locations.toggle-active');
