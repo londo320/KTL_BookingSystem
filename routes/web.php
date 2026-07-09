@@ -52,8 +52,9 @@ Route::get('/redirect-after-login', function () {
         return redirect()->route('app.dashboard');
     }
     
-    // Customer-only users go to customer dashboard
-    if ($user->hasRole('customer')) {
+    // Customer-only users go to customer dashboard (customer-admin is a
+    // customer-portal role too - its functions include customer.dashboard)
+    if ($user->hasRole(['customer', 'customer-admin'])) {
         return redirect()->route('customer.dashboard');
     }
     
@@ -1118,7 +1119,7 @@ Route::middleware('auth')->group(function () {
     /**
      * ───── Customer Routes ─────
      */
-    Route::prefix('customer')->middleware(['role:customer'])->as('customer.')->group(function () {
+    Route::prefix('customer')->middleware(['role:customer|customer-admin'])->as('customer.')->group(function () {
         Route::get('/dashboard', [\App\Http\Controllers\Customer\CustomerDashboardController::class, 'index'])->name('dashboard');
 
         // Booking management

@@ -299,7 +299,16 @@ class User extends Authenticatable
      */
     public function hasWarehouseAccess(): bool
     {
-        return $this->hasRole(['warehouse', 'admin', 'depot-admin', 'site-admin']);
+        return $this->hasRole([
+            'warehouse', 'admin', 'depot-admin', 'site-admin',
+            // Granular staff roles introduced alongside the Custom Role function
+            // bundles - these only ever need /app/* access (dashboard, bookings,
+            // arrivals), gated further by their assigned functions, but without
+            // this they never get past the post-login redirect at all and land
+            // on the "Access Pending" page despite having a valid role/depot.
+            'warehouse-manager', 'warehouse-operative', 'forklift-driver',
+            'yard-controller', 'gate-security', 'viewer',
+        ]);
     }
     
     /**
