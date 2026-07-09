@@ -465,6 +465,7 @@ class BookingController extends Controller
                 'end_at' => $factoryBooking->completed_at ?? $factoryBooking->arrived_at->copy()->addHour(),
                 'depot' => $factoryBooking->depot,
                 'depot_id' => $factoryBooking->depot_id,
+                'tippingBay' => null,
             ];
 
             // Calculate PO totals similar to Booking model accessors
@@ -505,6 +506,14 @@ class BookingController extends Controller
                 'original_factory_booking' => $factoryBooking, // Keep reference to original
                 'tipping_status' => $this->getFactoryBookingTippingStatus($factoryBooking),
                 'special_instructions' => $factoryBooking->delivery_notes,
+                'carrier' => $factoryBooking->carrier,
+                'carrier_company' => $factoryBooking->carrier?->name,
+                'tipping_completed_at' => $factoryBooking->completed_at,
+                'trailer_collection_scheduled' => null,
+                'dropped_trailer_location' => null,
+                'dropped_trailer_status' => null,
+                'is_rebooked' => false,
+                'original_booking_id' => null,
                 // Add PO total properties that the view expects
                 'total_expected_cases' => $totalExpectedCases,
                 'total_actual_cases' => $totalActualCases,
