@@ -65,18 +65,23 @@
                class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
               🔄 {{ $hasArrived ? 'Rebook/Reject' : 'Rebook' }}
             </a>
-            
-            @unless($booking->departed_at)
-              <button onclick="showCancelModal()"
-                      class="inline-flex items-center px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors">
-                ❌ {{ $hasArrived ? 'Cancel/Reject' : 'Cancel' }}
-              </button>
-            @else
+
+            @if($booking->departed_at)
               <span class="inline-flex items-center px-3 py-1.5 bg-gray-400 text-white text-sm font-medium rounded-md cursor-not-allowed"
                     title="Booking has already departed">
                 🚛 Departed
               </span>
-            @endunless
+            @elseif($hasArrived)
+              <span class="inline-flex items-center px-3 py-1.5 bg-gray-400 text-white text-sm font-medium rounded-md cursor-not-allowed"
+                    title="This vehicle is already on site. Please contact the warehouse directly to cancel.">
+                🔒 On Site
+              </span>
+            @else
+              <button onclick="showCancelModal()"
+                      class="inline-flex items-center px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors">
+                ❌ Cancel
+              </button>
+            @endif
           @endif
         </div>
         

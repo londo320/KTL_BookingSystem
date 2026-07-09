@@ -281,6 +281,10 @@ class Booking extends Model
 
     public function rebook(Slot $newSlot, string $reason): Booking
     {
+        if ($this->departed_at) {
+            throw new \Exception('Cannot rebook a booking that has already departed.');
+        }
+
         $newBooking = null;
         DB::transaction(function () use ($newSlot, $reason, &$newBooking) {
             // Load PO numbers and lines before creating history

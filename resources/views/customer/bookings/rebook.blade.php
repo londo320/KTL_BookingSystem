@@ -102,10 +102,17 @@
             🔄 Rebook Booking
           </button>
 
-          <button type="button" onclick="showCancelModal()"
-                  class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
-            ❌ Cancel Booking Instead
-          </button>
+          @if($booking->arrived_at)
+            <span class="px-6 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed"
+                  title="This vehicle is already on site. Please contact the warehouse directly to cancel.">
+              🔒 Cancel Unavailable — On Site
+            </span>
+          @else
+            <button type="button" onclick="showCancelModal()"
+                    class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+              ❌ Cancel Booking Instead
+            </button>
+          @endif
 
           <a href="{{ route('customer.bookings.show', $booking) }}"
              class="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400">

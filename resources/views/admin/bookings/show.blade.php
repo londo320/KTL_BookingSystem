@@ -99,16 +99,20 @@
               @endif
             @endif
             @if($canTakeAction)
-              <a href="{{ route('app.bookings.rebook.show', $booking) }}"
-                 class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
-                🔄 {{ $hasArrived ? 'Rebook/Reject' : 'Rebook' }}
-              </a>
               @unless($booking->departed_at)
-                <button onclick="showCancelModal()"
+                <a href="{{ route('app.bookings.rebook.show', $booking) }}"
+                   class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
+                  🔄 {{ $hasArrived ? 'Rebook/Reject' : 'Rebook' }}
+                </a>
+                <button onclick="showCancelModal({{ $hasArrived ? 'true' : 'false' }})"
                         class="inline-flex items-center px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors">
                   ❌ {{ $hasArrived ? 'Cancel/Reject' : 'Cancel' }}
                 </button>
               @else
+                <span class="inline-flex items-center px-3 py-1.5 bg-gray-400 text-white text-sm font-medium rounded-md cursor-not-allowed"
+                      title="Booking has already departed">
+                  🔄 Rebook
+                </span>
                 <span class="inline-flex items-center px-3 py-1.5 bg-gray-400 text-white text-sm font-medium rounded-md cursor-not-allowed"
                       title="Booking has already departed">
                   🚛 Departed
@@ -1586,7 +1590,10 @@
     function useMyEmail() {
       document.getElementById('emailAddress').value = '{{ auth()->user()->email }}';
     }
-    function showCancelModal() {
+    function showCancelModal(isOnSite) {
+      if (isOnSite && !confirm('This booking is already on site. Are you sure you want to cancel this collection? This cannot be undone once cancelled.')) {
+        return;
+      }
       document.getElementById('cancelModal').classList.remove('hidden');
       document.getElementById('cancelModal').classList.add('flex');
     }

@@ -1122,17 +1122,16 @@ class CustomerBookingController extends Controller
     {
         $this->authorize('update', $booking);
 
-        // Allow cancellation even after arrival for rejection cases
-        // if ($booking->arrived_at) {
-        //     return response()->json(['success' => false, 'message' => 'Cannot cancel a booking that has already arrived.'], 400);
-        // }
-
         if ($booking->isCancelled()) {
             return response()->json(['success' => false, 'message' => 'Booking is already cancelled.'], 400);
         }
 
         if ($booking->departed_at) {
             return response()->json(['success' => false, 'message' => 'Cannot cancel a booking that has already departed.'], 400);
+        }
+
+        if ($booking->arrived_at) {
+            return response()->json(['success' => false, 'message' => 'This booking is already on site. Please contact the warehouse directly to cancel.'], 400);
         }
 
         $request->validate([
